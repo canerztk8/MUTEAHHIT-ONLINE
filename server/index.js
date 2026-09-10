@@ -195,6 +195,11 @@ app.get('*', (req, res, next) => {
   if (req.path.startsWith('/api') || req.path.startsWith('/peerjs')) {
     return next();
   }
+  // Statik varlıklar (/assets/*, .js, .css, .wasm vb.) express.static tarafından bulunamadıysa
+  // ASLA index.html dönme, gerçek HTTP 404 dön! Aksi takdirde tarayıcı HTML'i JS gibi çalıştırmaya kalkışır.
+  if (req.path.startsWith('/assets/') || /\.[a-zA-Z0-9]+$/.test(req.path)) {
+    return res.status(404).type('text/plain').send('Asset not found');
+  }
   res.sendFile(path.join(distPath, 'index.html'), (err) => {
     if (err) {
       res.send(`

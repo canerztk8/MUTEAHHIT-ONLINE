@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { HostPeerService, ClientPeerService } from './network/PeerService.js';
 import { ACTION } from './network/protocol.js';
 import { BOARD_TILES } from './game/boardData.js';
@@ -11,12 +11,12 @@ import { TitleDeedCards } from './components/TitleDeedCards.jsx';
 import { DiceSidebarTray } from './components/DiceSidebarTray.jsx';
 import { ErrorBoundary } from './components/ErrorBoundary.jsx';
 
-// 🚀 Performance Code-Splitting: Lazy-load dialogs & heavy modals
-const PropertyCardModal = lazy(() => import('./components/PropertyCardModal.jsx').then(m => ({ default: m.PropertyCardModal })));
-const TradeModal = lazy(() => import('./components/TradeModal.jsx').then(m => ({ default: m.TradeModal })));
-const WinnerModal = lazy(() => import('./components/WinnerModal.jsx').then(m => ({ default: m.WinnerModal })));
-const EliminationModal = lazy(() => import('./components/EliminationModal.jsx').then(m => ({ default: m.EliminationModal })));
-const DevToolsModal = lazy(() => import('./components/DevToolsModal.jsx').then(m => ({ default: m.DevToolsModal })));
+// 🚀 Oyun İçi Kritik Modallar (Ağ kesintisi veya yeni deploy durumunda dinamik chunk hatası vermemesi için statik import)
+import { PropertyCardModal } from './components/PropertyCardModal.jsx';
+import { TradeModal } from './components/TradeModal.jsx';
+import { WinnerModal } from './components/WinnerModal.jsx';
+import { EliminationModal } from './components/EliminationModal.jsx';
+import { DevToolsModal } from './components/DevToolsModal.jsx';
 import { sounds } from './sound/soundEffects.js';
 import { Volume2, VolumeX, Copy, Check, Users, Sparkles, LogOut, Wrench, Sun, Moon, X } from 'lucide-react';
 
@@ -1240,7 +1240,7 @@ export function App() {
 
       {/* Modallar */}
       {selectedTileModal && (
-        <Suspense fallback={null}>
+        <ErrorBoundary name="Mülk Detay Kartı" fallback={null}>
           <PropertyCardModal
             tile={selectedTileModal}
             gameState={gameState}
@@ -1253,20 +1253,22 @@ export function App() {
             onOpenTrade={handleOpenTradeForTile}
             onStartAuction={handleStartPlayerAuction}
           />
-        </Suspense>
+        </ErrorBoundary>
       )}
 
       {/* 🃏 Kart Geçmişi Modalı (İhale & Fırsat / Belediye & İmar kare tıklaması) */}
       {cardHistoryModal && (
-        <CardHistoryModal
-          deckType={cardHistoryModal.deckType}
-          logs={gameState?.logs}
-          onClose={() => setCardHistoryModal(null)}
-        />
+        <ErrorBoundary name="Kart Geçmişi Modalı" fallback={null}>
+          <CardHistoryModal
+            deckType={cardHistoryModal.deckType}
+            logs={gameState?.logs}
+            onClose={() => setCardHistoryModal(null)}
+          />
+        </ErrorBoundary>
       )}
 
       {showTradeModal && (
-        <Suspense fallback={null}>
+        <ErrorBoundary name="Takas Modalı" fallback={null}>
           <TradeModal
             gameState={gameState}
             myPlayerId={myPlayerId}
@@ -1282,12 +1284,12 @@ export function App() {
             onProposeTrade={handleProposeTrade}
             onRespondTrade={handleRespondTrade}
           />
-        </Suspense>
+        </ErrorBoundary>
       )}
 
       {/* İFLAS VE ELENME ANİMASYON EKRANI / ÜST DUYURU BANNERI */}
       {activeElimination && (
-        <Suspense fallback={null}>
+        <ErrorBoundary name="İflas ve Elenme Modalı" fallback={null}>
           <EliminationModal
             elimination={activeElimination}
             isMe={activeElimination.playerId === myPlayerId}
@@ -1297,19 +1299,19 @@ export function App() {
             onLeaveRoom={() => handleLeaveGame(true)}
             onShowWinner={() => setActiveElimination(null)}
           />
-        </Suspense>
+        </ErrorBoundary>
       )}
 
       {/* ZAFER VE ŞAMPİYONLUK KUTLAMA MODALİ */}
       {gameState.winner && (!activeElimination || activeElimination.playerId !== myPlayerId) && (
-        <Suspense fallback={null}>
+        <ErrorBoundary name="Zafer Modalı" fallback={null}>
           <WinnerModal
             winner={gameState.winner}
             gameState={gameState}
             onRestart={handleRestartGame}
             onLeaveRoom={() => handleLeaveGame(true)}
           />
-        </Suspense>
+        </ErrorBoundary>
       )}
 
       {/* SOL ALT OYUNCU BİLGİ KARTI & CANLI BAKİYE (Fiziksel Müteahhit Kimlik Kartı) */}
@@ -1470,7 +1472,7 @@ export function App() {
 
       {/* 🛠️ DevTools Modal */}
       {showDevTools && (
-        <Suspense fallback={null}>
+        <ErrorBoundary name="Geliştirici Araçları" fallback={null}>
           <DevToolsModal
             isOpen={showDevTools}
             onClose={() => setShowDevTools(false)}
@@ -1478,7 +1480,7 @@ export function App() {
             myPlayerId={myPlayerId}
             network={network}
           />
-        </Suspense>
+        </ErrorBoundary>
       )}
     </div>
   );

@@ -12,6 +12,14 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   </React.StrictMode>
 );
 
+// 🔄 Vite dinamik modül / chunk yükleme hatalarında (yeni deploy yapıldığında eski chunk hash'i silinirse)
+// tarayıcının hata ekranında kalmasını önleyip son sürüm için sayfayı otomatik olarak yeniler
+window.addEventListener('vite:preloadError', (event) => {
+  console.warn('[Vite] Yeni sürüm dağıtıldı veya dinamik modül yüklenemedi. Sayfa otomatik yenileniyor...', event);
+  event.preventDefault();
+  window.location.reload();
+});
+
 // ⚡ Register Service Worker for Cache-First offline & asset caching
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {

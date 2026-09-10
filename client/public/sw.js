@@ -1,5 +1,5 @@
 // Müteahhit Online - High-Performance Service Worker Cache
-const CACHE_NAME = 'muteahhit-cache-v2';
+const CACHE_NAME = 'muteahhit-cache-v3';
 const STATIC_ASSET_REGEX = /\.(?:glb|gltf|wasm|webp|png|jpg|jpeg|svg|mp3|wav|ogg|woff2?|ttf|eot)$/i;
 
 // Install event: skip waiting to activate immediately
@@ -92,7 +92,9 @@ self.addEventListener('fetch', (event) => {
         const cachedResponse = await cache.match(request);
         const fetchPromise = fetch(request)
           .then((networkResponse) => {
-            if (networkResponse && networkResponse.status === 200) {
+            const contentType = networkResponse?.headers?.get('content-type') || '';
+            // Sunucu SPA HTML fallback dönerse (örn: 404 durumu) asla script/style gibi önbelleğe alma!
+            if (networkResponse && networkResponse.status === 200 && !contentType.includes('text/html')) {
               cache.put(request, networkResponse.clone());
             }
             return networkResponse;
@@ -102,5 +104,6 @@ self.addEventListener('fetch', (event) => {
         return cachedResponse || fetchPromise;
       })
     );
+    return;
   }
 });
