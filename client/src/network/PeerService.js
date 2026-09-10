@@ -462,10 +462,16 @@ export class HostPeerService {
       }
     }
 
-    conn.on('open', () => {
-      // Yeni bağlanan client'a mevcut durumu gönder
-      this._sendTo(conn, createSyncState(this._game.getPublicState()));
-    });
+    const sendInitialState = () => {
+      if (this._game) {
+        this._sendTo(conn, createSyncState(this._game.getPublicState()));
+      }
+    };
+    if (conn.open) {
+      sendInitialState();
+    } else {
+      conn.on('open', sendInitialState);
+    }
 
     conn.on('data', (msg) => {
       this._handleMessage(msg, conn);
@@ -590,19 +596,24 @@ export class HostPeerService {
             console.log(`[HostPeerService] ${specName} (${senderId}) maçı izlemeye başladı. Toplam İzleyici: ${this._spectators.size}`);
             game.addLog(`👁️ ${specName} maçı izlemeye başladı.`, 'info');
 
+            const spectatorEvent = {
+              type: MSG.EVENT,
+              event: 'SPECTATOR_JOINED',
+              payload: { isSpectator: true, spectatorCount: this._spectators.size }
+            };
+            const currentPublicState = game.getPublicState();
+            const syncStateMsg = createSyncState(currentPublicState);
+
             if (conn) {
-              this._sendTo(conn, {
-                type: MSG.EVENT,
-                event: 'SPECTATOR_JOINED',
-                payload: { isSpectator: true, spectatorCount: this._spectators.size }
-              });
-            } else if (this._relay?.isConnected) {
+              this._sendTo(conn, spectatorEvent);
+              this._sendTo(conn, syncStateMsg);
+            }
+            if (this._relay?.isConnected) {
               this._relay.send({
-                type: MSG.EVENT,
-                event: 'SPECTATOR_JOINED',
-                payload: { isSpectator: true, spectatorCount: this._spectators.size },
+                ...spectatorEvent,
                 targetId: senderId
               });
+              this._relay.broadcast(syncStateMsg);
             }
             this._broadcastState();
             break;
@@ -904,13 +915,14 @@ export class HostPeerService {
           this._lastChatTime.set(senderId, now);
 
           const sender = game.players.find(p => p.id === senderId);
+          const spectator = this._spectators?.get(senderId);
           const cleanText = String(payload.message || '').trim().substring(0, 300);
           if (!cleanText) break;
 
           const chatMsg = {
             id: Math.random().toString(36).substring(2, 9),
-            senderName: sender ? sender.name : 'Misafir',
-            senderColor: sender ? sender.color : '#94a3b8',
+            senderName: sender ? sender.name : (spectator?.name ? `👁️ ${spectator.name}` : 'İzleyici'),
+            senderColor: sender ? sender.color : '#38bdf8',
             text: cleanText,
             time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
           };

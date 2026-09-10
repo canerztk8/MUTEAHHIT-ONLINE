@@ -206,6 +206,7 @@ export function App() {
   const [ping, setPing] = useState(null);
   const [myPlayerId, setMyPlayerId] = useState(null);
   const myPlayerIdRef = useRef(null);
+  const [isSpectatorMode, setIsSpectatorMode] = useState(false);
 
   const formatPeerError = (err) => {
     if (!err) return null;
@@ -621,6 +622,7 @@ export function App() {
   const createRoom = useCallback(({ playerName, token, color, sessionToken }) => {
     // Önceki ağ bağlantısını temizle
     networkRef.current?.destroy();
+    setIsSpectatorMode(false);
 
     const host = new HostPeerService({
       playerName,
@@ -686,6 +688,9 @@ export function App() {
           window.history.replaceState({}, '', `${window.location.pathname}?room=${code}`);
         } catch (_) {}
       },
+      onSpectator: (isSpec) => {
+        setIsSpectatorMode(Boolean(isSpec));
+      },
       onState: handleIncomingState,
       onChat: (msg) => setChatMessages(prev => [...prev, msg]),
       onPing: (p) => setPing(p),
@@ -697,6 +702,7 @@ export function App() {
         setNetwork(null);
         setConnected(false);
         setGameState(null);
+        setIsSpectatorMode(false);
       },
       onHostDropped: () => {
         setConnected(false);
@@ -918,6 +924,7 @@ export function App() {
       setGameState(null);
       setPeerError(null);
       setPing(null);
+      setIsSpectatorMode(false);
     }
   };
 
@@ -993,22 +1000,22 @@ export function App() {
   }
 
   // ─── Bağlanılıyor / Ağ Hatası Ekranı ────────────────────────────────────────
-  // Sadece network nesnesi oluşturulmuşken (kullanıcı butona bastı) ama henüz
-  // bağlantı kurulmadığında göster. network === null ise Lobby'e düşer.
-  if (network !== null && !connected && !gameState) {
+  // Network nesnesi oluşturulmuşken (kullanıcı katıl/oluştur dedi) ama henüz
+  // gameState sunucudan/host'tan alınmadığında bu ekran gösterilir.
+  if (network !== null && !gameState) {
     return (
       <div className="relative min-h-screen w-full flex flex-col items-center justify-center overflow-hidden">
         <AnitkabirBackground isDarkMode={isDarkMode} />
-        <div className={`relative z-10 flex flex-col items-center gap-3 p-8 rounded-3xl border backdrop-blur-2xl shadow-2xl ${
+        <div className={`relative z-10 flex flex-col items-center gap-3.5 p-8 rounded-3xl border backdrop-blur-2xl shadow-2xl ${
           isDarkMode ? 'bg-slate-900/85 border-slate-700/60 text-white shadow-black/60' : 'bg-white/85 border-white/80 text-slate-900 shadow-slate-900/10 ring-1 ring-slate-900/5'
         }`}>
           {peerError ? (
             <>
               <span className="text-3xl">⚠️</span>
-              <span className="text-sm font-semibold text-rose-500">{peerError}</span>
+              <span className="text-sm font-semibold text-rose-500 max-w-xs text-center">{peerError}</span>
               <button
-                onClick={() => { setPeerError(null); setNetwork(null); }}
-                className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold rounded-xl transition text-sm cursor-pointer"
+                onClick={() => { setPeerError(null); setNetwork(null); setConnected(false); setIsSpectatorMode(false); }}
+                className="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold rounded-xl transition text-sm cursor-pointer shadow-md"
               >
                 Geri Dön
               </button>
@@ -1016,7 +1023,25 @@ export function App() {
           ) : (
             <>
               <div className="w-12 h-12 rounded-full border-4 border-amber-400 border-t-transparent animate-spin" />
-              <span className="text-sm font-semibold">P2P Bağlantısı Kuruluyor...</span>
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-sm font-bold">
+                  {connected ? 'Oyun Durumu Yükleniyor...' : 'Odaya Bağlanılıyor...'}
+                </span>
+                <span className="text-xs text-slate-400">
+                  {isSpectatorMode ? 'İzleyici olarak odaya aktarılıyorsunuz' : 'Lütfen bekleyin...'}
+                </span>
+              </div>
+              <button
+                onClick={() => {
+                  networkRef.current?.destroy();
+                  setNetwork(null);
+                  setConnected(false);
+                  setIsSpectatorMode(false);
+                }}
+                className="mt-2 text-xs text-slate-400 hover:text-rose-400 transition underline cursor-pointer"
+              >
+                İptal Et
+              </button>
             </>
           )}
         </div>
@@ -1064,12 +1089,18 @@ export function App() {
 
   // Yerel oyuncu ve üzerinde bulunduğu kare (F5 sonrası kesintisiz eşleşme kalkanı)
   const savedPlayerName = typeof localStorage !== 'undefined' ? localStorage.getItem('muteahhit_name') : null;
-  const myPlayer = effectiveGameState?.players?.find((p) => p.id === myPlayerId)
-    || (savedPlayerName ? effectiveGameState?.players?.find((p) => p.name === savedPlayerName && !p.isBot) : null);
+  const isSpectator = Boolean(
+    isSpectatorMode ||
+    network?.isSpectator ||
+    (effectiveGameState?.status === 'playing' && !effectiveGameState?.players?.some((p) => p.id === myPlayerId && !p.isBot))
+  );
+  const myPlayer = isSpectator
+    ? null
+    : (effectiveGameState?.players?.find((p) => p.id === myPlayerId)
+      || (savedPlayerName ? effectiveGameState?.players?.find((p) => p.name === savedPlayerName && !p.isBot) : null));
   const currentTile = myPlayer && BOARD_TILES ? BOARD_TILES[myPlayer.position] : null;
   const activePlayer = effectiveGameState?.players?.[effectiveGameState?.currentTurnIndex];
   const isMyTurn = Boolean(activePlayer && myPlayer && activePlayer.id === myPlayer.id);
-  const isSpectator = Boolean(effectiveGameState?.status === 'playing' && !myPlayer);
   const canRollAgain = Boolean(
     isMyTurn &&
     !isSpectator &&
@@ -1091,6 +1122,28 @@ export function App() {
   // Oyun Sahnesi
   return (
     <div className="h-screen max-h-[100dvh] overflow-hidden bg-transparent text-slate-900 dark:text-slate-100 flex flex-col selection:bg-amber-400 selection:text-black">
+      {/* 👁️ Canlı Yayın / İzleyici Modu Üst Barı */}
+      {isSpectator && (
+        <div className="fixed top-2.5 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2.5 pointer-events-auto bg-slate-950/90 dark:bg-slate-900/95 backdrop-blur-md border border-sky-500/60 px-3.5 py-1.5 rounded-2xl shadow-xl shadow-sky-500/15 animate-fadeIn">
+          <span className="flex h-2.5 w-2.5 relative">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-sky-500"></span>
+          </span>
+          <span className="text-xs font-bold text-sky-400 font-space uppercase tracking-wider flex items-center gap-1.5">
+            <span>👁️ CANLI MAÇ YAYINI</span>
+            <span className="text-slate-500">•</span>
+            <span className="text-slate-200 font-medium normal-case text-[11px]">İzleyicisiniz</span>
+          </span>
+          <button
+            onClick={() => handleLeaveGame(false)}
+            className="ml-2 px-2.5 py-0.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 text-[10px] font-bold transition cursor-pointer active:scale-95"
+            title="İzlemeyi Bırak ve Ana Menüye Dön"
+          >
+            Ayrıl
+          </button>
+        </div>
+      )}
+
       {/* Üst Kısayollar (Karanlık Mod & DevTools) */}
       <div className="fixed top-2.5 right-2.5 z-40 flex items-center gap-2 pointer-events-auto">
         {devToolsUnlocked && (

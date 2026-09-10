@@ -17,6 +17,13 @@ export function Lobby({ network, gameState, currentRoomCode, onStartGame, onCrea
   const [editingLobbyName, setEditingLobbyName] = useState('');
   const [optimisticTokenId, setOptimisticTokenId] = useState(null);
   const [optimisticColor, setOptimisticColor] = useState(null);
+  const [isJoining, setIsJoining] = useState(false);
+
+  useEffect(() => {
+    if (!network) {
+      setIsJoining(false);
+    }
+  }, [network]);
 
   // Lobideki mevcut oyuncu adını ve piyon seçimlerini senkronize et
   useEffect(() => {
@@ -86,6 +93,7 @@ export function Lobby({ network, gameState, currentRoomCode, onStartGame, onCrea
   };
 
   const handleJoinRoom = () => {
+    if (isJoining || network) return;
     if (!name.trim()) {
       setErrorMsg('Lütfen adınızı girin!');
       return;
@@ -95,6 +103,7 @@ export function Lobby({ network, gameState, currentRoomCode, onStartGame, onCrea
       return;
     }
     setErrorMsg('');
+    setIsJoining(true);
     localStorage.setItem('muteahhit_name', name.trim());
     let sessionToken = localStorage.getItem('muteahhit_session_token');
     if (!sessionToken) {
@@ -725,16 +734,28 @@ export function Lobby({ network, gameState, currentRoomCode, onStartGame, onCrea
               />
               <button
                 onClick={handleJoinRoom}
+                disabled={isJoining || Boolean(network)}
                 className={`px-5 py-3 rounded-xl font-bold text-sm ${
-                  invitedRoomCode
-                    ? 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-400 animate-pulse shadow-lg shadow-emerald-600/30'
+                  isJoining || Boolean(network)
+                    ? 'bg-slate-700 text-slate-400 border-slate-600 cursor-not-allowed opacity-80'
+                    : invitedRoomCode
+                    ? 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-400 animate-pulse shadow-lg shadow-emerald-600/30 cursor-pointer active:scale-98'
                     : isDarkMode
-                    ? 'bg-slate-800 hover:bg-slate-700 text-white border-slate-700'
-                    : 'bg-slate-900 hover:bg-slate-800 text-white border-slate-900'
-                } border transition flex items-center gap-1.5 active:scale-98 cursor-pointer font-space`}
+                    ? 'bg-slate-800 hover:bg-slate-700 text-white border-slate-700 cursor-pointer active:scale-98'
+                    : 'bg-slate-900 hover:bg-slate-800 text-white border-slate-900 cursor-pointer active:scale-98'
+                } border transition flex items-center gap-2 font-space`}
               >
-                <LogIn className="w-4 h-4" />
-                <span>{invitedRoomCode ? `Katıl (${invitedRoomCode})` : 'Katıl'}</span>
+                {isJoining || Boolean(network) ? (
+                  <>
+                    <div className="w-3.5 h-3.5 rounded-full border-2 border-amber-400 border-t-transparent animate-spin" />
+                    <span>Bağlanılıyor...</span>
+                  </>
+                ) : (
+                  <>
+                    <LogIn className="w-4 h-4" />
+                    <span>{invitedRoomCode ? `Katıl (${invitedRoomCode})` : 'Katıl'}</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
