@@ -374,16 +374,21 @@ export function DiceSidebarTray({
         </div>
       </div>
 
-      {/* 3D FİZİKSEL ZAR TABLASI (Tüm Alanı Kaplayan Gerçekçi Three.js + Cannon-es Arenası) */}
-      <div className="flex-1 relative bg-[#06111a] border-2 border-amber-900/40 rounded-3xl shadow-[inset_0_4px_20px_rgba(0,0,0,0.8),0_12px_24px_rgba(0,0,0,0.5)] flex flex-col min-h-0 overflow-hidden">
+      {/* 3D FİZİKSEL ZAR TABLASI (Yeşil Çuha / Casino Green Felt Arenası) */}
+      <div
+        className="flex-1 relative border-4 border-[#2d1b10] dark:border-[#3a2216] ring-1 ring-amber-600/35 rounded-3xl shadow-[inset_0_4px_32px_rgba(0,0,0,0.88),0_8px_20px_rgba(0,0,0,0.5)] flex flex-col min-h-0 overflow-hidden"
+        style={{
+          background: 'radial-gradient(ellipse at 50% 45%, #195638 0%, #103d27 50%, #072316 100%)',
+        }}
+      >
         {/* Üst Bilgi Rozeti (Aktif Oyuncu & Bot Atlama) */}
-        <div className="absolute top-2.5 inset-x-3 z-10 flex items-center justify-between pointer-events-auto">
-          <div className="flex items-center gap-1.5 bg-slate-950/80 backdrop-blur-md px-2.5 py-1 rounded-xl border border-slate-800 shadow-sm">
+        <div className="absolute top-2 inset-x-2.5 z-10 flex items-center justify-between pointer-events-auto">
+          <div className="flex items-center gap-1.5 bg-slate-950/85 backdrop-blur-md px-2 py-0.5 rounded-xl border border-slate-800 shadow-sm">
             <div
               className="w-2.5 h-2.5 rounded-full border border-white/60 shadow-sm flex-shrink-0"
               style={{ backgroundColor: activePlayer?.color || '#cbd5e1' }}
             />
-            <span className="text-[10px] font-space font-bold text-slate-200 truncate max-w-[120px]">
+            <span className="text-[10px] font-space font-bold text-slate-200 truncate max-w-[110px]">
               {isMyTurn ? 'Senin Sıran' : activePlayer?.name || 'Sıra Bekleniyor'}
             </span>
           </div>
@@ -391,7 +396,7 @@ export function DiceSidebarTray({
           {/* Süre Sayacı */}
           {gameState?.status === 'playing' && (
             <div
-              className={`flex items-center gap-1 px-2 py-1 rounded-xl border text-[10px] font-jetbrains font-bold transition shadow-sm bg-slate-950/80 backdrop-blur-md ${
+              className={`flex items-center gap-1 px-2 py-0.5 rounded-xl border text-[10px] font-jetbrains font-bold transition shadow-sm bg-slate-950/85 backdrop-blur-md ${
                 gameState?.isPaused
                   ? 'border-amber-400 text-amber-300 animate-pulse'
                   : gameState?.phase === 'AUCTION'
@@ -413,7 +418,7 @@ export function DiceSidebarTray({
           {gameState?.status === 'playing' && activePlayer?.isBot && onFastForwardBot && (
             <button
               onClick={onFastForwardBot}
-              className="flex items-center gap-1 px-2 py-1 rounded-xl bg-amber-500/25 hover:bg-amber-500/40 border border-amber-400/60 text-amber-300 text-[9.5px] font-jetbrains font-bold transition shadow-sm cursor-pointer active:scale-95 animate-pulse"
+              className="flex items-center gap-1 px-2 py-0.5 rounded-xl bg-amber-500/25 hover:bg-amber-500/40 border border-amber-400/60 text-amber-300 text-[9px] font-jetbrains font-bold transition shadow-sm cursor-pointer active:scale-95 animate-pulse"
               title="Botun turunu anında atla"
             >
               <Zap className="w-2.5 h-2.5 text-amber-400 fill-amber-400" />
@@ -426,12 +431,12 @@ export function DiceSidebarTray({
         <div
           id="dice-tray-container"
           ref={containerRef}
-          className="w-full h-full flex-1 rounded-3xl overflow-hidden relative cursor-pointer"
+          className="w-full h-full flex-1 rounded-2xl overflow-hidden relative cursor-pointer"
           title={canRollAny ? (isRollAgain ? 'Çift attın! Tekrar zar atmak için tıkla veya Space tuşuna bas' : 'Zar atmak için tıkla veya Space tuşuna bas') : 'Zar Tablası'}
         />
 
         {/* Alt Bilgi & Eylem Alanı */}
-        <div className="absolute bottom-2.5 inset-x-2.5 z-10 flex flex-col items-center gap-1.5 pointer-events-auto">
+        <div className="absolute bottom-2 inset-x-2 z-10 flex flex-col items-center gap-1 pointer-events-auto">
           {/* Toplam ve Çift Zar Durumu */}
           <div className="flex items-center gap-1.5 min-h-[28px]">
             {isRollingLocal ? (

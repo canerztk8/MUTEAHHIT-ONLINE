@@ -1121,7 +1121,7 @@ export function App() {
       {/* Ana Oyun Alanı - Sol Panel (Kuşe Kağıt Kartela) + Orta Tahta (Blueprint Pafta) + Sağ Panel (3D Zar Tablası) */}
       <main className="h-full w-full max-w-[1920px] mx-auto p-1.5 sm:p-2.5 flex flex-col lg:flex-row items-center justify-between gap-2 sm:gap-3 overflow-hidden min-h-0 relative">
         
-        {/* SOL PANEL: Oyuncu Listesi, Olaylar ve Sohbet, Tapu Kartları */}
+        {/* SOL PANEL: Oyuncu Listesi, Tapu Kartları */}
         <div className="w-full lg:w-[320px] xl:w-[350px] 2xl:w-[370px] h-full max-h-full flex flex-col gap-2 min-h-0 overflow-y-auto pr-0 lg:pr-1 pb-32 sm:pb-36 custom-scrollbar flex-shrink-0 order-1 lg:order-1">
           <ErrorBoundary name="Oyuncu Durumları Paneli">
             <PlayerPanel
@@ -1131,15 +1131,6 @@ export function App() {
               onTileClick={(tile) => setSelectedTileModal(tile)}
               onRemoveBot={handleRemoveBot}
               onSetBotDifficulty={handleSetBotDifficulty}
-            />
-          </ErrorBoundary>
-
-          <ErrorBoundary name="Olaylar ve Canlı Sohbet">
-            <ChatAndLog
-              logs={displayedLogs.length > 0 ? displayedLogs : (gameState?.logs || [])}
-              messages={chatMessages}
-              players={gameState?.players}
-              onSendMessage={handleSendMessage}
             />
           </ErrorBoundary>
 
@@ -1203,30 +1194,46 @@ export function App() {
           </ErrorBoundary>
         </div>
 
-        {/* SAĞ PANEL: Sağ Panel Kenar Zar Tablası & Üst Menü */}
-        <aside className="w-full lg:w-[280px] xl:w-[310px] 2xl:w-[330px] h-full max-h-full flex flex-col gap-2 min-h-0 flex-shrink-0 order-3 lg:order-3">
-          <ErrorBoundary name="Zar Tablası">
-            <DiceSidebarTray
-              gameState={gameState}
-              myPlayerId={myPlayerId}
-              isSpectator={isSpectator}
-              onRollDice={handleRollDice}
-              onRollAgain={handleRollAgain}
-              onFastForwardBot={handleFastForwardBot}
-              canRoll={canRoll}
-              roomCode={gameState.roomCode}
-              copiedLink={copiedLink}
-              onCopyLink={copyRoomLink}
-              volume={volume}
-              onVolumeToggle={() => handleVolumeChange(volume === 0 ? 0.7 : 0)}
-              onLeaveGame={() => handleLeaveGame(false)}
-              isDarkMode={isDarkMode}
-              onToggleDarkMode={toggleDarkMode}
-              onTogglePause={handleTogglePause}
-              onRollStart={() => setIsDiceRolling(true)}
-              onRollSettled={() => setIsDiceRolling(false)}
-            />
-          </ErrorBoundary>
+        {/* SAĞ PANEL: Sağ Panel Kenar Zar Tablası (Üst Yarı) & Olaylar ve Canlı Sohbet (Alt Yarı) */}
+        <aside className="w-full lg:w-[290px] xl:w-[320px] 2xl:w-[340px] h-full max-h-full flex flex-col gap-2 min-h-0 flex-shrink-0 order-3 lg:order-3">
+          {/* ÜST: 3D Zar Tablası (Boyu Yarıya Çekilmiş) */}
+          <div className="h-[48%] min-h-[230px] max-h-[380px] flex-shrink-0 flex flex-col min-h-0">
+            <ErrorBoundary name="Zar Tablası">
+              <DiceSidebarTray
+                gameState={gameState}
+                myPlayerId={myPlayerId}
+                isSpectator={isSpectator}
+                onRollDice={handleRollDice}
+                onRollAgain={handleRollAgain}
+                onFastForwardBot={handleFastForwardBot}
+                canRoll={canRoll}
+                roomCode={gameState.roomCode}
+                copiedLink={copiedLink}
+                onCopyLink={copyRoomLink}
+                volume={volume}
+                onVolumeToggle={() => handleVolumeChange(volume === 0 ? 0.7 : 0)}
+                onLeaveGame={() => handleLeaveGame(false)}
+                isDarkMode={isDarkMode}
+                onToggleDarkMode={toggleDarkMode}
+                onTogglePause={handleTogglePause}
+                onRollStart={() => setIsDiceRolling(true)}
+                onRollSettled={() => setIsDiceRolling(false)}
+              />
+            </ErrorBoundary>
+          </div>
+
+          {/* ALT: Olaylar ve Canlı Sohbet (Zar tablasının altındaki açılan alan) */}
+          <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+            <ErrorBoundary name="Olaylar ve Canlı Sohbet">
+              <ChatAndLog
+                logs={displayedLogs.length > 0 ? displayedLogs : (gameState?.logs || [])}
+                messages={chatMessages}
+                players={gameState?.players}
+                onSendMessage={handleSendMessage}
+                embedded={true}
+              />
+            </ErrorBoundary>
+          </div>
         </aside>
 
       </main>

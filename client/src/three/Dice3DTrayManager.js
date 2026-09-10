@@ -28,7 +28,7 @@ export class Dice3DTrayManager {
   }
 
   /**
-   * Klasik Monopoly zarı için 1..6 noktalı (pip) yüz görseli üretir
+   * Klasik Monopoly zarı için 1..6 modern noktalı (pip) yüz görseli üretir
    */
   _createPipImage(faceNumber, size = 256) {
     if (typeof document === 'undefined') return null;
@@ -40,8 +40,16 @@ export class Dice3DTrayManager {
     // Şeffaf arka plan – DiceBox yüzeyi beyaz plastik materyalle dolduracaktır
     ctx.clearRect(0, 0, size, size);
 
-    // Derin siyah parlak noktalar (Klasik Monopoly pips)
-    ctx.fillStyle = '#111111';
+    // Modern zar yüzeyi çerçeve pahı (subtle modern edge bevel)
+    if (typeof ctx.roundRect === 'function') {
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.04)';
+      ctx.lineWidth = 2.5;
+      const pad = 10;
+      const rad = 24;
+      ctx.beginPath();
+      ctx.roundRect(pad, pad, size - pad * 2, size - pad * 2, rad);
+      ctx.stroke();
+    }
 
     const radius = size * 0.082; // ~21px
     const c = size * 0.5;        // 128
@@ -49,13 +57,40 @@ export class Dice3DTrayManager {
     const p2 = size * 0.73;      // ~187
 
     const drawDot = (x, y, r = radius) => {
+      // 1. Dış derinlik / gölge (engraved depth shadow)
+      ctx.beginPath();
+      ctx.arc(x, y + r * 0.07, r * 1.04, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+      ctx.fill();
+
+      // 2. Modern lake obsidian akrilik degradeli gövde
+      if (typeof ctx.createRadialGradient === 'function') {
+        const dotGrad = ctx.createRadialGradient(
+          x - r * 0.3, y - r * 0.3, r * 0.08,
+          x, y, r
+        );
+        dotGrad.addColorStop(0, '#27272a'); // Hafif tepe ışıltısı
+        dotGrad.addColorStop(0.45, '#18181b'); // Derin parlak lake siyah
+        dotGrad.addColorStop(1, '#09090b'); // Dip gölge
+        ctx.fillStyle = dotGrad;
+      } else {
+        ctx.fillStyle = '#111111';
+      }
+
       ctx.beginPath();
       ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 3. Mikro speküler parıltı (modern cam/akrilik derinliği)
+      ctx.beginPath();
+      ctx.arc(x - r * 0.24, y - r * 0.24, r * 0.26, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.22)';
       ctx.fill();
     };
 
     switch (faceNumber) {
       case 1:
+        // 1 yüzü için modern casino standardında hafif belirgin merkez nokta
         drawDot(c, c, radius * 1.18);
         break;
       case 2:
