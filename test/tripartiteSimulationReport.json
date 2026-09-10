@@ -1,0 +1,76 @@
+{
+  "timestamp": "2026-09-08T03:10:46.794Z",
+  "totalDurationSeconds": "39.12",
+  "experiment1_SelfPlay": {
+    "mode": "SELF_PLAY",
+    "totalGames": 100000,
+    "validGames": 65814,
+    "turnTimeouts": 34186,
+    "wins": {
+      "GRANDMASTER": 19085,
+      "MONOPOLY_RUSHER": 16713,
+      "AUCTION_SHARK": 19779,
+      "CASH_TITAN": 10237
+    },
+    "seatWins": [
+      17737,
+      16167,
+      16406,
+      15504
+    ],
+    "roundSum": 2950018,
+    "jailStalls": 695663,
+    "threeHouseWins": 61813,
+    "hotelWins": 47978,
+    "inflationRoundsTriggered": 12893933,
+    "suddenDeathTriggered": 5163721
+  },
+  "experiment2_GmVsBots": {
+    "mode": "GM_VS_BOTS",
+    "totalGames": 100000,
+    "validGames": 65731,
+    "turnTimeouts": 34269,
+    "wins": {
+      "BOT_ORTA": 15649,
+      "BOT_KOLAY": 15057,
+      "GRANDMASTER": 18607,
+      "BOT_ZOR": 16418
+    },
+    "seatWins": [
+      17480,
+      15939,
+      16255,
+      16057
+    ],
+    "roundSum": 2910505,
+    "jailStalls": 343444,
+    "threeHouseWins": 61840,
+    "hotelWins": 56536,
+    "inflationRoundsTriggered": 12788302,
+    "suddenDeathTriggered": 5108502
+  },
+  "experiment3_BotsOnly": {
+    "mode": "BOTS_ONLY",
+    "totalGames": 100000,
+    "validGames": 66207,
+    "turnTimeouts": 33793,
+    "wins": {
+      "BOT_ORTA": 15736,
+      "BOT_IMKANSIZ": 19144,
+      "BOT_KOLAY": 14983,
+      "BOT_ZOR": 16344
+    },
+    "seatWins": [
+      17339,
+      16282,
+      16281,
+      16305
+    ],
+    "roundSum": 2923556,
+    "jailStalls": 341454,
+    "threeHouseWins": 62208,
+    "hotelWins": 56833,
+    "inflationRoundsTriggered": 12712264,
+    "suddenDeathTriggered": 5070672
+  }
+}

@@ -1,0 +1,182 @@
+{
+  "timestamp": "2026-09-08T12:32:25.509Z",
+  "totalDurationSeconds": "50.70",
+  "totalSimulatedGames": 400000,
+  "experiments": {
+    "exp1": {
+      "mode": "SELF_PLAY",
+      "modeName": "DENEY 1: USTA KENDİNE KARŞI (SELF-PLAY)",
+      "totalGames": 100000,
+      "validGames": 99760,
+      "turnTimeouts": 240,
+      "wins": {
+        "GRANDMASTER": 27741,
+        "CASH_TITAN": 19052,
+        "AUCTION_SHARK": 28328,
+        "MONOPOLY_RUSHER": 24639
+      },
+      "seatWins": [
+        26220,
+        24144,
+        24869,
+        24527
+      ],
+      "roundSum": 4446813,
+      "roundHistogram": {
+        "under20": 510,
+        "rounds20to24": 2508,
+        "rounds25to31": 10903,
+        "rounds32to39": 18973,
+        "rounds40to49": 28581,
+        "rounds50plus": 38285
+      },
+      "jailStalls": 558727,
+      "threeHouseWins": 70534,
+      "hotelWins": 41123,
+      "railroadWins": 95268,
+      "wealthTaxCollectedSum": 0,
+      "freeParkingJackpotsClaimed": 0,
+      "bankLoansDeniedAt40": 6106,
+      "highInterestUnmortgages": 323244,
+      "thresholdReach": {
+        "round15": 99955,
+        "round20": 99490,
+        "round25": 96982,
+        "round32": 86079,
+        "round40": 67106,
+        "round50": 38525
+      }
+    },
+    "exp2": {
+      "mode": "GM_VS_BOTS",
+      "modeName": "DENEY 2: SEN (GRANDMASTER) BOTLARA KARŞI",
+      "totalGames": 100000,
+      "validGames": 99789,
+      "turnTimeouts": 211,
+      "wins": {
+        "BOT_ORTA": 23412,
+        "GRANDMASTER": 26397,
+        "BOT_IMKANSIZ": 26901,
+        "BOT_ZOR": 23079
+      },
+      "seatWins": [
+        25816,
+        24361,
+        24608,
+        25004
+      ],
+      "roundSum": 4420485,
+      "roundHistogram": {
+        "under20": 575,
+        "rounds20to24": 2931,
+        "rounds25to31": 11350,
+        "rounds32to39": 19371,
+        "rounds40to49": 27837,
+        "rounds50plus": 37725
+      },
+      "jailStalls": 554087,
+      "threeHouseWins": 70953,
+      "hotelWins": 49921,
+      "railroadWins": 95191,
+      "wealthTaxCollectedSum": 0,
+      "freeParkingJackpotsClaimed": 0,
+      "bankLoansDeniedAt40": 5952,
+      "highInterestUnmortgages": 323359,
+      "thresholdReach": {
+        "round15": 99953,
+        "round20": 99425,
+        "round25": 96494,
+        "round32": 85144,
+        "round40": 65773,
+        "round50": 37936
+      }
+    },
+    "exp3": {
+      "mode": "BOTS_ONLY",
+      "modeName": "DENEY 3: BOTLAR KENDİ ARASINDA (ZORLUK SAVAŞI)",
+      "totalGames": 100000,
+      "validGames": 99825,
+      "turnTimeouts": 175,
+      "wins": {
+        "BOT_ORTA": 24090,
+        "BOT_KOLAY": 23327,
+        "BOT_IMKANSIZ": 27921,
+        "BOT_ZOR": 24487
+      },
+      "seatWins": [
+        26059,
+        24321,
+        24902,
+        24543
+      ],
+      "roundSum": 4393380,
+      "roundHistogram": {
+        "under20": 645,
+        "rounds20to24": 3095,
+        "rounds25to31": 11930,
+        "rounds32to39": 19580,
+        "rounds40to49": 27794,
+        "rounds50plus": 36781
+      },
+      "jailStalls": 273456,
+      "threeHouseWins": 72051,
+      "hotelWins": 50107,
+      "railroadWins": 95514,
+      "wealthTaxCollectedSum": 0,
+      "freeParkingJackpotsClaimed": 0,
+      "bankLoansDeniedAt40": 6014,
+      "highInterestUnmortgages": 322125,
+      "thresholdReach": {
+        "round15": 99949,
+        "round20": 99355,
+        "round25": 96260,
+        "round32": 84329,
+        "round40": 64749,
+        "round50": 36955
+      }
+    },
+    "exp4": {
+      "mode": "CRISIS_STRESS",
+      "modeName": "DENEY 4: HİPERENFLASYON & AFET VERGİSİ STRES TESTİ",
+      "totalGames": 100000,
+      "validGames": 99788,
+      "turnTimeouts": 212,
+      "wins": {
+        "CASH_TITAN": 18300,
+        "BOT_IMKANSIZ": 55621,
+        "GRANDMASTER": 25867
+      },
+      "seatWins": [
+        25892,
+        24406,
+        24603,
+        24887
+      ],
+      "roundSum": 4448662,
+      "roundHistogram": {
+        "under20": 526,
+        "rounds20to24": 2583,
+        "rounds25to31": 10840,
+        "rounds32to39": 19101,
+        "rounds40to49": 28420,
+        "rounds50plus": 38318
+      },
+      "jailStalls": 839296,
+      "threeHouseWins": 70734,
+      "hotelWins": 42456,
+      "railroadWins": 95313,
+      "wealthTaxCollectedSum": 0,
+      "freeParkingJackpotsClaimed": 0,
+      "bankLoansDeniedAt40": 6168,
+      "highInterestUnmortgages": 325273,
+      "thresholdReach": {
+        "round15": 99969,
+        "round20": 99474,
+        "round25": 96891,
+        "round32": 86051,
+        "round40": 66949,
+        "round50": 38529
+      }
+    }
+  }
+}

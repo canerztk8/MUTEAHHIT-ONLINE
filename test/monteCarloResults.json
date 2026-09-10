@@ -1,0 +1,331 @@
+{
+  "report1": {
+    "totalGames": 50000,
+    "validGames": 41562,
+    "turnTimeouts": 8438,
+    "completionRate": "83.12",
+    "avgRounds": "50.8",
+    "durationSeconds": "33.02",
+    "seatWinPercentages": [
+      "25.23",
+      "26.49",
+      "24.50",
+      "23.78"
+    ],
+    "difficultyWins": {
+      "cok_kolay": 0,
+      "kolay": 0,
+      "orta": 41562,
+      "zor": 0,
+      "imkansiz": 0
+    },
+    "difficultyPlays": {
+      "cok_kolay": 0,
+      "kolay": 0,
+      "orta": 200000,
+      "zor": 0,
+      "imkansiz": 0
+    },
+    "monopolyStats": {
+      "brown": {
+        "formed": 37364,
+        "wins": 30489,
+        "winRate": 81.6,
+        "frequency": 74.7
+      },
+      "light_blue": {
+        "formed": 36185,
+        "wins": 34517,
+        "winRate": 95.4,
+        "frequency": 72.4
+      },
+      "pink": {
+        "formed": 36395,
+        "wins": 34480,
+        "winRate": 94.7,
+        "frequency": 72.8
+      },
+      "orange": {
+        "formed": 37724,
+        "wins": 36114,
+        "winRate": 95.7,
+        "frequency": 75.4
+      },
+      "red": {
+        "formed": 38085,
+        "wins": 36440,
+        "winRate": 95.7,
+        "frequency": 76.2
+      },
+      "yellow": {
+        "formed": 37435,
+        "wins": 35800,
+        "winRate": 95.6,
+        "frequency": 74.9
+      },
+      "green": {
+        "formed": 36590,
+        "wins": 34734,
+        "winRate": 94.9,
+        "frequency": 73.2
+      },
+      "dark_blue": {
+        "formed": 39657,
+        "wins": 30543,
+        "winRate": 77,
+        "frequency": 79.3
+      },
+      "railroad": {
+        "formed": 35233,
+        "wins": 34262,
+        "winRate": 97.2,
+        "frequency": 70.5
+      },
+      "utility": {
+        "formed": 41411,
+        "wins": 30590,
+        "winRate": 73.9,
+        "frequency": 82.8
+      }
+    },
+    "tileLandings": [
+      341276,
+      218837,
+      191798,
+      230047,
+      247342,
+      255101,
+      250401,
+      116788,
+      264306,
+      255585,
+      626200,
+      243364,
+      272861,
+      246395,
+      255879,
+      286216,
+      286751,
+      261079,
+      295851,
+      307344,
+      288732,
+      283045,
+      124766,
+      279718,
+      317895,
+      288795,
+      315537,
+      268966,
+      281249,
+      263114,
+      0,
+      313686,
+      265801,
+      237466,
+      256060,
+      249682,
+      105687,
+      232467,
+      225692,
+      226207
+    ],
+    "roundDistribution": {
+      "10": 120,
+      "15": 1184,
+      "20": 3704,
+      "25": 5936,
+      "30": 6077,
+      "35": 5376,
+      "40": 4315,
+      "45": 3233,
+      "50": 2457,
+      "55": 1855,
+      "60": 1522,
+      "65": 1311,
+      "70": 1102,
+      "75": 989,
+      "80": 1194,
+      "85": 5601,
+      "90": 1141,
+      "95": 554,
+      "100": 2329
+    },
+    "bankLoans": {
+      "takenTotal": 0,
+      "winnerWithLoan": 0,
+      "loanWinnerRate": "0.00"
+    },
+    "jackpot": {
+      "totalClaimed": 0,
+      "totalMoneyCollected": 0,
+      "avgJackpotPerClaim": 0,
+      "jackpotWinnerRate": 0
+    }
+  },
+  "report2": {
+    "totalGames": 50000,
+    "validGames": 42262,
+    "turnTimeouts": 7738,
+    "completionRate": "84.52",
+    "avgRounds": "47.9",
+    "durationSeconds": "31.34",
+    "seatWinPercentages": [
+      "31.20",
+      "29.75",
+      "20.70",
+      "18.35"
+    ],
+    "difficultyWins": {
+      "cok_kolay": 0,
+      "kolay": 13186,
+      "orta": 12574,
+      "zor": 8748,
+      "imkansiz": 7754
+    },
+    "difficultyPlays": {
+      "cok_kolay": 0,
+      "kolay": 50000,
+      "orta": 50000,
+      "zor": 50000,
+      "imkansiz": 50000
+    },
+    "monopolyStats": {
+      "brown": {
+        "formed": 36396,
+        "wins": 28814,
+        "winRate": 79.2,
+        "frequency": 72.8
+      },
+      "light_blue": {
+        "formed": 35168,
+        "wins": 33015,
+        "winRate": 93.9,
+        "frequency": 70.3
+      },
+      "pink": {
+        "formed": 35238,
+        "wins": 32754,
+        "winRate": 93,
+        "frequency": 70.5
+      },
+      "orange": {
+        "formed": 36932,
+        "wins": 34651,
+        "winRate": 93.8,
+        "frequency": 73.9
+      },
+      "red": {
+        "formed": 37066,
+        "wins": 34535,
+        "winRate": 93.2,
+        "frequency": 74.1
+      },
+      "yellow": {
+        "formed": 36395,
+        "wins": 33826,
+        "winRate": 92.9,
+        "frequency": 72.8
+      },
+      "green": {
+        "formed": 35742,
+        "wins": 32427,
+        "winRate": 90.7,
+        "frequency": 71.5
+      },
+      "dark_blue": {
+        "formed": 39084,
+        "wins": 26203,
+        "winRate": 67,
+        "frequency": 78.2
+      },
+      "railroad": {
+        "formed": 33739,
+        "wins": 32558,
+        "winRate": 96.5,
+        "frequency": 67.5
+      },
+      "utility": {
+        "formed": 40666,
+        "wins": 29690,
+        "winRate": 73,
+        "frequency": 81.3
+      }
+    },
+    "tileLandings": [
+      316065,
+      204345,
+      179176,
+      215531,
+      230438,
+      238976,
+      235281,
+      110145,
+      247834,
+      240410,
+      589808,
+      227843,
+      255541,
+      230533,
+      240741,
+      268744,
+      269050,
+      243009,
+      278174,
+      287612,
+      270110,
+      265546,
+      116254,
+      262179,
+      298217,
+      270645,
+      294861,
+      252130,
+      262560,
+      243686,
+      0,
+      294391,
+      248079,
+      221302,
+      238880,
+      231499,
+      98261,
+      217413,
+      208729,
+      211098
+    ],
+    "roundDistribution": {
+      "5": 2,
+      "10": 255,
+      "15": 2100,
+      "20": 5164,
+      "25": 6721,
+      "30": 6504,
+      "35": 4984,
+      "40": 3796,
+      "45": 2697,
+      "50": 2060,
+      "55": 1619,
+      "60": 1346,
+      "65": 1039,
+      "70": 971,
+      "75": 868,
+      "80": 1021,
+      "85": 5054,
+      "90": 947,
+      "95": 558,
+      "100": 2294
+    },
+    "bankLoans": {
+      "takenTotal": 0,
+      "winnerWithLoan": 0,
+      "loanWinnerRate": "0.00"
+    },
+    "jackpot": {
+      "totalClaimed": 0,
+      "totalMoneyCollected": 0,
+      "avgJackpotPerClaim": 0,
+      "jackpotWinnerRate": 0
+    }
+  }
+}

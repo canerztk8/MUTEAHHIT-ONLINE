@@ -1,0 +1,50 @@
+{
+  "totalGames": 1000000,
+  "durationSeconds": "130.31",
+  "ratePerSec": 7674,
+  "avgRounds": "46.1",
+  "seatPercentages": [
+    "25.06",
+    "26.88",
+    "24.57",
+    "23.49"
+  ],
+  "combined": {
+    "totalGames": 1000000,
+    "validGames": 759330,
+    "turnTimeouts": 240670,
+    "seatWins": [
+      190326,
+      204073,
+      186587,
+      178344
+    ],
+    "groupMonopolyFormed": {
+      "brown": 690104,
+      "light_blue": 657592,
+      "pink": 659732,
+      "orange": 686312,
+      "red": 688851,
+      "yellow": 677756,
+      "green": 664661,
+      "dark_blue": 734204,
+      "railroad": 634937,
+      "utility": 777783
+    },
+    "groupMonopolyWins": {
+      "brown": 552037,
+      "light_blue": 623129,
+      "pink": 621289,
+      "orange": 653545,
+      "red": 654638,
+      "yellow": 645194,
+      "green": 626757,
+      "dark_blue": 546221,
+      "railroad": 613644,
+      "utility": 554335
+    },
+    "bankLoansTaken": 0,
+    "bankLoanWins": 0,
+    "roundSum": 46093854
+  }
+}

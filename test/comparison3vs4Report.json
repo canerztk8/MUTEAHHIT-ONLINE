@@ -1,0 +1,91 @@
+{
+  "res3": {
+    "playerCount": 3,
+    "totalGames": 4992,
+    "validGames": 4992,
+    "turnTimeouts": 0,
+    "seatWins": [
+      1773,
+      1571,
+      1648
+    ],
+    "roundSum": 303614,
+    "minRounds": 18,
+    "maxRounds": 142,
+    "thresholdReach": {
+      "round15": 4992,
+      "round20": 4991,
+      "round25": 4965,
+      "round32": 4859,
+      "round40": 4500,
+      "round50": 3537
+    },
+    "monopolyGamesCount": 0,
+    "naturalMonopolies": 0,
+    "tradedMonopolies": 0,
+    "winningGroups": {
+      "brown": 3732,
+      "light_blue": 3662,
+      "green": 3747,
+      "utility": 4102,
+      "pink": 3624,
+      "orange": 3743,
+      "yellow": 3763,
+      "railroad": 3437,
+      "red": 3814,
+      "dark_blue": 3988
+    },
+    "threeHouseWins": 3415,
+    "hotelWins": 2635,
+    "railroadWins": 4743,
+    "wealthTaxCollectedSum": 3844780,
+    "wealthTaxInstances": 37371,
+    "wealthTaxShieldSaves": 86446,
+    "wealthTaxShieldSavedTL": 3780045
+  },
+  "res4": {
+    "playerCount": 4,
+    "totalGames": 4992,
+    "validGames": 4992,
+    "turnTimeouts": 0,
+    "seatWins": [
+      1454,
+      1281,
+      1154,
+      1103
+    ],
+    "roundSum": 328195,
+    "minRounds": 15,
+    "maxRounds": 149,
+    "thresholdReach": {
+      "round15": 4992,
+      "round20": 4990,
+      "round25": 4966,
+      "round32": 4824,
+      "round40": 4416,
+      "round50": 3670
+    },
+    "monopolyGamesCount": 0,
+    "naturalMonopolies": 0,
+    "tradedMonopolies": 0,
+    "winningGroups": {
+      "brown": 3933,
+      "light_blue": 3844,
+      "pink": 3881,
+      "orange": 3985,
+      "red": 3963,
+      "yellow": 3924,
+      "green": 3944,
+      "dark_blue": 4216,
+      "railroad": 3737,
+      "utility": 4171
+    },
+    "threeHouseWins": 3685,
+    "hotelWins": 3429,
+    "railroadWins": 4772,
+    "wealthTaxCollectedSum": 19544433,
+    "wealthTaxInstances": 99392,
+    "wealthTaxShieldSaves": 162067,
+    "wealthTaxShieldSavedTL": 9126024
+  }
+}

@@ -1,0 +1,241 @@
+{
+  "timestamp": "2026-09-08T12:58:27.149Z",
+  "totalDurationSeconds": "67.70",
+  "totalSimulatedGames": 500000,
+  "experiments": {
+    "exp1": {
+      "mode": "SELF_PLAY",
+      "modeName": "DENEY 1: USTA KENDİNE KARŞI (SELF-PLAY)",
+      "totalGames": 100000,
+      "validGames": 99767,
+      "turnTimeouts": 233,
+      "wins": {
+        "MONOPOLY_RUSHER": 25377,
+        "CASH_TITAN": 19193,
+        "AUCTION_SHARK": 27983,
+        "GRANDMASTER": 27214
+      },
+      "seatWins": [
+        26189,
+        24260,
+        24600,
+        24718
+      ],
+      "roundSum": 4393525,
+      "roundHistogram": {
+        "under20": 613,
+        "rounds20to24": 2783,
+        "rounds25to31": 11796,
+        "rounds32to39": 19887,
+        "rounds40to49": 28286,
+        "rounds50plus": 36402
+      },
+      "jailStalls": 119502,
+      "jailEarlyExits": 653947,
+      "jailZeroRentBlockedCount": 0,
+      "jailZeroRentBlockedAmount": 0,
+      "jailDiscountedRentCount": 0,
+      "jailDiscountedRentSaved": 0,
+      "threeHouseWins": 71346,
+      "hotelWins": 41924,
+      "railroadWins": 95263,
+      "bankLoansDeniedAt40": 5939,
+      "highInterestUnmortgages": 312038,
+      "thresholdReach": {
+        "round15": 99949,
+        "round20": 99387,
+        "round25": 96604,
+        "round32": 84807,
+        "round40": 64920,
+        "round50": 36634
+      }
+    },
+    "exp2": {
+      "mode": "GM_VS_BOTS",
+      "modeName": "DENEY 2: SEN (GRANDMASTER) BOTLARA KARŞI",
+      "totalGames": 100000,
+      "validGames": 99769,
+      "turnTimeouts": 231,
+      "wins": {
+        "BOT_ORTA": 23809,
+        "BOT_ZOR": 23746,
+        "BOT_IMKANSIZ": 26622,
+        "GRANDMASTER": 25592
+      },
+      "seatWins": [
+        26208,
+        24230,
+        24548,
+        24783
+      ],
+      "roundSum": 4371481,
+      "roundHistogram": {
+        "under20": 704,
+        "rounds20to24": 3276,
+        "rounds25to31": 12325,
+        "rounds32to39": 19647,
+        "rounds40to49": 27482,
+        "rounds50plus": 36335
+      },
+      "jailStalls": 122039,
+      "jailEarlyExits": 646478,
+      "jailZeroRentBlockedCount": 0,
+      "jailZeroRentBlockedAmount": 0,
+      "jailDiscountedRentCount": 0,
+      "jailDiscountedRentSaved": 0,
+      "threeHouseWins": 71618,
+      "hotelWins": 50599,
+      "railroadWins": 95197,
+      "bankLoansDeniedAt40": 5924,
+      "highInterestUnmortgages": 312874,
+      "thresholdReach": {
+        "round15": 99942,
+        "round20": 99296,
+        "round25": 96020,
+        "round32": 83694,
+        "round40": 64047,
+        "round50": 36564
+      }
+    },
+    "exp3": {
+      "mode": "BOTS_ONLY",
+      "modeName": "DENEY 3: BOTLAR KENDİ ARASINDA (ZORLUK SAVAŞI)",
+      "totalGames": 100000,
+      "validGames": 99782,
+      "turnTimeouts": 218,
+      "wins": {
+        "BOT_KOLAY": 23165,
+        "BOT_ORTA": 24644,
+        "BOT_IMKANSIZ": 26971,
+        "BOT_ZOR": 25002
+      },
+      "seatWins": [
+        25755,
+        24302,
+        24969,
+        24756
+      ],
+      "roundSum": 4370846,
+      "roundHistogram": {
+        "under20": 698,
+        "rounds20to24": 3286,
+        "rounds25to31": 12364,
+        "rounds32to39": 19645,
+        "rounds40to49": 27528,
+        "rounds50plus": 36261
+      },
+      "jailStalls": 186018,
+      "jailEarlyExits": 585083,
+      "jailZeroRentBlockedCount": 0,
+      "jailZeroRentBlockedAmount": 0,
+      "jailDiscountedRentCount": 0,
+      "jailDiscountedRentSaved": 0,
+      "threeHouseWins": 72219,
+      "hotelWins": 50353,
+      "railroadWins": 95458,
+      "bankLoansDeniedAt40": 5937,
+      "highInterestUnmortgages": 313900,
+      "thresholdReach": {
+        "round15": 99937,
+        "round20": 99302,
+        "round25": 96016,
+        "round32": 83651,
+        "round40": 64006,
+        "round50": 36475
+      }
+    },
+    "exp4": {
+      "mode": "JAIL_COST_TEST",
+      "modeName": "DENEY 4: KODES FIRSAT MALİYETİ & BELEŞ KİRA TESTİ",
+      "totalGames": 100000,
+      "validGames": 99795,
+      "turnTimeouts": 205,
+      "wins": {
+        "GRANDMASTER": 25442,
+        "BOT_IMKANSIZ": 26655,
+        "AUCTION_SHARK": 24912,
+        "BOT_ZOR": 22786
+      },
+      "seatWins": [
+        26350,
+        24343,
+        24448,
+        24654
+      ],
+      "roundSum": 4372777,
+      "roundHistogram": {
+        "under20": 698,
+        "rounds20to24": 3241,
+        "rounds25to31": 12207,
+        "rounds32to39": 19797,
+        "rounds40to49": 27712,
+        "rounds50plus": 36140
+      },
+      "jailStalls": 59207,
+      "jailEarlyExits": 706928,
+      "jailZeroRentBlockedCount": 0,
+      "jailZeroRentBlockedAmount": 0,
+      "jailDiscountedRentCount": 0,
+      "jailDiscountedRentSaved": 0,
+      "threeHouseWins": 71342,
+      "hotelWins": 50533,
+      "railroadWins": 95295,
+      "bankLoansDeniedAt40": 5918,
+      "highInterestUnmortgages": 311505,
+      "thresholdReach": {
+        "round15": 99942,
+        "round20": 99302,
+        "round25": 96061,
+        "round32": 83852,
+        "round40": 64054,
+        "round50": 36341
+      }
+    },
+    "exp5": {
+      "mode": "CRISIS_STRESS",
+      "modeName": "DENEY 5: EKSTREM KIYAMET, KAYYUM & HİPERENFLASYON",
+      "totalGames": 100000,
+      "validGames": 99799,
+      "turnTimeouts": 201,
+      "wins": {
+        "GRANDMASTER": 25745,
+        "CASH_TITAN": 19142,
+        "BOT_IMKANSIZ": 54912
+      },
+      "seatWins": [
+        26037,
+        24094,
+        24593,
+        25075
+      ],
+      "roundSum": 4383585,
+      "roundHistogram": {
+        "under20": 537,
+        "rounds20to24": 3005,
+        "rounds25to31": 12023,
+        "rounds32to39": 19867,
+        "rounds40to49": 28127,
+        "rounds50plus": 36240
+      },
+      "jailStalls": 55141,
+      "jailEarlyExits": 715717,
+      "jailZeroRentBlockedCount": 0,
+      "jailZeroRentBlockedAmount": 0,
+      "jailDiscountedRentCount": 0,
+      "jailDiscountedRentSaved": 0,
+      "threeHouseWins": 71475,
+      "hotelWins": 43248,
+      "railroadWins": 95283,
+      "bankLoansDeniedAt40": 6053,
+      "highInterestUnmortgages": 308287,
+      "thresholdReach": {
+        "round15": 99971,
+        "round20": 99463,
+        "round25": 96458,
+        "round32": 84435,
+        "round40": 64566,
+        "round50": 36439
+      }
+    }
+  }
+}

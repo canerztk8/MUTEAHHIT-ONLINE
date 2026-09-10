@@ -1,0 +1,679 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    background-color: #0b0f19;
+    background-image: radial-gradient(circle at 50% 50%, #161f30 0%, #080c14 100%);
+    min-height: 100vh;
+  }
+}
+
+/* Custom modern scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.6);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(71, 85, 105, 0.6);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.8);
+}
+
+/* 3D Dice Cube Animation */
+.dice-cube {
+  width: 48px;
+  height: 48px;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.dice-rolling {
+  animation: rollAnimation 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+@keyframes rollAnimation {
+  0% {
+    transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg) scale(0.9);
+  }
+  30% {
+    transform: rotateX(360deg) rotateY(180deg) rotateZ(90deg) scale(1.15);
+  }
+  70% {
+    transform: rotateX(720deg) rotateY(540deg) rotateZ(270deg) scale(1.1);
+  }
+  100% {
+    transform: rotateX(1080deg) rotateY(720deg) rotateZ(360deg) scale(1);
+  }
+}
+
+/* Glow effects for active board elements */
+.active-player-glow {
+  box-shadow: 0 0 20px -2px rgba(234, 179, 8, 0.7), 0 0 10px -2px rgba(234, 179, 8, 0.4);
+}
+
+/* Zar Atma Nabız & Işıma Animasyonu */
+@keyframes diceGlowPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 16px rgba(245, 158, 11, 0.75), 0 0 35px rgba(245, 158, 11, 0.35);
+  }
+  50% {
+    transform: scale(1.03);
+    box-shadow: 0 0 28px rgba(245, 158, 11, 0.95), 0 0 55px rgba(245, 158, 11, 0.55);
+  }
+}
+
+.animate-dice-glow {
+  animation: diceGlowPulse 1.6s infinite ease-in-out;
+}
+
+/* Açık Artırma (Auction) Yüksek Görünürlüklü Parlama & Kalın Çerçeve Animasyonu */
+@keyframes auctionDemandPulse {
+  0%, 100% {
+    box-shadow: 
+      0 0 0 6px #ef4444,
+      0 0 0 10px #ffffff,
+      0 0 35px 12px rgba(239, 68, 68, 0.95),
+      0 0 85px 28px rgba(220, 38, 38, 0.75),
+      inset 0 0 28px 8px rgba(239, 68, 68, 0.65);
+    transform: scale(1.03);
+  }
+  50% {
+    box-shadow: 
+      0 0 0 9px #ff1a1a,
+      0 0 0 14px #ffffff,
+      0 0 65px 22px rgba(255, 30, 30, 1),
+      0 0 130px 50px rgba(239, 68, 68, 0.9),
+      inset 0 0 45px 16px rgba(255, 40, 40, 0.85);
+    transform: scale(1.06);
+  }
+}
+
+.demand-highlight-auction {
+  animation: auctionDemandPulse 1.2s infinite ease-in-out !important;
+  z-index: 50 !important;
+  border-color: #ef4444 !important;
+  border-width: 4px !important;
+}
+
+/* Takas (Trade) Yüksek Görünürlüklü Parlama & Kalın Çerçeve Animasyonu */
+@keyframes tradeDemandPulse {
+  0%, 100% {
+    box-shadow: 
+      0 0 0 6px #06b6d4,
+      0 0 0 10px #ffffff,
+      0 0 35px 12px rgba(6, 182, 212, 0.95),
+      0 0 85px 28px rgba(14, 165, 233, 0.75),
+      inset 0 0 28px 8px rgba(6, 182, 212, 0.65);
+    transform: scale(1.03);
+  }
+  50% {
+    box-shadow: 
+      0 0 0 9px #22d3ee,
+      0 0 0 14px #ffffff,
+      0 0 65px 22px rgba(34, 211, 238, 1),
+      0 0 130px 50px rgba(6, 182, 212, 0.9),
+      inset 0 0 45px 16px rgba(34, 211, 238, 0.85);
+    transform: scale(1.06);
+  }
+}
+
+.demand-highlight-trade {
+  animation: tradeDemandPulse 1.2s infinite ease-in-out !important;
+  z-index: 50 !important;
+  border-color: #06b6d4 !important;
+  border-width: 4px !important;
+}
+
+/* İhale ve Takas Konum İşaretçisi Dalgalanma Animasyonları */
+@keyframes demandIndicatorBobV {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes demandIndicatorBobVReverse {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(4px);
+  }
+}
+
+@keyframes demandIndicatorBobH {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(4px);
+  }
+}
+
+@keyframes demandIndicatorBobHReverse {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-4px);
+  }
+}
+
+.demand-indicator-top {
+  animation: demandIndicatorBobVReverse 1.4s ease-in-out infinite;
+}
+
+.demand-indicator-bottom {
+  animation: demandIndicatorBobV 1.4s ease-in-out infinite;
+}
+
+.demand-indicator-left {
+  animation: demandIndicatorBobH 1.4s ease-in-out infinite;
+}
+
+.demand-indicator-right {
+  animation: demandIndicatorBobHReverse 1.4s ease-in-out infinite;
+}
+
+/* 3D Physical Card Deck Styling */
+.card-deck,
+.physical-deck-stack {
+  box-shadow: 
+    1px 1px 0 1px #0f172a,
+    2px 2px 0 1px #1e293b,
+    3px 4px 0 1px #0f172a,
+    4px 6px 0 1px #334155,
+    5px 8px 0 1px #0f172a,
+    0 16px 24px -2px rgba(0, 0, 0, 0.65);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.card-deck:hover,
+.physical-deck-stack:hover {
+  box-shadow: 
+    1px 2px 0 1px #0f172a,
+    3px 4px 0 1px #1e293b,
+    4px 7px 0 1px #0f172a,
+    5px 9px 0 1px #334155,
+    0 22px 30px -2px rgba(0, 0, 0, 0.75);
+}
+
+/* 3D Card Draw Animation */
+.card-draw-animate {
+  animation: cardDrawEffect 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform-origin: center center;
+}
+
+@keyframes cardDrawEffect {
+  0% {
+    opacity: 0;
+    transform: scale(0.25) translateY(60px) rotate(-10deg);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1.04) translateY(-4px) rotate(1deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0) rotate(0deg);
+  }
+}
+
+/* 3D Realistic Card Draw & Flip Engine */
+.perspective-1200 {
+  perspective: 1200px;
+}
+
+.preserve-3d {
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Şans / İhale & Fırsat Destesi (Sol Üst): Desteden çıkışta kapalı (-180deg), merkeze vardığında tam düz (0deg) */
+@keyframes chanceCardFlightAndFlip {
+  0% {
+    opacity: 1;
+    transform: translate3d(clamp(-320px, -35vw, -130px), clamp(-250px, -28vh, -100px), -120px) scale(0.32) rotate(-16deg) rotateY(-180deg);
+    filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.6));
+  }
+  38% {
+    opacity: 1;
+    transform: translate3d(0px, -18px, 60px) scale(0.85) rotate(-3deg) rotateY(-90deg);
+    filter: drop-shadow(0 20px 30px rgba(0, 0, 0, 0.7));
+  }
+  75% {
+    opacity: 1;
+    transform: translate3d(0px, 0px, 0px) scale(1.03) rotate(0deg) rotateY(12deg);
+    filter: drop-shadow(0 25px 45px rgba(0, 0, 0, 0.85));
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0px, 0px, 0px) scale(1.0) rotate(0deg) rotateY(0deg);
+    filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.8));
+  }
+}
+
+/* Belediye & İmar Destesi (Sağ Alt): Desteden çıkışta kapalı (180deg), merkeze vardığında tam düz (0deg) */
+@keyframes chestCardFlightAndFlip {
+  0% {
+    opacity: 1;
+    transform: translate3d(clamp(130px, 35vw, 320px), clamp(100px, 28vh, 250px), -120px) scale(0.32) rotate(16deg) rotateY(180deg);
+    filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.6));
+  }
+  38% {
+    opacity: 1;
+    transform: translate3d(0px, -18px, 60px) scale(0.85) rotate(3deg) rotateY(90deg);
+    filter: drop-shadow(0 20px 30px rgba(0, 0, 0, 0.7));
+  }
+  75% {
+    opacity: 1;
+    transform: translate3d(0px, 0px, 0px) scale(1.03) rotate(0deg) rotateY(-12deg);
+    filter: drop-shadow(0 25px 45px rgba(0, 0, 0, 0.85));
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0px, 0px, 0px) scale(1.0) rotate(0deg) rotateY(0deg);
+    filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.8));
+  }
+}
+
+.animate-card-draw-chance {
+  animation: chanceCardFlightAndFlip 0.82s cubic-bezier(0.18, 0.88, 0.28, 1.1) forwards;
+  will-change: transform;
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+}
+
+.animate-card-draw-chest {
+  animation: chestCardFlightAndFlip 0.82s cubic-bezier(0.18, 0.88, 0.28, 1.1) forwards;
+  will-change: transform;
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+}
+
+/* Kart açıldığında üzerinden geçen altın / ışık hüzmesi (Shimmer) */
+@keyframes cardLightShimmer {
+  0% {
+    transform: translateX(-160%) skewX(-25deg);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateX(260%) skewX(-25deg);
+    opacity: 0;
+  }
+}
+
+.animate-card-shimmer {
+  animation: cardLightShimmer 0.9s 0.72s ease-out forwards;
+}
+
+/* Floating Money Delta Animation (+₺ / -₺) */
+@keyframes floatUp {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.85);
+  }
+  20% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1.15);
+  }
+  75% {
+    opacity: 1;
+    transform: translateY(-16px) scale(1.05);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-28px) scale(0.95);
+  }
+}
+
+.animate-floatUp {
+  animation: floatUp 2.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Realistic 3D Tumbling Dice Across the Board */
+@keyframes diceTumble1 {
+  0% {
+    opacity: 0;
+    transform: translate(-160px, -180px) rotateX(0deg) rotateY(0deg) rotateZ(-360deg) scale(0.4);
+  }
+  15% {
+    opacity: 1;
+  }
+  35% {
+    /* First hard impact on the board felt */
+    transform: translate(-60px, 15px) rotateX(540deg) rotateY(280deg) rotateZ(-120deg) scale(1.25);
+  }
+  55% {
+    /* Upward bounce */
+    transform: translate(-10px, -25px) rotateX(900deg) rotateY(520deg) rotateZ(30deg) scale(1.12);
+  }
+  75% {
+    /* Second smaller impact */
+    transform: translate(-38px, 8px) rotateX(1260deg) rotateY(760deg) rotateZ(12deg) scale(1.04);
+  }
+  88% {
+    /* Minor slide/settle */
+    transform: translate(-30px, -2px) rotateX(1380deg) rotateY(860deg) rotateZ(4deg) scale(1.01);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-32px, 0px) rotateX(1440deg) rotateY(900deg) rotateZ(0deg) scale(1);
+  }
+}
+
+@keyframes diceTumble2 {
+  0% {
+    opacity: 0;
+    transform: translate(160px, -190px) rotateX(0deg) rotateY(0deg) rotateZ(360deg) scale(0.4);
+  }
+  15% {
+    opacity: 1;
+  }
+  38% {
+    /* First hard impact */
+    transform: translate(65px, 20px) rotateX(-540deg) rotateY(-300deg) rotateZ(140deg) scale(1.25);
+  }
+  58% {
+    /* Upward bounce */
+    transform: translate(15px, -22px) rotateX(-900deg) rotateY(-540deg) rotateZ(-40deg) scale(1.12);
+  }
+  78% {
+    /* Second smaller impact */
+    transform: translate(38px, 6px) rotateX(-1260deg) rotateY(-780deg) rotateZ(-15deg) scale(1.04);
+  }
+  90% {
+    /* Minor settle */
+    transform: translate(30px, -2px) rotateX(-1380deg) rotateY(-860deg) rotateZ(-5deg) scale(1.01);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(32px, 0px) rotateX(-1440deg) rotateY(-900deg) rotateZ(0deg) scale(1);
+  }
+}
+
+@keyframes diceShadow1 {
+  0% {
+    opacity: 0;
+    transform: translate(-160px, 40px) scale(0.3);
+  }
+  35% {
+    opacity: 0.85;
+    transform: translate(-60px, 35px) scale(1.2);
+  }
+  55% {
+    opacity: 0.35;
+    transform: translate(-10px, 35px) scale(0.85);
+  }
+  75% {
+    opacity: 0.75;
+    transform: translate(-38px, 35px) scale(1.05);
+  }
+  100% {
+    opacity: 0.65;
+    transform: translate(-32px, 35px) scale(1);
+  }
+}
+
+@keyframes diceShadow2 {
+  0% {
+    opacity: 0;
+    transform: translate(160px, 40px) scale(0.3);
+  }
+  38% {
+    opacity: 0.85;
+    transform: translate(65px, 35px) scale(1.2);
+  }
+  58% {
+    opacity: 0.35;
+    transform: translate(15px, 35px) scale(0.85);
+  }
+  78% {
+    opacity: 0.75;
+    transform: translate(38px, 35px) scale(1.05);
+  }
+  100% {
+    opacity: 0.65;
+    transform: translate(32px, 35px) scale(1);
+  }
+}
+
+.animate-dice-tumble-1 {
+  animation: diceTumble1 1.25s cubic-bezier(0.2, 0.85, 0.32, 1.1) forwards;
+}
+
+.animate-dice-tumble-2 {
+  animation: diceTumble2 1.3s cubic-bezier(0.2, 0.85, 0.32, 1.1) forwards;
+}
+
+.animate-dice-shadow-1 {
+  animation: diceShadow1 1.25s cubic-bezier(0.2, 0.85, 0.32, 1.1) forwards;
+}
+
+.animate-dice-shadow-2 {
+  animation: diceShadow2 1.3s cubic-bezier(0.2, 0.85, 0.32, 1.1) forwards;
+}
+
+/* Kira Bildirimi - Sadece Dikey Bounce (Yatay Centering Asla Etkilenmez) */
+@keyframes rentBannerBounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.animate-rent-banner-bounce {
+  animation: rentBannerBounce 0.45s ease-in-out 2;
+}
+
+/* Mimari Pafta / Blueprint Grid Background (Teknik Çizim Açık Mukavva Estetiği) */
+.bg-blueprint-grid {
+  background-color: #f1f5f9; /* Çok açık mat gri/fildişi */
+  background-image: 
+    linear-gradient(rgba(15, 23, 42, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 23, 42, 0.04) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Karanlık Mod Mimari Gece Paftası (Göz Yormayan Koyu Lacivert/Obsidyen Grid) */
+.dark .bg-blueprint-grid {
+  background-color: #080d1a;
+  background-image: 
+    linear-gradient(rgba(56, 189, 248, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(56, 189, 248, 0.06) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Tahta Mukavva Derinliği */
+.board-cardboard-elevation {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.dark .board-cardboard-elevation {
+  box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.95), 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+/* Matbaa Kağıt Kare Basım Derinliği */
+.tile-paper-press {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6), 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.dark .tile-paper-press {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06), 0 1px 3px rgba(0, 0, 0, 0.45);
+}
+
+/* Deste Katman Gölgesi & Fiziksel 30-Kartlık Deste Etkisi */
+.physical-deck-stack {
+  box-shadow: 
+    0 1px 1px rgba(0, 0, 0, 0.15),
+    1px 2px 0 #e2e8f0,
+    2px 4px 0 #cbd5e1,
+    3px 6px 0 #94a3b8,
+    4px 10px 15px -3px rgba(0, 0, 0, 0.3);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
+}
+
+.dark .physical-deck-stack {
+  box-shadow: 
+    0 1px 1px rgba(0, 0, 0, 0.4),
+    1px 2px 0 #1e293b,
+    2px 4px 0 #0f172a,
+    3px 6px 0 #090d16,
+    4px 10px 18px -2px rgba(0, 0, 0, 0.7);
+}
+
+.physical-deck-stack:hover {
+  box-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.15),
+    1px 3px 0 #e2e8f0,
+    3px 6px 0 #cbd5e1,
+    4px 9px 0 #94a3b8,
+    6px 16px 24px -4px rgba(0, 0, 0, 0.35);
+}
+
+.dark .physical-deck-stack:hover {
+  box-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.4),
+    1px 3px 0 #1e293b,
+    3px 6px 0 #0f172a,
+    4px 9px 0 #090d16,
+    6px 16px 24px -4px rgba(0, 0, 0, 0.85);
+}
+
+/* Tahta Üzeri Kart Yuvası (Board Slot) */
+.board-card-slot {
+  border: 2px dashed #94a3b8;
+  border-radius: 1rem;
+  background-color: rgba(15, 23, 42, 0.04);
+}
+
+.dark .board-card-slot {
+  border: 2px dashed #475569;
+  background-color: rgba(15, 23, 42, 0.4);
+}
+
+.deck-card-shadow {
+  box-shadow: 0 14px 28px -4px rgba(15, 23, 42, 0.28), 0 4px 8px -2px rgba(15, 23, 42, 0.16);
+}
+
+/* Font Sınıfları */
+.font-space {
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+.font-jetbrains {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Fiziksel Kuşe Kağıt & Kartela Sınıfları */
+.cardstock-panel {
+  background-color: #F8FAFC;
+  border: 1px solid #CBD5E1;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.25), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+}
+
+.dark .cardstock-panel {
+  background-color: #0b1329;
+  border: 1px solid #1e293b;
+  color: #f8fafc;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
+}
+
+.cardstock-card {
+  background-color: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
+}
+
+.dark .cardstock-card {
+  background-color: #111c38;
+  border: 1px solid #1e293b;
+  color: #f8fafc;
+  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* Görünmez Piyon Hizalama Kapsayıcısı (Tile Inner Slot) */
+.tile-pawns-container {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* 💀 İflas ve Elenme Özel Animasyonları */
+@keyframes eliminationPulse {
+  0%, 100% {
+    box-shadow: 0 0 25px rgba(225, 29, 72, 0.4), 0 0 50px rgba(159, 18, 57, 0.2);
+    border-color: rgba(244, 63, 94, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 45px rgba(225, 29, 72, 0.8), 0 0 90px rgba(159, 18, 57, 0.4);
+    border-color: rgba(244, 63, 94, 0.9);
+  }
+}
+
+.animate-elimination-pulse {
+  animation: eliminationPulse 2s infinite ease-in-out;
+}
+
+@keyframes countdownBar {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+
+.animate-countdown-bar {
+  animation: countdownBar 5s linear forwards;
+}
+
+@keyframes dramaticShake {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  10%, 30%, 50%, 70%, 90% { transform: translate(-3px, 1px) rotate(-1.5deg); }
+  20%, 40%, 60%, 80% { transform: translate(3px, -1px) rotate(1.5deg); }
+}
+
+.animate-dramatic-shake {
+  animation: dramaticShake 0.7s ease-in-out;
+}
+
+/* 🏆 Zafer ve Kupa Parıltısı */
+@keyframes trophyGlowPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 30px rgba(245, 158, 11, 0.5), 0 0 70px rgba(234, 179, 8, 0.25);
+  }
+  50% {
+    transform: scale(1.04);
+    box-shadow: 0 0 55px rgba(245, 158, 11, 0.85), 0 0 110px rgba(234, 179, 8, 0.5);
+  }
+}
+
+.animate-trophy-glow {
+  animation: trophyGlowPulse 2.4s infinite ease-in-out;
+}
+

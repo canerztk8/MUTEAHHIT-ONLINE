@@ -1,0 +1,46 @@
+{
+  "totalGames": 1000000,
+  "durationSeconds": "183.42",
+  "ratePerSec": 5451,
+  "strategyPercentages": {
+    "GRANDMASTER": "22.55",
+    "MONOPOLY_RUSHER": "21.14",
+    "CASH_TITAN": "30.46",
+    "AUCTION_SHARK": "25.85"
+  },
+  "seatPercentages": [
+    "26.07",
+    "24.19",
+    "24.79",
+    "24.94"
+  ],
+  "combined": {
+    "totalGames": 1000000,
+    "validGames": 744455,
+    "turnTimeouts": 255545,
+    "strategyWins": {
+      "GRANDMASTER": 167883,
+      "MONOPOLY_RUSHER": 157389,
+      "CASH_TITAN": 226757,
+      "AUCTION_SHARK": 192426
+    },
+    "seatWins": [
+      194105,
+      180118,
+      184552,
+      185680
+    ],
+    "strategyMonopolies": {
+      "GRANDMASTER": 0,
+      "MONOPOLY_RUSHER": 0,
+      "CASH_TITAN": 0,
+      "AUCTION_SHARK": 0
+    },
+    "jailStallSuccessCount": 744424,
+    "jailStallAttempts": 1046432,
+    "threeHousePeakWins": 744454,
+    "hotelRushWins": 314983,
+    "auctionSnipeCount": 2780412,
+    "roundSum": 40539018
+  }
+}
