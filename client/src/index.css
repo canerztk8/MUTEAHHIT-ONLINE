@@ -4,9 +4,27 @@
 
 @layer base {
   body {
+    background-color: #ded1be;
+    background-image:
+      /* Radial ambient tabletop spotlight focused behind the game board */
+      radial-gradient(ellipse at 50% 48%, rgba(255, 253, 248, 0.72) 0%, rgba(238, 226, 209, 0.48) 45%, rgba(168, 140, 110, 0.72) 100%),
+      /* Subtle wood plank vertical grain lines */
+      repeating-linear-gradient(90deg, rgba(140, 102, 65, 0.04) 0px, rgba(140, 102, 65, 0.04) 1px, transparent 1px, transparent 28px),
+      repeating-linear-gradient(90deg, rgba(110, 78, 48, 0.025) 0px, rgba(110, 78, 48, 0.025) 2px, transparent 2px, transparent 84px),
+      /* Subtle horizontal cross-grain pores */
+      repeating-linear-gradient(0deg, rgba(140, 102, 65, 0.02) 0px, rgba(140, 102, 65, 0.02) 1px, transparent 1px, transparent 56px),
+      /* Rich natural warm oak base */
+      linear-gradient(135deg, #eee4d5 0%, #ded1be 50%, #cca988 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+    color: #0f172a;
+  }
+
+  html.dark body,
+  .dark body {
     background-color: #0b0f19;
     background-image: radial-gradient(circle at 50% 50%, #161f30 0%, #080c14 100%);
-    min-height: 100vh;
+    color: #f8fafc;
   }
 }
 
@@ -16,13 +34,25 @@
   height: 6px;
 }
 ::-webkit-scrollbar-track {
+  background: rgba(120, 95, 75, 0.08);
+}
+.dark ::-webkit-scrollbar-track,
+html.dark ::-webkit-scrollbar-track {
   background: rgba(15, 23, 42, 0.6);
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(71, 85, 105, 0.6);
+  background: rgba(140, 110, 85, 0.35);
   border-radius: 9999px;
 }
+.dark ::-webkit-scrollbar-thumb,
+html.dark ::-webkit-scrollbar-thumb {
+  background: rgba(71, 85, 105, 0.6);
+}
 ::-webkit-scrollbar-thumb:hover {
+  background: rgba(140, 110, 85, 0.55);
+}
+.dark ::-webkit-scrollbar-thumb:hover,
+html.dark ::-webkit-scrollbar-thumb:hover {
   background: rgba(100, 116, 139, 0.8);
 }
 
@@ -506,7 +536,10 @@
 
 /* Tahta Mukavva Derinliği */
 .board-cardboard-elevation {
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  box-shadow: 
+    0 24px 48px -12px rgba(92, 64, 40, 0.32),
+    0 12px 24px -8px rgba(92, 64, 40, 0.22),
+    0 0 0 1px rgba(92, 64, 40, 0.12);
 }
 
 .dark .board-cardboard-elevation {

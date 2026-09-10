@@ -1090,7 +1090,7 @@ export function App() {
 
   // Oyun Sahnesi
   return (
-    <div className="h-screen max-h-[100dvh] overflow-hidden bg-transparent text-slate-100 flex flex-col selection:bg-amber-400 selection:text-black">
+    <div className="h-screen max-h-[100dvh] overflow-hidden bg-transparent text-slate-900 dark:text-slate-100 flex flex-col selection:bg-amber-400 selection:text-black">
       {/* Üst Kısayollar (Karanlık Mod & DevTools) */}
       <div className="fixed top-2.5 right-2.5 z-40 flex items-center gap-2 pointer-events-auto">
         {devToolsUnlocked && (
