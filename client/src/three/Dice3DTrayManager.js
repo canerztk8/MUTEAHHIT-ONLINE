@@ -169,6 +169,49 @@ export class Dice3DTrayManager {
   }
 
   /**
+   * Zarların tepsi dışına, butonların arkasına veya tavana fırlamasını engelleyen
+   * 4 yönlü görünmez fiziksel sınır duvarlarını (Cannon-ES) kurar ve her setDimensions
+   * yeniden boyutlandırmasında sınırları yeşil çuha içinde kilitler.
+   */
+  _setupInvisibleWalls() {
+    if (!this.box) return;
+
+    const enforceWalls = () => {
+      if (!this.box?.box_body || !this.box?.display) return;
+      const cw = this.box.display.containerWidth;
+      const ch = this.box.display.containerHeight;
+      if (!cw || !ch) return;
+
+      // Üst duvar: Üst oyuncu rozeti ve sürenin hemen altında zarları tutar
+      if (this.box.box_body.topWall) {
+        this.box.box_body.topWall.position.set(0, ch * 0.78, 0);
+      }
+      // Alt duvar: Alt "ZAR AT" butonu ve skor rozetinin hemen üzerinde zarları tutar
+      if (this.box.box_body.bottomWall) {
+        this.box.box_body.bottomWall.position.set(0, -ch * 0.74, 0);
+      }
+      // Sol duvar: Ahşap çerçeve iç sınırı
+      if (this.box.box_body.leftWall) {
+        this.box.box_body.leftWall.position.set(cw * 0.84, 0, 0);
+      }
+      // Sağ duvar: Ahşap çerçeve iç sınırı
+      if (this.box.box_body.rightWall) {
+        this.box.box_body.rightWall.position.set(-cw * 0.84, 0, 0);
+      }
+    };
+
+    if (typeof this.box.makeWorldBox === 'function') {
+      const origMakeWorldBox = this.box.makeWorldBox.bind(this.box);
+      this.box.makeWorldBox = () => {
+        origMakeWorldBox();
+        enforceWalls();
+      };
+    }
+
+    enforceWalls();
+  }
+
+  /**
    * 3D Zar Tablasını ve DiceBox motorunu başlatır
    */
   async setupScene(container, onRollClick = null, initialDice = [1, 1]) {
@@ -202,6 +245,9 @@ export class Dice3DTrayManager {
 
       // Klasik noktalı Monopoly zarı dokusunu uygula
       await this._applyClassicMonopolyPips();
+
+      // Zarların tepsi sınırları dışına taşmasını engelleyen görünmez fiziksel sınır duvarlarını kur
+      this._setupInvisibleWalls();
 
       this.isSceneReady = true;
     } catch (err) {
