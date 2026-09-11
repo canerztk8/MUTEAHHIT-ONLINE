@@ -112,7 +112,7 @@ export class MonopolyGame {
       ...(meta || {})
     };
     this.logs.push(logEntry);
-    if (this.logs.length > 80) this.logs.shift();
+    if (this.logs.length > 50) this.logs.shift();
   }
 
   adjustPlayerMoney(player, delta, reason) {

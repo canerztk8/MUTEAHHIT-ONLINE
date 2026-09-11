@@ -131,15 +131,6 @@ export class Board3DManager {
     fillLight.position.set(-10, 14, -8);
     this.scene.add(fillLight);
 
-    // 5. Tahta Zemin Gölge Yakalayıcısı (Görünmez zemin, piyon ve zar gölgelerini yakalar)
-    const shadowPlaneGeo = new THREE.PlaneGeometry(24, 24);
-    const shadowPlaneMat = new THREE.ShadowMaterial({ opacity: 0.38 });
-    const shadowPlane = new THREE.Mesh(shadowPlaneGeo, shadowPlaneMat);
-    shadowPlane.rotation.x = -Math.PI / 2;
-    shadowPlane.position.y = 0.01;
-    shadowPlane.receiveShadow = true;
-    this.scene.add(shadowPlane);
-
     // ResizeObserver ile responsive boyutlandırma
     this.resizeObserver = new ResizeObserver(() => this.handleResize());
     this.resizeObserver.observe(container);

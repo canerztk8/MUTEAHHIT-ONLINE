@@ -18,6 +18,7 @@ export default defineConfig({
         manualChunks: {
           three: ['three'],
           physics: ['cannon-es'],
+          dice: ['@3d-dice/dice-box-threejs'],
           vendor: ['react', 'react-dom', 'peerjs', 'lucide-react']
         }
       }

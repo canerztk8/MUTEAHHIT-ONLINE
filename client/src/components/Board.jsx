@@ -498,6 +498,126 @@ const TileCell = React.memo(function TileCell({
   );
 }, areTilePropsEqual);
 
+// ⚡ Performans İzolasyonu: Fare kareler üzerinde gezinirken devasa Board bileşenini baştan render etmez
+const tileHoverListeners = new Set();
+function notifyTileHover(tile) {
+  for (const fn of tileHoverListeners) fn(tile);
+}
+
+const CenterInspectedTilePreview = React.memo(function CenterInspectedTilePreview({
+  properties,
+  players,
+  myPlayerId,
+  isDarkMode,
+  onTileClick,
+  onOpenTrade
+}) {
+  const [inspectedTile, setInspectedTile] = useState(null);
+
+  useEffect(() => {
+    tileHoverListeners.add(setInspectedTile);
+    return () => {
+      tileHoverListeners.delete(setInspectedTile);
+    };
+  }, []);
+
+  if (!inspectedTile) return null;
+
+  return (
+    <div
+      onClick={() => onTileClick(inspectedTile)}
+      className={`pointer-events-auto w-full max-w-sm ${
+        isDarkMode ? 'bg-[#0f172a]/95 border-slate-700 text-slate-100 shadow-[0_8px_24px_rgba(0,0,0,0.45)]' : 'bg-white/95 border-[#cbd5e1] text-[#0f172a] shadow-[0_8px_24px_rgba(0,0,0,0.12)]'
+      } border rounded-xl px-2.5 py-1.5 flex items-center justify-between gap-2 animate-fadeIn cursor-pointer hover:border-amber-400 transition-colors backdrop-blur-md`}
+      title="Detaylı bilgi için tıklayın"
+    >
+      <div className="flex items-center gap-2.5 min-w-0">
+        <div className={`w-11 h-11 sm:w-13 sm:h-13 rounded-xl overflow-hidden border ${
+          isDarkMode ? 'border-slate-700 bg-slate-850 shadow-md' : 'border-slate-300 bg-slate-100 shadow-sm'
+        } flex-shrink-0 flex items-center justify-center relative`}>
+          {inspectedTile.image && (
+            <img
+              src={inspectedTile.image}
+              alt={inspectedTile.name}
+              className="w-full h-full object-cover relative z-10"
+              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+            />
+          )}
+          <div
+            className="absolute inset-0 flex items-center justify-center text-base sm:text-lg font-bold select-none z-0"
+            style={{ backgroundColor: inspectedTile.groupColor || (isDarkMode ? '#1e293b' : '#e2e8f0') }}
+          >
+            {inspectedTile.icon || '🏛️'}
+          </div>
+        </div>
+        <div className="min-w-0 text-left leading-tight">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <h4 className={`text-[11px] sm:text-xs font-black truncate font-space ${
+              isDarkMode ? 'text-slate-100' : 'text-[#0f172a]'
+            }`}>{inspectedTile.name}</h4>
+            {inspectedTile.cost && (
+              <span className={`text-[10px] sm:text-[11px] font-black font-jetbrains ${
+                isDarkMode ? 'text-amber-400' : 'text-amber-700'
+              }`}>{inspectedTile.cost}₺</span>
+            )}
+          </div>
+          {inspectedTile.type === 'property' && inspectedTile.rent ? (
+            <div className={`text-[8px] sm:text-[9px] flex items-center gap-1.5 sm:gap-2 flex-wrap font-jetbrains ${
+              isDarkMode ? 'text-slate-400' : 'text-slate-600'
+            }`}>
+              <span>Yalın: <strong className={isDarkMode ? 'text-slate-100' : 'text-[#0f172a]'}>{inspectedTile.rent[0]}₺</strong></span>
+              <span>1 Ev: <strong className={isDarkMode ? 'text-emerald-400' : 'text-emerald-700'}>{inspectedTile.rent[1]}₺</strong></span>
+              <span>Otel: <strong className={isDarkMode ? 'text-rose-400' : 'text-rose-700'}>{inspectedTile.rent[5]}₺</strong></span>
+              <span>İpotek: <strong className={isDarkMode ? 'text-amber-400' : 'text-amber-800'}>{inspectedTile.mortgage}₺</strong></span>
+            </div>
+          ) : inspectedTile.type === 'railroad' ? (
+            <div className={`text-[8px] sm:text-[9px] flex items-center gap-1.5 sm:gap-2 flex-wrap font-jetbrains ${
+              isDarkMode ? 'text-slate-400' : 'text-slate-600'
+            }`}>
+              <span>1 Gar: <strong className={isDarkMode ? 'text-slate-100' : 'text-[#0f172a]'}>25₺</strong></span>
+              <span>2 Gar: <strong className={isDarkMode ? 'text-emerald-400' : 'text-emerald-700'}>50₺</strong></span>
+              <span>4 Gar: <strong className={isDarkMode ? 'text-rose-400' : 'text-rose-700'}>200₺</strong></span>
+              <span>İpotek: <strong className={isDarkMode ? 'text-amber-400' : 'text-amber-800'}>100₺</strong></span>
+            </div>
+          ) : inspectedTile.type === 'utility' ? (
+            <div className={`text-[8px] sm:text-[9px] flex items-center gap-1.5 sm:gap-2 flex-wrap font-jetbrains ${
+              isDarkMode ? 'text-slate-400' : 'text-slate-600'
+            }`}>
+              <span>1 Tesis: <strong className={isDarkMode ? 'text-slate-100' : 'text-[#0f172a]'}>4x Zar</strong></span>
+              <span>2 Tesis: <strong className={isDarkMode ? 'text-emerald-400' : 'text-emerald-700'}>10x Zar</strong></span>
+              <span>İpotek: <strong className={isDarkMode ? 'text-amber-400' : 'text-amber-800'}>75₺</strong></span>
+            </div>
+          ) : (
+            <p className={`text-[8px] sm:text-[8.5px] truncate font-jetbrains ${
+              isDarkMode ? 'text-slate-400' : 'text-slate-500'
+            }`}>{inspectedTile.description || 'Özel Kare'}</p>
+          )}
+        </div>
+      </div>
+      {(() => {
+        const insProp = properties[inspectedTile.id];
+        const insOwner = insProp?.ownerId ? players.find(p => p.id === insProp.ownerId) : null;
+        if (insOwner && insOwner.id !== myPlayerId && !insOwner.isBankrupt && (insProp?.houses || 0) === 0) {
+          return (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenTrade && onOpenTrade(insOwner, inspectedTile.id);
+              }}
+              className="px-2 py-0.5 rounded-lg bg-gradient-to-r from-amber-500 to-yellow-400 hover:brightness-110 text-slate-950 font-black text-[9.5px] sm:text-[10px] flex items-center gap-1 shadow-xs transition active:scale-95 cursor-pointer flex-shrink-0"
+              title={`${insOwner.name} oyuncusuna bu mülk için teklif yap`}
+            >
+              <span>🤝</span>
+              <span>Teklif</span>
+            </button>
+          );
+        }
+        return null;
+      })()}
+    </div>
+  );
+});
+
 export function Board({
   gameState,
   onTileClick,
@@ -562,10 +682,9 @@ export function Board({
     }
   }, [players]);
 
-  // Canlı Büyüteç (Hover / İncelenen Kare)
-  const [inspectedTile, setInspectedTile] = useState(null);
-  const handleTileMouseEnter = useCallback((t) => setInspectedTile(t), []);
-  const handleTileMouseLeave = useCallback(() => setInspectedTile(null), []);
+  // Canlı Büyüteç (Hover / İncelenen Kare) — İzole olay bildirim sistemi
+  const handleTileMouseEnter = useCallback((t) => notifyTileHover(t), []);
+  const handleTileMouseLeave = useCallback(() => notifyTileHover(null), []);
   const deckLiftTimeoutRef = useRef(null);
 
   // Açık Artırma Canlı Tokmak Sesi Takibi (Sayaç izole alt bileşende çalışır)
@@ -1326,99 +1445,14 @@ export function Board({
 
           {/* İncelenen Arsa / Tapu Bilgi Şeridi (Layout Shift Engellenmiş Sabit Taban Rozeti) */}
           <div className="absolute bottom-1.5 sm:bottom-2 inset-x-2 z-30 flex items-center justify-center pointer-events-none transition-all duration-200">
-            {inspectedTile ? (
-              <div
-                onClick={() => onTileClick(inspectedTile)}
-                className={`pointer-events-auto w-full max-w-sm ${
-                  isDarkMode ? 'bg-[#0f172a]/95 border-slate-700 text-slate-100 shadow-[0_8px_24px_rgba(0,0,0,0.45)]' : 'bg-white/95 border-[#cbd5e1] text-[#0f172a] shadow-[0_8px_24px_rgba(0,0,0,0.12)]'
-                } border rounded-xl px-2.5 py-1.5 flex items-center justify-between gap-2 animate-fadeIn cursor-pointer hover:border-amber-400 transition-colors backdrop-blur-md`}
-                title="Detaylı bilgi için tıklayın"
-              >
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className={`w-11 h-11 sm:w-13 sm:h-13 rounded-xl overflow-hidden border ${
-                    isDarkMode ? 'border-slate-700 bg-slate-850 shadow-md' : 'border-slate-300 bg-slate-100 shadow-sm'
-                  } flex-shrink-0 flex items-center justify-center relative`}>
-                    {inspectedTile.image && (
-                      <img
-                        src={inspectedTile.image}
-                        alt={inspectedTile.name}
-                        className="w-full h-full object-cover relative z-10"
-                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                      />
-                    )}
-                    <div
-                      className="absolute inset-0 flex items-center justify-center text-base sm:text-lg font-bold select-none z-0"
-                      style={{ backgroundColor: inspectedTile.groupColor || (isDarkMode ? '#1e293b' : '#e2e8f0') }}
-                    >
-                      {inspectedTile.icon || '🏛️'}
-                    </div>
-                  </div>
-                  <div className="min-w-0 text-left leading-tight">
-                    <div className="flex items-center gap-1.5 sm:gap-2">
-                      <h4 className={`text-[11px] sm:text-xs font-black truncate font-space ${
-                        isDarkMode ? 'text-slate-100' : 'text-[#0f172a]'
-                      }`}>{inspectedTile.name}</h4>
-                      {inspectedTile.cost && (
-                        <span className={`text-[10px] sm:text-[11px] font-black font-jetbrains ${
-                          isDarkMode ? 'text-amber-400' : 'text-amber-700'
-                        }`}>{inspectedTile.cost}₺</span>
-                      )}
-                    </div>
-                    {inspectedTile.type === 'property' && inspectedTile.rent ? (
-                      <div className={`text-[8px] sm:text-[9px] flex items-center gap-1.5 sm:gap-2 flex-wrap font-jetbrains ${
-                        isDarkMode ? 'text-slate-400' : 'text-slate-600'
-                      }`}>
-                        <span>Yalın: <strong className={isDarkMode ? 'text-slate-100' : 'text-[#0f172a]'}>{inspectedTile.rent[0]}₺</strong></span>
-                        <span>1 Ev: <strong className={isDarkMode ? 'text-emerald-400' : 'text-emerald-700'}>{inspectedTile.rent[1]}₺</strong></span>
-                        <span>Otel: <strong className={isDarkMode ? 'text-rose-400' : 'text-rose-700'}>{inspectedTile.rent[5]}₺</strong></span>
-                        <span>İpotek: <strong className={isDarkMode ? 'text-amber-400' : 'text-amber-800'}>{inspectedTile.mortgage}₺</strong></span>
-                      </div>
-                    ) : inspectedTile.type === 'railroad' ? (
-                      <div className={`text-[8px] sm:text-[9px] flex items-center gap-1.5 sm:gap-2 flex-wrap font-jetbrains ${
-                        isDarkMode ? 'text-slate-400' : 'text-slate-600'
-                      }`}>
-                        <span>1 Gar: <strong className={isDarkMode ? 'text-slate-100' : 'text-[#0f172a]'}>25₺</strong></span>
-                        <span>2 Gar: <strong className={isDarkMode ? 'text-emerald-400' : 'text-emerald-700'}>50₺</strong></span>
-                        <span>4 Gar: <strong className={isDarkMode ? 'text-rose-400' : 'text-rose-700'}>200₺</strong></span>
-                        <span>İpotek: <strong className={isDarkMode ? 'text-amber-400' : 'text-amber-800'}>100₺</strong></span>
-                      </div>
-                    ) : inspectedTile.type === 'utility' ? (
-                      <div className={`text-[8px] sm:text-[9px] flex items-center gap-1.5 sm:gap-2 flex-wrap font-jetbrains ${
-                        isDarkMode ? 'text-slate-400' : 'text-slate-600'
-                      }`}>
-                        <span>1 Tesis: <strong className={isDarkMode ? 'text-slate-100' : 'text-[#0f172a]'}>4x Zar</strong></span>
-                        <span>2 Tesis: <strong className={isDarkMode ? 'text-emerald-400' : 'text-emerald-700'}>10x Zar</strong></span>
-                        <span>İpotek: <strong className={isDarkMode ? 'text-amber-400' : 'text-amber-800'}>75₺</strong></span>
-                      </div>
-                    ) : (
-                      <p className={`text-[8px] sm:text-[8.5px] truncate font-jetbrains ${
-                        isDarkMode ? 'text-slate-400' : 'text-slate-500'
-                      }`}>{inspectedTile.description || 'Özel Kare'}</p>
-                    )}
-                  </div>
-                </div>
-                {(() => {
-                  const insProp = properties[inspectedTile.id];
-                  const insOwner = insProp?.ownerId ? players.find(p => p.id === insProp.ownerId) : null;
-                  if (insOwner && insOwner.id !== myPlayerId && !insOwner.isBankrupt && (insProp?.houses || 0) === 0) {
-                    return (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onOpenTrade && onOpenTrade(insOwner, inspectedTile.id);
-                        }}
-                        className="px-2 py-0.5 rounded-lg bg-gradient-to-r from-amber-500 to-yellow-400 hover:brightness-110 text-slate-950 font-black text-[9.5px] sm:text-[10px] flex items-center gap-1 shadow-xs transition active:scale-95 cursor-pointer flex-shrink-0"
-                        title={`${insOwner.name} oyuncusuna bu mülk için teklif yap`}
-                      >
-                        <span>🤝</span>
-                        <span>Teklif</span>
-                      </button>
-                    );
-                  }
-                  return null;
-                })()}
-              </div>
-            ) : null}
+            <CenterInspectedTilePreview
+              properties={properties}
+              players={players}
+              myPlayerId={myPlayerId}
+              isDarkMode={isDarkMode}
+              onTileClick={onTileClick}
+              onOpenTrade={onOpenTrade}
+            />
           </div>
         </div>
 
