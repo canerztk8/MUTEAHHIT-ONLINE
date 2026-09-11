@@ -322,7 +322,7 @@ export function DiceSidebarTray({
   return (
     <div className="w-full h-full max-h-full flex flex-col gap-2 min-h-0">
       {/* ÜST BAŞLIK BARI: Oda Kodu, Ses, Ayrıl & Kontroller (Logo ve Başlık Talebe Göre Kaldırıldı) */}
-      <div className="cardstock-panel rounded-2xl p-2 sm:p-2.5 flex items-center justify-between gap-1.5 shadow-md flex-shrink-0 text-slate-900 dark:text-slate-100 tile-paper-press">
+      <div className="relative z-40 cardstock-panel rounded-2xl p-2 sm:p-2.5 flex items-center justify-between gap-1.5 shadow-md flex-shrink-0 text-slate-900 dark:text-slate-100 tile-paper-press">
         <div className="flex items-center gap-1.5 min-w-0">
           {roomCode ? (
             <button
@@ -363,13 +363,13 @@ export function DiceSidebarTray({
           </button>
 
           {/* 🔊 Ses Ayarı & Slider Popover */}
-          <div className="relative" ref={volumeMenuRef}>
+          <div className="relative z-50" ref={volumeMenuRef}>
             <button
               onClick={() => setShowVolumeSlider(prev => !prev)}
-              title={volume === 0 ? 'Ses Kapalı (Ayar için tıkla)' : `Ses Seviyesi: %${Math.round(volume * 100)} (Ayar için tıkla)`}
+              title={showVolumeSlider ? undefined : (volume === 0 ? 'Ses Kapalı (Ayar için tıkla)' : `Ses Seviyesi: %${Math.round(volume * 100)} (Ayar için tıkla)`)}
               className={`p-1.5 rounded-xl border transition cursor-pointer shadow-xs flex items-center justify-center ${
                 showVolumeSlider
-                  ? 'bg-amber-500/20 border-amber-500 text-amber-400'
+                  ? 'bg-amber-500/20 border-amber-500 text-amber-400 ring-2 ring-amber-400/40'
                   : 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200'
               }`}
             >
@@ -378,8 +378,8 @@ export function DiceSidebarTray({
 
             {/* Ses Seviyesi Slider Balonu */}
             {showVolumeSlider && (
-              <div className="absolute right-0 top-full mt-2 z-50 w-48 p-2.5 rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-700 shadow-2xl animate-fadeIn flex flex-col gap-2">
-                <div className="flex items-center justify-between text-[10px] font-space font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              <div className="absolute right-0 top-full mt-2 z-50 w-52 p-3 rounded-2xl bg-white dark:bg-slate-900 border-2 border-amber-400/80 dark:border-amber-500/80 shadow-[0_12px_36px_rgba(0,0,0,0.6)] backdrop-blur-xl animate-fadeIn flex flex-col gap-2.5">
+                <div className="flex items-center justify-between text-[10.5px] font-space font-extrabold uppercase tracking-wider text-slate-600 dark:text-slate-300">
                   <span className="flex items-center gap-1">
                     {volume === 0 ? 'Sessiz' : 'Oyun Sesi'}
                   </span>
@@ -391,10 +391,10 @@ export function DiceSidebarTray({
                 <div className="flex items-center gap-2">
                   <button
                     onClick={onVolumeToggle}
-                    className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition cursor-pointer"
+                    className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition cursor-pointer"
                     title={volume === 0 ? 'Sesi Aç' : 'Sessize Al'}
                   >
-                    {volume === 0 ? <VolumeX className="w-3.5 h-3.5 text-rose-500" /> : <Volume2 className="w-3.5 h-3.5 text-emerald-500" />}
+                    {volume === 0 ? <VolumeX className="w-4 h-4 text-rose-500" /> : <Volume2 className="w-4 h-4 text-emerald-500" />}
                   </button>
                   <input
                     type="range"
@@ -403,7 +403,7 @@ export function DiceSidebarTray({
                     step="0.01"
                     value={volume}
                     onChange={(e) => onVolumeChange ? onVolumeChange(parseFloat(e.target.value)) : onVolumeToggle?.()}
-                    className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                    className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
                   />
                 </div>
               </div>
@@ -436,7 +436,7 @@ export function DiceSidebarTray({
 
       {/* 3D FİZİKSEL ZAR TABLASI (Yeşil Çuha / Casino Green Felt Arenası) */}
       <div
-        className="flex-1 relative border-4 border-[#2d1b10] dark:border-[#3a2216] ring-1 ring-amber-600/35 rounded-3xl shadow-[inset_0_4px_32px_rgba(0,0,0,0.88),0_8px_20px_rgba(0,0,0,0.5)] flex flex-col min-h-0 overflow-hidden"
+        className="flex-1 relative z-10 border-4 border-[#2d1b10] dark:border-[#3a2216] ring-1 ring-amber-600/35 rounded-3xl shadow-[inset_0_4px_32px_rgba(0,0,0,0.88),0_8px_20px_rgba(0,0,0,0.5)] flex flex-col min-h-0 overflow-hidden"
         style={{
           background: 'radial-gradient(ellipse at 50% 45%, #195638 0%, #103d27 50%, #072316 100%)',
         }}

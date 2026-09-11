@@ -1173,49 +1173,15 @@ export function App() {
         </div>
       )}
 
-      {/* Üst Kısayollar (Karanlık Mod, Canlı Ağ Durumu & DevTools) */}
-      <div className="fixed top-2.5 right-2.5 z-40 flex items-center gap-2 pointer-events-none">
-        {/* 📡 Canlı Ping & Bağlantı Tipi HUD Göstergesi */}
-        {connected && network && (
-          <div
-            className={`pointer-events-none px-2 py-0.5 rounded-lg text-[9.5px] font-bold font-space border backdrop-blur-[1px] flex items-center gap-1.5 select-none transition-all ${
-              network.isHost
-                ? 'bg-slate-950/15 border-emerald-500/25 text-emerald-400/80 shadow-xs'
-                : network.isRelayActive
-                  ? 'bg-slate-950/15 border-amber-500/25 text-amber-400/80 shadow-xs'
-                  : 'bg-slate-950/15 border-sky-500/25 text-sky-400/80 shadow-xs'
-            }`}
-            title={
-              network.isHost
-                ? 'Oda Kurucusu (Host) — Sıfır Gecikme'
-                : network.isRelayActive
-                  ? 'WebSocket Sunucu Rölesi (Relay) — Firewall/CGNAT Korumalı'
-                  : 'WebRTC P2P — Doğrudan Cihazdan Cihaza Bağlantı'
-            }
-          >
-            <span className={`w-1.5 h-1.5 rounded-full opacity-80 ${
-              network.isHost
-                ? 'bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.5)]'
-                : network.isRelayActive
-                  ? 'bg-amber-400 animate-pulse shadow-[0_0_6px_rgba(251,191,36,0.5)]'
-                  : 'bg-sky-400 shadow-[0_0_6px_rgba(56,189,248,0.5)]'
-            }`} />
-            <span className="opacity-90">
-              {network.isHost
-                ? 'HOST'
-                : `${ping !== null ? ping + 'ms' : '...'} (${network.isRelayActive ? 'RELAY' : 'P2P'})`}
-            </span>
-          </div>
-        )}
-
+      {/* Üst Kısayollar (Karanlık Mod & DevTools) */}
+      <div className="fixed top-2.5 right-2.5 lg:right-[305px] xl:right-[335px] 2xl:right-[355px] z-40 flex items-center gap-2 pointer-events-none">
         {devToolsUnlocked && (
           <button
             onClick={() => setShowDevTools(prev => !prev)}
-            className="pointer-events-auto px-2.5 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-amber-400 border border-amber-500/80 shadow-lg backdrop-blur-md flex items-center gap-1.5 text-xs font-black font-space cursor-pointer transition active:scale-95 animate-pulse"
+            className="pointer-events-auto p-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-amber-400 border border-amber-500/80 shadow-lg backdrop-blur-md flex items-center justify-center cursor-pointer transition active:scale-95 animate-pulse"
             title="Müteahhit DevTools Test Panelini Aç / Kapat"
           >
-            <Wrench className="w-3.5 h-3.5 text-amber-400" />
-            <span>DEVTOOLS</span>
+            <Wrench className="w-4 h-4 text-amber-400" />
           </button>
         )}
 
@@ -1484,32 +1450,42 @@ export function App() {
                 <span className="text-[9px] bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-700 px-1.5 py-0.2 rounded font-black tracking-wider uppercase font-space">
                   SEN
                 </span>
-                {/* Dinamik Ping Göstergesi */}
-                <div
-                  className={`ml-auto flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-black font-jetbrains border shadow-xs transition-colors ${
-                    ping === null
-                      ? 'text-slate-400 dark:text-slate-500 bg-slate-500/10 border-slate-500/20'
-                      : ping < 75
-                      ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
-                      : ping < 160
-                      ? 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/30'
-                      : 'text-rose-600 dark:text-rose-400 bg-rose-500/10 border-rose-500/30 animate-pulse'
-                  }`}
-                  title={`Ağ Gecikmesi (Ping): ${ping !== null ? `${ping} ms` : 'Ölçülüyor...'}`}
-                >
-                  <span
-                    className={`w-1.5 h-1.5 rounded-full ${
+                {/* Host veya Dinamik Ping Göstergesi */}
+                {myPlayer?.isHost || network?.isHost ? (
+                  <div
+                    className="ml-auto flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9.5px] font-black font-space border shadow-xs bg-emerald-500/15 border-emerald-500/35 text-emerald-600 dark:text-emerald-400 select-none"
+                    title="Oda Kurucusu (Host) — Sıfır Gecikme"
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)]" />
+                    <span>HOST</span>
+                  </div>
+                ) : (
+                  <div
+                    className={`ml-auto flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-black font-jetbrains border shadow-xs transition-colors ${
                       ping === null
-                        ? 'bg-slate-400'
+                        ? 'text-slate-400 dark:text-slate-500 bg-slate-500/10 border-slate-500/20'
                         : ping < 75
-                        ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)]'
+                        ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
                         : ping < 160
-                        ? 'bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.8)]'
-                        : 'bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.8)]'
+                        ? 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/30'
+                        : 'text-rose-600 dark:text-rose-400 bg-rose-500/10 border-rose-500/30 animate-pulse'
                     }`}
-                  />
-                  <span>{ping !== null ? `${ping} ms` : '...'}</span>
-                </div>
+                    title={`Ağ Gecikmesi (Ping): ${ping !== null ? `${ping} ms` : 'Ölçülüyor...'}`}
+                  >
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full ${
+                        ping === null
+                          ? 'bg-slate-400'
+                          : ping < 75
+                          ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)]'
+                          : ping < 160
+                          ? 'bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.8)]'
+                          : 'bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.8)]'
+                      }`}
+                    />
+                    <span>{ping !== null ? `${ping} ms` : '...'}</span>
+                  </div>
+                )}
               </div>
               <div className="flex items-center gap-2 mt-0.5">
                 <span className="text-base sm:text-xl font-black font-jetbrains text-emerald-700 dark:text-emerald-400 drop-shadow-xs">
