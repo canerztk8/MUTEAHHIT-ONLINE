@@ -75,7 +75,7 @@ function getPeerConfig() {
       path: envPath,
       secure: Number(envPort) !== 9000,
       debug: import.meta.env.DEV ? 2 : 0,
-      config: { iceServers: ICE_SERVERS },
+      config: { iceServers: ICE_SERVERS, iceCandidatePoolSize: 2 },
     };
   }
 
@@ -94,7 +94,7 @@ function getPeerConfig() {
       path: '/peerjs',
       secure: window.location.protocol === 'https:',
       debug: 0,
-      config: { iceServers: ICE_SERVERS },
+      config: { iceServers: ICE_SERVERS, iceCandidatePoolSize: 2 },
     };
   }
 
@@ -105,7 +105,7 @@ function getPeerConfig() {
     path: '/peerjs',
     secure: false,
     debug: import.meta.env.DEV ? 2 : 0,
-    config: { iceServers: ICE_SERVERS },
+    config: { iceServers: ICE_SERVERS, iceCandidatePoolSize: 2 },
   };
 }
 
@@ -316,6 +316,7 @@ export class HostPeerService {
   get roomCode() { return this._roomCode; }
   get peerId() { return this._peer?.id || null; }
   get game() { return this._game; }
+  get isHost() { return true; }
 
   _init() {
     const config = getPeerConfig();
@@ -1301,6 +1302,8 @@ export class ClientPeerService {
   }
 
   get peerId() { return this._assignedPeerId || this._peer?.id || this._myRelayId || null; }
+  get isHost() { return false; }
+  get isRelayActive() { return Boolean(this._isRelayActive); }
 
   _init() {
     const config = getPeerConfig();

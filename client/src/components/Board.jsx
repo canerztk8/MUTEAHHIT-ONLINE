@@ -748,8 +748,19 @@ export function Board({
     (activePlayer?.money >= 0) &&
     gameState.status === 'playing';
 
-  // Piyonların kare kare adım animasyonu (başlangıçta tüm oyuncular hemen pozisyonlarında yer alsın)
+  // Piyonların kare kare adım animasyonu (2D ok ve kart parıltısı piyonun yere temas anında senkronize olur)
   const [displayedPositions, setDisplayedPositions] = useState(() => {
+    const init = {};
+    if (players) {
+      players.forEach((p) => {
+        init[p.id] = p.position ?? 0;
+      });
+    }
+    return init;
+  });
+
+  // 3D Piyonların anlık zıplama hedefleri (t=0ms zıplama başlangıcı için)
+  const [pawn3DPositions, setPawn3DPositions] = useState(() => {
     const init = {};
     if (players) {
       players.forEach((p) => {
@@ -1028,6 +1039,7 @@ export function Board({
       // İlk yükleme
       if (prevPos === undefined) {
         prevPositionsRef.current[p.id] = targetPos;
+        setPawn3DPositions((prev) => ({ ...prev, [p.id]: targetPos }));
         setDisplayedPositions((prev) => ({ ...prev, [p.id]: targetPos }));
         return;
       }
@@ -1042,6 +1054,14 @@ export function Board({
         if (activeIntervalsRef.current[`timeout_${p.id}`]) {
           clearTimeout(activeIntervalsRef.current[`timeout_${p.id}`]);
           delete activeIntervalsRef.current[`timeout_${p.id}`];
+        }
+        if (activeIntervalsRef.current[`touchdown_${p.id}`]) {
+          clearTimeout(activeIntervalsRef.current[`touchdown_${p.id}`]);
+          delete activeIntervalsRef.current[`touchdown_${p.id}`];
+        }
+        if (activeIntervalsRef.current[`final_${p.id}`]) {
+          clearTimeout(activeIntervalsRef.current[`final_${p.id}`]);
+          delete activeIntervalsRef.current[`final_${p.id}`];
         }
         if (activeIntervalsRef.current[`transfer_${p.id}`]) {
           clearTimeout(activeIntervalsRef.current[`transfer_${p.id}`]);
@@ -1080,27 +1100,42 @@ export function Board({
             const startStepMovement = () => {
               const interval = setInterval(() => {
                 step++;
-                current = isBackward ? (current - 1 + 40) % 40 : (current + 1) % 40;
-                setDisplayedPositions((prev) => ({ ...prev, [p.id]: current }));
+                const nextTile = isBackward ? (current - 1 + 40) % 40 : (current + 1) % 40;
+                current = nextTile;
+                const isFinalStep = step >= totalSteps;
+
+                // 1) 3D Piyon t=0ms anında derhal zıplamaya başlar:
+                setPawn3DPositions((prev) => ({ ...prev, [p.id]: isFinalStep ? targetPos : nextTile }));
                 sounds.playStep();
 
-                if (step >= totalSteps) {
+                if (isFinalStep) {
                   clearInterval(interval);
                   delete activeIntervalsRef.current[p.id];
-                  setDisplayedPositions((prev) => ({ ...prev, [p.id]: targetPos }));
-                  setIsMovingPawn(false);
 
-                  // Piyon tam kareye ulaştı: bekleyen kira bildirimi ve ses efektini tetikle
-                  if (pendingRentRef.current) {
-                    setRentNotification(pendingRentRef.current);
-                    sounds.playCash();
-                    pendingRentRef.current = null;
-                  }
+                  // Piyonun son kareye temas anı (~125ms): ok ve parıltı hedefe varır, hareket tamamlanır
+                  const finalTouchdown = setTimeout(() => {
+                    setDisplayedPositions((prev) => ({ ...prev, [p.id]: targetPos }));
+                    setIsMovingPawn(false);
 
-                  // Üst bileşene piyonun vardığını haber ver
-                  if (onPawnLanded) {
-                    onPawnLanded(p.id, targetPos);
-                  }
+                    // Piyon tam kareye ulaştı: bekleyen kira bildirimi ve ses efektini tetikle
+                    if (pendingRentRef.current) {
+                      setRentNotification(pendingRentRef.current);
+                      sounds.playCash();
+                      pendingRentRef.current = null;
+                    }
+
+                    // Üst bileşene piyonun vardığını haber ver
+                    if (onPawnLanded) {
+                      onPawnLanded(p.id, targetPos);
+                    }
+                  }, 125);
+                  activeIntervalsRef.current[`final_${p.id}`] = finalTouchdown;
+                } else {
+                  // Ara adımlarda piyon yere indiğinde (~125ms) 2D ok ve kart parıltısı yeni kareye geçer
+                  const touchdownTimeout = setTimeout(() => {
+                    setDisplayedPositions((prev) => ({ ...prev, [p.id]: nextTile }));
+                  }, 125);
+                  activeIntervalsRef.current[`touchdown_${p.id}`] = touchdownTimeout;
                 }
               }, 175);
 
@@ -1134,25 +1169,37 @@ export function Board({
               const timeout = setTimeout(() => {
                 const interval = setInterval(() => {
                   step++;
-                  current = (current + 1) % 40;
-                  setDisplayedPositions((prev) => ({ ...prev, [p.id]: current }));
+                  const nextTile = (current + 1) % 40;
+                  current = nextTile;
+                  const isFinalStep = step >= totalSteps;
+
+                  setPawn3DPositions((prev) => ({ ...prev, [p.id]: isFinalStep ? targetPos : nextTile }));
                   sounds.playStep();
 
-                  if (step >= totalSteps) {
+                  if (isFinalStep) {
                     clearInterval(interval);
                     delete activeIntervalsRef.current[p.id];
-                    setDisplayedPositions((prev) => ({ ...prev, [p.id]: targetPos }));
-                    setIsMovingPawn(false);
 
-                    if (pendingRentRef.current) {
-                      setRentNotification(pendingRentRef.current);
-                      sounds.playCash();
-                      pendingRentRef.current = null;
-                    }
+                    const finalTouchdown = setTimeout(() => {
+                      setDisplayedPositions((prev) => ({ ...prev, [p.id]: targetPos }));
+                      setIsMovingPawn(false);
 
-                    if (onPawnLanded) {
-                      onPawnLanded(p.id, targetPos);
-                    }
+                      if (pendingRentRef.current) {
+                        setRentNotification(pendingRentRef.current);
+                        sounds.playCash();
+                        pendingRentRef.current = null;
+                      }
+
+                      if (onPawnLanded) {
+                        onPawnLanded(p.id, targetPos);
+                      }
+                    }, 80);
+                    activeIntervalsRef.current[`final_${p.id}`] = finalTouchdown;
+                  } else {
+                    const touchdownTimeout = setTimeout(() => {
+                      setDisplayedPositions((prev) => ({ ...prev, [p.id]: nextTile }));
+                    }, 80);
+                    activeIntervalsRef.current[`touchdown_${p.id}`] = touchdownTimeout;
                   }
                 }, 110);
 
@@ -1161,6 +1208,7 @@ export function Board({
 
               activeIntervalsRef.current[`timeout_${p.id}`] = timeout;
             } else {
+              setPawn3DPositions((prev) => ({ ...prev, [p.id]: targetPos }));
               setDisplayedPositions((prev) => ({ ...prev, [p.id]: targetPos }));
               setIsMovingPawn(false);
               if (pendingRentRef.current) {
@@ -1187,29 +1235,42 @@ export function Board({
             const startInspectorMovement = () => {
               const interval = setInterval(() => {
                 step++;
-                current = (current + 1) % 40;
-                setDisplayedPositions((prev) => ({ ...prev, [p.id]: current }));
+                const nextTile = (current + 1) % 40;
+                current = nextTile;
+                const isFinalStep = step >= stepsToInspector;
+
+                setPawn3DPositions((prev) => ({ ...prev, [p.id]: isFinalStep ? 30 : nextTile }));
                 sounds.playStep();
 
-                if (step >= stepsToInspector) {
+                if (isFinalStep) {
                   clearInterval(interval);
                   delete activeIntervalsRef.current[p.id];
-                  setDisplayedPositions((prev) => ({ ...prev, [p.id]: 30 }));
-                  sounds.playJail();
 
-                  // 30. karede (Müfettiş) teftiş uyarısını oyuncu görsün, ardından 900ms sonra 10. kareye (Maliye) sevk et
-                  const jailTransferTimeout = setTimeout(() => {
-                    setDisplayedPositions((prev) => ({ ...prev, [p.id]: targetPos }));
+                  const finalTouchdown = setTimeout(() => {
+                    setDisplayedPositions((prev) => ({ ...prev, [p.id]: 30 }));
                     sounds.playJail();
-                    setIsMovingPawn(false);
-                    if (pendingRentRef.current) {
-                      pendingRentRef.current = null;
-                    }
-                    if (onPawnLanded) {
-                      onPawnLanded(p.id, targetPos);
-                    }
-                  }, 900);
-                  activeIntervalsRef.current[`transfer_${p.id}`] = jailTransferTimeout;
+
+                    // 30. karede (Müfettiş) teftiş uyarısını oyuncu görsün, ardından 900ms sonra 10. kareye (Maliye) sevk et
+                    const jailTransferTimeout = setTimeout(() => {
+                      setPawn3DPositions((prev) => ({ ...prev, [p.id]: targetPos }));
+                      setDisplayedPositions((prev) => ({ ...prev, [p.id]: targetPos }));
+                      sounds.playJail();
+                      setIsMovingPawn(false);
+                      if (pendingRentRef.current) {
+                        pendingRentRef.current = null;
+                      }
+                      if (onPawnLanded) {
+                        onPawnLanded(p.id, targetPos);
+                      }
+                    }, 900);
+                    activeIntervalsRef.current[`transfer_${p.id}`] = jailTransferTimeout;
+                  }, 125);
+                  activeIntervalsRef.current[`final_${p.id}`] = finalTouchdown;
+                } else {
+                  const touchdownTimeout = setTimeout(() => {
+                    setDisplayedPositions((prev) => ({ ...prev, [p.id]: nextTile }));
+                  }, 125);
+                  activeIntervalsRef.current[`touchdown_${p.id}`] = touchdownTimeout;
                 }
               }, 175);
 
@@ -1229,6 +1290,7 @@ export function Board({
             activeIntervalsRef.current[`poll_${p.id}`] = pollInterval;
           } else {
             // Doğrudan kodese yerleşme (örneğin kart çekimi)
+            setPawn3DPositions((prev) => ({ ...prev, [p.id]: targetPos }));
             setDisplayedPositions((prev) => ({ ...prev, [p.id]: targetPos }));
             setIsMovingPawn(false);
             if (pendingRentRef.current) {
@@ -1741,7 +1803,7 @@ export function Board({
       {/* 3D Three.js Şeffaf Katman: 3D Piyonlar - TAHTA KARELERİNİN ÜSTÜNDE PARLAYAN 3D MODELLER */}
       <Board3DOverlay
         gameState={gameState}
-        displayedPositions={displayedPositions}
+        displayedPositions={pawn3DPositions}
         myPlayerId={myPlayerId}
         onRollDice={onRollDice}
         canRoll={canRoll}

@@ -70,15 +70,32 @@ peerServer.on('disconnect', (client) => {
 const relayWss = new WebSocketServer({ noServer: true });
 const relayRooms = new Map(); // roomCode -> Map<WebSocket, playerId>
 
+// 🔋 Zombi Bağlantı Temizleme (Dead connection reaper - 30sn)
+const relayHeartbeat = setInterval(() => {
+  relayWss.clients.forEach((ws) => {
+    if (ws.isAlive === false) return ws.terminate();
+    ws.isAlive = false;
+    try { ws.ping(); } catch (_) {}
+  });
+}, 30000);
+
+relayWss.on('close', () => {
+  clearInterval(relayHeartbeat);
+});
+
 relayWss.on('connection', (ws) => {
   let roomCode = null;
   let playerId = null;
+
+  ws.isAlive = true;
+  ws.on('pong', () => { ws.isAlive = true; });
 
   ws.on('message', (raw) => {
     try {
       const msg = JSON.parse(raw.toString());
 
       if (msg.type === 'relay:ping') {
+        ws.isAlive = true;
         ws.send(JSON.stringify({ type: 'relay:pong', t0: msg.t0 }));
         return;
       }

@@ -14,7 +14,9 @@ function getAudioContext() {
     }
   }
   if (audioCtx && audioCtx.state === 'suspended') {
-    audioCtx.resume();
+    try {
+      audioCtx.resume().catch(() => {});
+    } catch (_) {}
   }
   return audioCtx;
 }
@@ -29,13 +31,13 @@ if (typeof document !== 'undefined') {
     if (document.hidden) {
       if (audioCtx && audioCtx.state === 'running') {
         try {
-          audioCtx.suspend();
+          audioCtx.suspend().catch(() => {});
         } catch (_) {}
       }
     } else {
       if (audioCtx && audioCtx.state === 'suspended') {
         try {
-          audioCtx.resume();
+          audioCtx.resume().catch(() => {});
         } catch (_) {}
       }
     }

@@ -100,14 +100,16 @@ export class Board3DManager {
     this.camera.up.set(0, 0, -1);
 
     // 3. Renderer (Şeffaf WebGL Canvas - 2D tahtanın üstüne tam oturur)
+    // 🔋 Donanım & Pil Kalkanı: Mobilde termal ısınmayı ve pili korumak için 'default' GPU ve 1.15x tavan, masaüstünde 1.5x 'high-performance'
+    const isMobile = typeof window !== 'undefined' && (window.innerWidth < 768 || /Android|iPhone|iPad/i.test(navigator.userAgent));
     this.renderer = new THREE.WebGLRenderer({
       alpha: true,
-      antialias: true,
-      powerPreference: 'high-performance'
+      antialias: !isMobile,
+      powerPreference: isMobile ? 'default' : 'high-performance'
     });
     this.renderer.setSize(width, height);
-    // Yüksek DPI ekranlarda GPU fill-rate yükünü hafifleten 1.5x tavan
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+    const maxDpr = isMobile ? 1.15 : 1.5;
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, maxDpr));
     this.renderer.shadowMap.enabled = false; // ⚡ 60 FPS: İkincil shadow pass kaldırılarak GPU çizim yükü yarıya indirildi
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.15;
@@ -203,10 +205,10 @@ export class Board3DManager {
 
   // Tahta rayları üzerindeki piyonların hareket yönüne dönmesi (South, West, North, East)
   _getBoardTrackRotation(tileId) {
-    if (tileId >= 0 && tileId <= 9) return -Math.PI / 2;
-    if (tileId >= 10 && tileId <= 19) return -Math.PI;
-    if (tileId >= 20 && tileId <= 29) return Math.PI / 2;
-    return 0; // 30..39
+    if (tileId >= 1 && tileId <= 10) return -Math.PI / 2;
+    if (tileId >= 11 && tileId <= 20) return -Math.PI;
+    if (tileId >= 21 && tileId <= 30) return Math.PI / 2;
+    return 0; // 31..39, 0
   }
 
   // Oyuncu 3D piyonlarının Three.js sahnesiyle canlı senkronizasyonu
@@ -378,8 +380,9 @@ export class Board3DManager {
         record.root.position.x = THREE.MathUtils.lerp(record.startPos.x, record.targetPos.x, easeT);
         record.root.position.z = THREE.MathUtils.lerp(record.startPos.z, record.targetPos.z, easeT);
 
-        // Y ekseninde zengin parabolik zıplama yayı (hop)
-        const hopHeight = 0.55;
+        // Y ekseninde zengin parabolik zıplama yayı (hop) - Köşe karelerin mesafesine göre dinamik yay yüksekliği
+        const dist = record.startPos.distanceTo(record.targetPos);
+        const hopHeight = 0.55 * Math.min(1.4, Math.max(1.0, dist / 1.7));
         const arc = Math.sin(t * Math.PI) * hopHeight;
         record.root.position.y = 0.02 + arc;
 

@@ -206,6 +206,25 @@ export function App() {
     } catch {}
   }, []);
 
+  // 🚀 Render Backend Pre-Warm (Erken Uyandırma)
+  // Sayfa açıldığı anda backend'e arka planda sessizce bir GET isteği atarak
+  // Render uyku modundaysa oyuncu lobideyken uyanmasını sağlar.
+  useEffect(() => {
+    const backendHost = import.meta.env.VITE_PEER_HOST || 'muteahhit-online-backend.onrender.com';
+    const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    if (!isLocal && backendHost) {
+      const url = `https://${backendHost}/api/health`;
+      fetch(url, { mode: 'cors', cache: 'no-store' })
+        .then(res => res.json())
+        .then(() => console.log('[Network] Backend erken uyandırma sinyali başarılı (Pre-warm OK).'))
+        .catch(() => {
+          setTimeout(() => {
+            fetch(url, { mode: 'cors', cache: 'no-store' }).catch(() => {});
+          }, 3500);
+        });
+    }
+  }, []);
+
   // ─── P2P Ağ Durumu ─────────────────────────────────────────────────────────
   /** @type {[HostPeerService|ClientPeerService|null, function]} */
   const [network, setNetwork] = useState(null);
@@ -1154,8 +1173,41 @@ export function App() {
         </div>
       )}
 
-      {/* Üst Kısayollar (Karanlık Mod & DevTools) */}
+      {/* Üst Kısayollar (Karanlık Mod, Canlı Ağ Durumu & DevTools) */}
       <div className="fixed top-2.5 right-2.5 z-40 flex items-center gap-2 pointer-events-auto">
+        {/* 📡 Canlı Ping & Bağlantı Tipi HUD Göstergesi */}
+        {connected && network && (
+          <div
+            className={`px-2.5 py-1 rounded-xl text-[10.5px] font-bold font-space border backdrop-blur-md shadow-md flex items-center gap-1.5 select-none transition-all ${
+              network.isHost
+                ? 'bg-slate-900/90 border-emerald-500/60 text-emerald-400 shadow-emerald-950/30'
+                : network.isRelayActive
+                  ? 'bg-slate-900/90 border-amber-500/60 text-amber-400 shadow-amber-950/30'
+                  : 'bg-slate-900/90 border-sky-500/60 text-sky-400 shadow-sky-950/30'
+            }`}
+            title={
+              network.isHost
+                ? 'Oda Kurucusu (Host) — Sıfır Gecikme'
+                : network.isRelayActive
+                  ? 'WebSocket Sunucu Rölesi (Relay) — Firewall/CGNAT Korumalı'
+                  : 'WebRTC P2P — Doğrudan Cihazdan Cihaza Bağlantı'
+            }
+          >
+            <span className={`w-2 h-2 rounded-full ${
+              network.isHost
+                ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]'
+                : network.isRelayActive
+                  ? 'bg-amber-400 animate-pulse shadow-[0_0_8px_rgba(251,191,36,0.8)]'
+                  : 'bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.8)]'
+            }`} />
+            <span>
+              {network.isHost
+                ? 'HOST'
+                : `${ping !== null ? ping + 'ms' : '...'} (${network.isRelayActive ? 'RELAY' : 'P2P'})`}
+            </span>
+          </div>
+        )}
+
         {devToolsUnlocked && (
           <button
             onClick={() => setShowDevTools(prev => !prev)}
