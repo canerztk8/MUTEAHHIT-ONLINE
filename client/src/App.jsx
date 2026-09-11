@@ -17,8 +17,7 @@ import { TradeModal } from './components/TradeModal.jsx';
 import { WinnerModal } from './components/WinnerModal.jsx';
 import { EliminationModal } from './components/EliminationModal.jsx';
 import { DevToolsModal } from './components/DevToolsModal.jsx';
-import { sounds } from './sound/soundEffects.js';
-import { Volume2, VolumeX, Copy, Check, Users, Sparkles, LogOut, Wrench, Sun, Moon, X, Zap } from 'lucide-react';
+import { Volume2, VolumeX, Copy, Check, Users, Sparkles, LogOut, Wrench, Sun, Moon, X } from 'lucide-react';
 
 // 🃏 Son 3 Çekilen Kart Geçmişi Modalı (Deste kartına tıklanınca açılır)
 function CardHistoryModal({ deckType, logs, onClose }) {
@@ -1166,18 +1165,6 @@ export function App() {
             <span>DEVTOOLS</span>
           </button>
         )}
-        {/* ⚡ 60 FPS Yüksek Performans Ana Mod Rozeti (Kalıcı Devrede) */}
-        <div
-          title="60 FPS Yüksek Performans Ana Modu Devrede: Ağır GPU filtreleri kapalı, akıcı motor aktif."
-          className={`px-2.5 py-1.5 rounded-xl border shadow-md flex items-center gap-1.5 text-xs font-black font-space select-none ${
-            isDarkMode
-              ? 'bg-slate-900/90 border-amber-500/60 text-amber-300 shadow-amber-500/10'
-              : 'bg-white/95 border-amber-400 text-slate-800 shadow-slate-900/5'
-          }`}
-        >
-          <Zap className="w-3.5 h-3.5 fill-current text-amber-500" />
-          <span className="hidden sm:inline">60 FPS MODU</span>
-        </div>
 
         <div className="lg:hidden">
           <button

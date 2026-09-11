@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Play, Bot, Copy, Check, Sparkles, LogIn, PlusCircle, LogOut, Trash2, Cpu, Sun, Moon, Zap } from 'lucide-react';
+import { Users, Play, Bot, Copy, Check, Sparkles, LogIn, PlusCircle, LogOut, Trash2, Cpu, Sun, Moon } from 'lucide-react';
 import { PLAYER_TOKENS, PLAYER_COLORS } from '../game/boardData.js';
 import { TopDownPawnPreview } from './TopDownPawnPreview.jsx';
 import { TopDownPawnSvg } from './TopDownPawnSvg.jsx';
@@ -197,12 +197,6 @@ export function Lobby({
               <span className={`text-[11px] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'} font-medium`}>
                 {isHost ? '👑 Oda Kurucususunuz' : '👤 Oyuncu'}
               </span>
-              <div
-                title="60 FPS Yüksek Performans Ana Modu Devrede: Ağır filtreler kapalı, akıcı motor aktif."
-                className="p-1.5 rounded-xl border border-emerald-400/60 bg-emerald-500/20 text-emerald-300 shadow-xs flex items-center justify-center select-none"
-              >
-                <Zap className="w-3.5 h-3.5 text-emerald-400 fill-emerald-400" />
-              </div>
               {onToggleDarkMode && (
                 <button
                   onClick={onToggleDarkMode}

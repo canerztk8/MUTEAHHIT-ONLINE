@@ -333,15 +333,6 @@ export function DiceSidebarTray({
 
         {/* Oda Kodu, Karanlık Mod, Ses, Ayrıl */}
         <div className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
-
-          {/* ⚡ 60 FPS Yüksek Performans Ana Mod Rozeti */}
-          <div
-            title="60 FPS Yüksek Performans Ana Modu Devrede: Ağır GPU filtreleri ve Three.js dinamik gölgeleri kapalı."
-            className="p-1.5 rounded-xl border border-amber-400/70 bg-amber-500/20 text-amber-300 shadow-xs flex items-center justify-center select-none"
-          >
-            <Zap className="w-3.5 h-3.5 fill-current text-amber-400" />
-          </div>
-
           {/* 🌙 / ☀️ Karanlık Mod Değiştirici Buton */}
           <button
             onClick={onToggleDarkMode}
