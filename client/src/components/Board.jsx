@@ -1048,6 +1048,7 @@ export function Board({
       if (prevPos !== targetPos) {
         // Varsa devam eden eski interval ve timeout'u anında durdur
         if (activeIntervalsRef.current[p.id]) {
+          clearTimeout(activeIntervalsRef.current[p.id]);
           clearInterval(activeIntervalsRef.current[p.id]);
           delete activeIntervalsRef.current[p.id];
         }
@@ -1098,24 +1099,27 @@ export function Board({
             setIsMovingPawn(true);
 
             const startStepMovement = () => {
-              const interval = setInterval(() => {
+              const HOP_TIME = 160;
+              const SETTLE_PAUSE = 25;
+
+              const executeStep = () => {
                 step++;
                 const nextTile = isBackward ? (current - 1 + 40) % 40 : (current + 1) % 40;
                 current = nextTile;
                 const isFinalStep = step >= totalSteps;
 
-                // 1) 3D Piyon t=0ms anında derhal zıplamaya başlar:
+                // 1) 3D Piyon t=0ms anında zıplamaya başlar:
                 setPawn3DPositions((prev) => ({ ...prev, [p.id]: isFinalStep ? targetPos : nextTile }));
-                sounds.playStep();
 
-                if (isFinalStep) {
-                  clearInterval(interval);
-                  delete activeIntervalsRef.current[p.id];
+                // 2) Piyon tam yere indiğinde (HOP_TIME = 160ms):
+                const touchdownTimeout = setTimeout(() => {
+                  // 2D Minimal ok, kart zemin ışıması ve ses efekti piyonun yere basmasıyla TAM senkronize tetiklenir:
+                  setDisplayedPositions((prev) => ({ ...prev, [p.id]: isFinalStep ? targetPos : nextTile }));
+                  sounds.playStep();
 
-                  // Piyonun son kareye temas anı (~125ms): ok ve parıltı hedefe varır, hareket tamamlanır
-                  const finalTouchdown = setTimeout(() => {
-                    setDisplayedPositions((prev) => ({ ...prev, [p.id]: targetPos }));
+                  if (isFinalStep) {
                     setIsMovingPawn(false);
+                    delete activeIntervalsRef.current[p.id];
 
                     // Piyon tam kareye ulaştı: bekleyen kira bildirimi ve ses efektini tetikle
                     if (pendingRentRef.current) {
@@ -1128,18 +1132,17 @@ export function Board({
                     if (onPawnLanded) {
                       onPawnLanded(p.id, targetPos);
                     }
-                  }, 125);
-                  activeIntervalsRef.current[`final_${p.id}`] = finalTouchdown;
-                } else {
-                  // Ara adımlarda piyon yere indiğinde (~125ms) 2D ok ve kart parıltısı yeni kareye geçer
-                  const touchdownTimeout = setTimeout(() => {
-                    setDisplayedPositions((prev) => ({ ...prev, [p.id]: nextTile }));
-                  }, 125);
-                  activeIntervalsRef.current[`touchdown_${p.id}`] = touchdownTimeout;
-                }
-              }, 175);
+                  } else {
+                    // Bir sonraki adım, piyonun yere basıp yaylanmasından (SETTLE_PAUSE = 25ms) hemen sonra başlar:
+                    const nextStepTimeout = setTimeout(executeStep, SETTLE_PAUSE);
+                    activeIntervalsRef.current[p.id] = nextStepTimeout;
+                  }
+                }, HOP_TIME);
 
-              activeIntervalsRef.current[p.id] = interval;
+                activeIntervalsRef.current[`touchdown_${p.id}`] = touchdownTimeout;
+              };
+
+              executeStep();
             };
 
             if (isBackward) {
@@ -1160,52 +1163,50 @@ export function Board({
               activeIntervalsRef.current[`poll_${p.id}`] = pollInterval;
             }
           } else {
-            // totalSteps > 12: ışınlanmak yerine saat yönünde akıcı tempolu (110ms) yürüyüş ile hedefe ulaş
+            // totalSteps > 12: ışınlanmak yerine saat yönünde akıcı tempolu (90ms) yürüyüş ile hedefe ulaş
             if (totalSteps > 0) {
               let step = 0;
               let current = prevPos;
               setIsMovingPawn(true);
 
-              const timeout = setTimeout(() => {
-                const interval = setInterval(() => {
-                  step++;
-                  const nextTile = (current + 1) % 40;
-                  current = nextTile;
-                  const isFinalStep = step >= totalSteps;
+              const FAST_HOP_TIME = 90;
+              const FAST_SETTLE = 20;
 
-                  setPawn3DPositions((prev) => ({ ...prev, [p.id]: isFinalStep ? targetPos : nextTile }));
+              const executeFastStep = () => {
+                step++;
+                const nextTile = (current + 1) % 40;
+                current = nextTile;
+                const isFinalStep = step >= totalSteps;
+
+                setPawn3DPositions((prev) => ({ ...prev, [p.id]: isFinalStep ? targetPos : nextTile }));
+
+                const touchdownTimeout = setTimeout(() => {
+                  setDisplayedPositions((prev) => ({ ...prev, [p.id]: isFinalStep ? targetPos : nextTile }));
                   sounds.playStep();
 
                   if (isFinalStep) {
-                    clearInterval(interval);
+                    setIsMovingPawn(false);
                     delete activeIntervalsRef.current[p.id];
 
-                    const finalTouchdown = setTimeout(() => {
-                      setDisplayedPositions((prev) => ({ ...prev, [p.id]: targetPos }));
-                      setIsMovingPawn(false);
+                    if (pendingRentRef.current) {
+                      setRentNotification(pendingRentRef.current);
+                      sounds.playCash();
+                      pendingRentRef.current = null;
+                    }
 
-                      if (pendingRentRef.current) {
-                        setRentNotification(pendingRentRef.current);
-                        sounds.playCash();
-                        pendingRentRef.current = null;
-                      }
-
-                      if (onPawnLanded) {
-                        onPawnLanded(p.id, targetPos);
-                      }
-                    }, 80);
-                    activeIntervalsRef.current[`final_${p.id}`] = finalTouchdown;
+                    if (onPawnLanded) {
+                      onPawnLanded(p.id, targetPos);
+                    }
                   } else {
-                    const touchdownTimeout = setTimeout(() => {
-                      setDisplayedPositions((prev) => ({ ...prev, [p.id]: nextTile }));
-                    }, 80);
-                    activeIntervalsRef.current[`touchdown_${p.id}`] = touchdownTimeout;
+                    const nextStepTimeout = setTimeout(executeFastStep, FAST_SETTLE);
+                    activeIntervalsRef.current[p.id] = nextStepTimeout;
                   }
-                }, 110);
+                }, FAST_HOP_TIME);
 
-                activeIntervalsRef.current[p.id] = interval;
-              }, 250);
+                activeIntervalsRef.current[`touchdown_${p.id}`] = touchdownTimeout;
+              };
 
+              const timeout = setTimeout(executeFastStep, 250);
               activeIntervalsRef.current[`timeout_${p.id}`] = timeout;
             } else {
               setPawn3DPositions((prev) => ({ ...prev, [p.id]: targetPos }));
@@ -1233,21 +1234,23 @@ export function Board({
             setIsMovingPawn(true);
 
             const startInspectorMovement = () => {
-              const interval = setInterval(() => {
+              const HOP_TIME = 160;
+              const SETTLE_PAUSE = 25;
+
+              const executeInspectorStep = () => {
                 step++;
                 const nextTile = (current + 1) % 40;
                 current = nextTile;
                 const isFinalStep = step >= stepsToInspector;
 
                 setPawn3DPositions((prev) => ({ ...prev, [p.id]: isFinalStep ? 30 : nextTile }));
-                sounds.playStep();
 
-                if (isFinalStep) {
-                  clearInterval(interval);
-                  delete activeIntervalsRef.current[p.id];
+                const touchdownTimeout = setTimeout(() => {
+                  setDisplayedPositions((prev) => ({ ...prev, [p.id]: isFinalStep ? 30 : nextTile }));
+                  sounds.playStep();
 
-                  const finalTouchdown = setTimeout(() => {
-                    setDisplayedPositions((prev) => ({ ...prev, [p.id]: 30 }));
+                  if (isFinalStep) {
+                    delete activeIntervalsRef.current[p.id];
                     sounds.playJail();
 
                     // 30. karede (Müfettiş) teftiş uyarısını oyuncu görsün, ardından 900ms sonra 10. kareye (Maliye) sevk et
@@ -1264,17 +1267,16 @@ export function Board({
                       }
                     }, 900);
                     activeIntervalsRef.current[`transfer_${p.id}`] = jailTransferTimeout;
-                  }, 125);
-                  activeIntervalsRef.current[`final_${p.id}`] = finalTouchdown;
-                } else {
-                  const touchdownTimeout = setTimeout(() => {
-                    setDisplayedPositions((prev) => ({ ...prev, [p.id]: nextTile }));
-                  }, 125);
-                  activeIntervalsRef.current[`touchdown_${p.id}`] = touchdownTimeout;
-                }
-              }, 175);
+                  } else {
+                    const nextStepTimeout = setTimeout(executeInspectorStep, SETTLE_PAUSE);
+                    activeIntervalsRef.current[p.id] = nextStepTimeout;
+                  }
+                }, HOP_TIME);
 
-              activeIntervalsRef.current[p.id] = interval;
+                activeIntervalsRef.current[`touchdown_${p.id}`] = touchdownTimeout;
+              };
+
+              executeInspectorStep();
             };
 
             const startTime = Date.now();
@@ -1390,17 +1392,17 @@ export function Board({
               }`} style={{ zIndex: 2 }} />
 
               {/* Tahtaya Sabit Basılmış İhale Kartı Yuvası (Board Slot) */}
-              <div className="flex absolute left-3 sm:left-6 md:left-8 top-8 sm:top-12 md:top-14 w-20 h-28 sm:w-28 sm:h-40 md:w-32 md:h-44 -rotate-12 rounded-2xl board-card-slot items-center justify-center pointer-events-none select-none z-0">
+              <div className="flex absolute left-2 sm:left-4 md:left-5 xl:left-7 top-4 sm:top-7 md:top-9 xl:top-12 w-14 h-20 sm:w-18 sm:h-26 md:w-22 md:h-32 lg:w-22 lg:h-32 xl:w-26 xl:h-38 2xl:w-30 2xl:h-42 -rotate-12 rounded-xl sm:rounded-2xl board-card-slot items-center justify-center pointer-events-none select-none z-0">
                 <div className="flex flex-col items-center justify-center text-center opacity-20 dark:opacity-30">
-                  <span className="text-lg sm:text-2xl md:text-3xl mb-1">📁</span>
-                  <span className={`text-[7px] sm:text-[9px] md:text-[10px] font-black uppercase tracking-[0.15em] sm:tracking-[0.2em] ${isDarkMode ? 'text-slate-300' : 'text-[#0F172A]'} font-space text-center leading-snug`}>
+                  <span className="text-base sm:text-lg md:text-xl xl:text-2xl 2xl:text-3xl mb-0.5 sm:mb-1">📁</span>
+                  <span className={`text-[6px] sm:text-[7.5px] md:text-[8.5px] xl:text-[9.5px] 2xl:text-[10px] font-black uppercase tracking-[0.12em] sm:tracking-[0.18em] ${isDarkMode ? 'text-slate-300' : 'text-[#0F172A]'} font-space text-center leading-snug`}>
                     İHALE & FIRSAT<br />DESTESİ
                   </span>
                 </div>
               </div>
 
               {/* Fiziksel İhale & Fırsat Destesi (Manila Klasörü / Kraft & Kamu İhalesi Damgası) */}
-              <div className="flex absolute left-3 sm:left-6 md:left-8 top-8 sm:top-12 md:top-14 z-30 pointer-events-auto select-none">
+              <div className="flex absolute left-2 sm:left-4 md:left-5 xl:left-7 top-4 sm:top-7 md:top-9 xl:top-12 z-30 pointer-events-auto select-none">
                 <div
                   onClick={(e) => {
                     e.stopPropagation();
@@ -1408,31 +1410,31 @@ export function Board({
                     triggerDeckLift('chance');
                     onShowCardHistory?.('chance');
                   }}
-                  className={`relative w-20 h-28 sm:w-28 sm:h-40 md:w-32 md:h-44 rounded-2xl bg-gradient-to-br from-[#c26a27] via-[#b45309] to-[#78350f] p-2 sm:p-2.5 md:p-3 text-white physical-deck-stack flex flex-col items-center justify-between border border-amber-300/40 cursor-pointer transition-all duration-300 ${
+                  className={`relative w-14 h-20 sm:w-18 sm:h-26 md:w-22 md:h-32 lg:w-22 lg:h-32 xl:w-26 xl:h-38 2xl:w-30 2xl:h-42 rounded-xl sm:rounded-2xl bg-gradient-to-br from-[#c26a27] via-[#b45309] to-[#78350f] p-1.5 sm:p-2 md:p-2.5 text-white physical-deck-stack flex flex-col items-center justify-between border border-amber-300/40 cursor-pointer transition-all duration-300 ${
                     deckLift === 'chance' ? '-rotate-6 -translate-y-3.5 scale-105 shadow-2xl' : '-rotate-12 hover:-rotate-6 hover:-translate-y-2 hover:scale-102'
                   }`}
                   title="İhale & Fırsat Kart Geçmişini Gör (Tıkla)"
                 >
                   {/* Kraft Dosya İnce İç Çerçevesi */}
-                  <div className="absolute inset-1.5 sm:inset-2 border border-white/30 rounded-xl pointer-events-none" />
+                  <div className="absolute inset-1 sm:inset-1.5 border border-white/30 rounded-lg sm:rounded-xl pointer-events-none" />
 
                   {/* Üst Deste Başlığı */}
-                  <div className="w-full text-center border-b border-amber-200/30 pb-1 z-10">
-                    <span className="text-[7.5px] sm:text-[9.5px] md:text-[11px] font-black uppercase tracking-wider block text-amber-100 font-space drop-shadow-sm whitespace-nowrap">
+                  <div className="w-full text-center border-b border-amber-200/30 pb-0.5 sm:pb-1 z-10">
+                    <span className="text-[6px] sm:text-[7.5px] md:text-[8.5px] xl:text-[10px] 2xl:text-[11px] font-black uppercase tracking-wider block text-amber-100 font-space drop-shadow-sm whitespace-nowrap">
                       İHALE & FIRSAT
                     </span>
                   </div>
 
                   {/* Orta Klasör / Evrak İkonu & Damga */}
                   <div className="relative flex flex-col items-center justify-center my-auto z-10">
-                    <div className="w-10 h-10 sm:w-13 sm:h-13 md:w-15 md:h-15 rounded-xl bg-black/25 border border-amber-400/40 flex items-center justify-center shadow-inner">
-                      <span className="text-xl sm:text-2xl md:text-3xl drop-shadow-md">📁</span>
+                    <div className="w-6 h-6 sm:w-8 sm:h-8 md:w-9 md:h-9 xl:w-12 xl:h-12 2xl:w-14 2xl:h-14 rounded-lg sm:rounded-xl bg-black/25 border border-amber-400/40 flex items-center justify-center shadow-inner">
+                      <span className="text-base sm:text-lg md:text-xl xl:text-2xl 2xl:text-3xl drop-shadow-md">📁</span>
                     </div>
                   </div>
 
                   {/* Alt Bilgi */}
                   <div className="w-full text-center z-10">
-                    <span className="text-[6px] sm:text-[8px] md:text-[9px] font-black opacity-85 uppercase tracking-widest text-amber-200 font-jetbrains block">
+                    <span className="text-[5px] sm:text-[6px] md:text-[7px] xl:text-[8.5px] 2xl:text-[9px] font-black opacity-85 uppercase tracking-widest text-amber-200 font-jetbrains block">
                       DOSYA NO: 06
                     </span>
                   </div>
@@ -1440,17 +1442,17 @@ export function Board({
               </div>
 
               {/* Tahtaya Sabit Basılmış Şans / Belediye Kartı Yuvası (Board Slot) */}
-              <div className="flex absolute right-3 sm:right-6 md:right-8 bottom-8 sm:bottom-12 md:bottom-14 w-20 h-28 sm:w-28 sm:h-40 md:w-32 md:h-44 rotate-12 rounded-2xl board-card-slot items-center justify-center pointer-events-none select-none z-0">
+              <div className="flex absolute right-2 sm:right-4 md:right-5 xl:right-7 bottom-4 sm:bottom-7 md:bottom-9 xl:bottom-12 w-14 h-20 sm:w-18 sm:h-26 md:w-22 md:h-32 lg:w-22 lg:h-32 xl:w-26 xl:h-38 2xl:w-30 2xl:h-42 rotate-12 rounded-xl sm:rounded-2xl board-card-slot items-center justify-center pointer-events-none select-none z-0">
                 <div className="flex flex-col items-center justify-center text-center opacity-20 dark:opacity-30">
-                  <span className="text-lg sm:text-2xl md:text-3xl mb-1">🏛️</span>
-                  <span className={`text-[7px] sm:text-[9px] md:text-[10px] font-black uppercase tracking-[0.15em] sm:tracking-[0.2em] ${isDarkMode ? 'text-slate-300' : 'text-[#0F172A]'} font-space text-center leading-snug`}>
+                  <span className="text-base sm:text-lg md:text-xl xl:text-2xl 2xl:text-3xl mb-0.5 sm:mb-1">🏛️</span>
+                  <span className={`text-[6px] sm:text-[7.5px] md:text-[8.5px] xl:text-[9.5px] 2xl:text-[10px] font-black uppercase tracking-[0.12em] sm:tracking-[0.18em] ${isDarkMode ? 'text-slate-300' : 'text-[#0F172A]'} font-space text-center leading-snug`}>
                     BELEDİYE & İMAR<br />DESTESİ
                   </span>
                 </div>
               </div>
 
               {/* Fiziksel Belediye & Şans Destesi (Resmi Tebligat & Altın Yaldız Estetiği) */}
-              <div className="flex absolute right-3 sm:right-6 md:right-8 bottom-8 sm:bottom-12 md:bottom-14 z-30 pointer-events-auto select-none">
+              <div className="flex absolute right-2 sm:right-4 md:right-5 xl:right-7 bottom-4 sm:bottom-7 md:bottom-9 xl:bottom-12 z-30 pointer-events-auto select-none">
                 <div
                   onClick={(e) => {
                     e.stopPropagation();
@@ -1458,31 +1460,31 @@ export function Board({
                     triggerDeckLift('chest');
                     onShowCardHistory?.('chest');
                   }}
-                  className={`relative w-20 h-28 sm:w-28 sm:h-40 md:w-32 md:h-44 rounded-2xl bg-gradient-to-br from-[#064e3b] via-[#065f46] to-[#022c22] p-2 sm:p-2.5 md:p-3 text-white physical-deck-stack flex flex-col items-center justify-between border border-emerald-400/50 cursor-pointer transition-all duration-300 ${
+                  className={`relative w-14 h-20 sm:w-18 sm:h-26 md:w-22 md:h-32 lg:w-22 lg:h-32 xl:w-26 xl:h-38 2xl:w-30 2xl:h-42 rounded-xl sm:rounded-2xl bg-gradient-to-br from-[#064e3b] via-[#065f46] to-[#022c22] p-1.5 sm:p-2 md:p-2.5 text-white physical-deck-stack flex flex-col items-center justify-between border border-emerald-400/50 cursor-pointer transition-all duration-300 ${
                     deckLift === 'chest' ? 'rotate-6 -translate-y-3.5 scale-105 shadow-2xl' : 'rotate-12 hover:rotate-6 hover:-translate-y-2 hover:scale-102'
                   }`}
                   title="Belediye & İmar Kart Geçmişini Gör (Tıkla)"
                 >
                   {/* Altın Yaldızlı İnce İç Çerçeve */}
-                  <div className="absolute inset-1.5 sm:inset-2 border border-amber-400/40 rounded-xl pointer-events-none" />
+                  <div className="absolute inset-1 sm:inset-1.5 border border-amber-400/40 rounded-lg sm:rounded-xl pointer-events-none" />
 
                   {/* Üst Deste Başlığı */}
-                  <div className="w-full text-center border-b border-amber-400/35 pb-1 z-10">
-                    <span className="text-[7.5px] sm:text-[9.5px] md:text-[11px] font-black uppercase tracking-wider block text-amber-300 font-space drop-shadow-sm whitespace-nowrap">
+                  <div className="w-full text-center border-b border-amber-400/35 pb-0.5 sm:pb-1 z-10">
+                    <span className="text-[6px] sm:text-[7.5px] md:text-[8.5px] xl:text-[10px] 2xl:text-[11px] font-black uppercase tracking-wider block text-amber-300 font-space drop-shadow-sm whitespace-nowrap">
                       BELEDİYE & İMAR
                     </span>
                   </div>
 
                   {/* Orta Belediye Terazi / Sütun İkonu & Yaldızlı Tebligat Damgası */}
                   <div className="relative flex flex-col items-center justify-center my-auto z-10">
-                    <div className="w-10 h-10 sm:w-13 sm:h-13 md:w-15 md:h-15 rounded-xl bg-black/30 border border-emerald-300/40 flex items-center justify-center shadow-inner">
-                      <span className="text-xl sm:text-2xl md:text-3xl drop-shadow-md">🏛️</span>
+                    <div className="w-6 h-6 sm:w-8 sm:h-8 md:w-9 md:h-9 xl:w-12 xl:h-12 2xl:w-14 2xl:h-14 rounded-lg sm:rounded-xl bg-black/30 border border-emerald-300/40 flex items-center justify-center shadow-inner">
+                      <span className="text-base sm:text-lg md:text-xl xl:text-2xl 2xl:text-3xl drop-shadow-md">🏛️</span>
                     </div>
                   </div>
 
                   {/* Alt Bilgi */}
                   <div className="w-full text-center z-10">
-                    <span className="text-[6px] sm:text-[8px] md:text-[9px] font-black opacity-90 uppercase tracking-widest text-emerald-200 font-jetbrains block">
+                    <span className="text-[5px] sm:text-[6px] md:text-[7px] xl:text-[8.5px] 2xl:text-[9px] font-black opacity-90 uppercase tracking-widest text-emerald-200 font-jetbrains block">
                       İMAR DAİRESİ
                     </span>
                   </div>

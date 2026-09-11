@@ -280,6 +280,7 @@ export class Board3DManager {
           currentTile: tileId,
           startPos: new THREE.Vector3(targetX, 0.02, targetZ),
           targetPos: new THREE.Vector3(targetX, 0.02, targetZ),
+          startRotY: targetRotY,
           targetRotY,
           hopProgress: 1.0,
           tokenId: p.token?.id,
@@ -319,6 +320,8 @@ export class Board3DManager {
         if (record.currentTile !== tileId) {
           record.startPos.copy(record.root.position);
           record.targetPos.set(targetX, 0.02, targetZ);
+          record.startRotY = record.root.rotation.y;
+          record.targetRotY = targetRotY;
           record.hopProgress = 0.0;
           record.currentTile = tileId;
           hasMovement = true;
@@ -371,8 +374,8 @@ export class Board3DManager {
 
       if (record.hopProgress < 1.0) {
         hasActiveAnimation = true;
-        // 175ms'lik adım süresine tam uyumlu, pürüzsüz ve doğal parabolik yay temposu (1.0 / 0.153s ≈ 6.5)
-        record.hopProgress = Math.min(1.0, record.hopProgress + dt * 6.5);
+        // 160ms'lik adım süresine tam uyumlu, pürüzsüz ve doğal parabolik yay temposu (1.0 / 0.160s = 6.25)
+        record.hopProgress = Math.min(1.0, record.hopProgress + dt * 6.25);
         const t = record.hopProgress;
 
         // X ve Z ekseninde pürüzsüz smoothstep interpolasyonu
@@ -395,9 +398,11 @@ export class Board3DManager {
           record.shadow.material.opacity = Math.max(0.18, 0.68 - (arc / hopHeight) * 0.45);
         }
 
-        // 2. YÖN DÖNÜŞÜ (Smooth rotation towards movement track)
+        // 2. YÖN DÖNÜŞÜ (Hop easeT'ye kilitli, yere temas anında 100% tamamlanan pürüzsüz köşe dönüşü)
         if (record.targetRotY !== undefined) {
-          record.root.rotation.y = lerpAngle(record.root.rotation.y, record.targetRotY, dt * 12.0);
+          const startRot = record.startRotY !== undefined ? record.startRotY : record.root.rotation.y;
+          const rotDiff = Math.atan2(Math.sin(record.targetRotY - startRot), Math.cos(record.targetRotY - startRot));
+          record.root.rotation.y = normalizeAngle(startRot + rotDiff * easeT);
         }
 
         // 3. SQUASH & STRETCH FİZİĞİ:
@@ -418,32 +423,21 @@ export class Board3DManager {
         }
         record.root.scale.set(scaleXZ, scaleY, scaleXZ);
       } else {
-        // Dinlenme (Idle): pürüzsüzce orijinal ölçeğe ve zemine yerleş (Sıfır bellek tahsisi)
+        // Dinlenme (Idle): pürüzsüzce orijinal ölçeğe ve zemine tam otur
         record.root.scale.lerp(VECTOR_ONE, 0.22);
-
-        const distSq = record.root.position.distanceToSquared(record.targetPos);
-        if (distSq > 0.0001) {
-          hasActiveAnimation = true;
-          record.root.position.lerp(record.targetPos, 0.25);
-        } else {
-          record.root.position.copy(record.targetPos);
-        }
+        record.root.position.copy(record.targetPos);
+        record.root.position.y = 0.02;
 
         if (record.shadow) {
-          record.shadow.position.x = record.root.position.x;
-          record.shadow.position.z = record.root.position.z;
+          record.shadow.position.x = record.targetPos.x;
+          record.shadow.position.z = record.targetPos.z;
           record.shadow.scale.lerp(VECTOR_ONE, 0.22);
           record.shadow.material.opacity = THREE.MathUtils.lerp(record.shadow.material.opacity, 0.68, 0.22);
         }
 
         if (record.targetRotY !== undefined) {
-          const diff = Math.abs(Math.atan2(Math.sin(record.targetRotY - record.root.rotation.y), Math.cos(record.targetRotY - record.root.rotation.y)));
-          if (diff > 0.005) {
-            hasActiveAnimation = true;
-            record.root.rotation.y = lerpAngle(record.root.rotation.y, record.targetRotY, 0.2);
-          } else {
-            record.root.rotation.y = record.targetRotY;
-          }
+          record.root.rotation.y = record.targetRotY;
+          record.startRotY = record.targetRotY;
         }
       }
     }

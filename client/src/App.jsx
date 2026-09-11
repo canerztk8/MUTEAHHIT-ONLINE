@@ -1151,21 +1151,19 @@ export function App() {
   // Oyun Sahnesi
   return (
     <div className="h-screen max-h-[100dvh] overflow-hidden bg-transparent text-slate-900 dark:text-slate-100 flex flex-col selection:bg-amber-400 selection:text-black">
-      {/* 👁️ Canlı Yayın / İzleyici Modu Üst Barı */}
+      {/* 👁️ Canlı Yayın / İzleyici Modu Üst Barı (Tahtanın Üstünü Kapatmayacak Şekilde Sol Üstte) */}
       {isSpectator && (
-        <div className="fixed top-2.5 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2.5 pointer-events-auto bg-slate-950/90 dark:bg-slate-900/95 backdrop-blur-md border border-sky-500/60 px-3.5 py-1.5 rounded-2xl shadow-xl shadow-sky-500/15 animate-fadeIn">
-          <span className="flex h-2.5 w-2.5 relative">
+        <div className="fixed top-2 left-2.5 z-40 flex items-center gap-1.5 pointer-events-auto bg-slate-950/90 dark:bg-slate-900/95 backdrop-blur-md border border-sky-500/60 px-2.5 py-1 rounded-xl shadow-lg shadow-sky-500/15 animate-fadeIn">
+          <span className="flex h-2 w-2 relative">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-sky-500"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-sky-500"></span>
           </span>
-          <span className="text-xs font-bold text-sky-400 font-space uppercase tracking-wider flex items-center gap-1.5">
-            <span>👁️ CANLI MAÇ YAYINI</span>
-            <span className="text-slate-500">•</span>
-            <span className="text-slate-200 font-medium normal-case text-[11px]">İzleyicisiniz</span>
+          <span className="text-[10px] sm:text-xs font-bold text-sky-400 font-space uppercase tracking-wider flex items-center gap-1">
+            <span>👁️ CANLI İZLEYİCİ</span>
           </span>
           <button
             onClick={() => handleLeaveGame(false)}
-            className="ml-2 px-2.5 py-0.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 text-[10px] font-bold transition cursor-pointer active:scale-95"
+            className="ml-1 px-2 py-0.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 text-[9px] sm:text-[10px] font-bold transition cursor-pointer active:scale-95"
             title="İzlemeyi Bırak ve Ana Menüye Dön"
           >
             Ayrıl
