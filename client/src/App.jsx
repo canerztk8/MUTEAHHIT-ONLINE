@@ -1236,7 +1236,7 @@ export function App() {
       <main className="h-full w-full max-w-[1920px] mx-auto p-1.5 sm:p-2.5 flex flex-col lg:flex-row items-center justify-between gap-2 sm:gap-3 overflow-hidden min-h-0 relative">
         
         {/* SOL PANEL: Oyuncu Listesi, Tapu Kartları */}
-        <div className="w-full lg:w-[320px] xl:w-[350px] 2xl:w-[370px] h-full max-h-full flex flex-col gap-2 min-h-0 overflow-y-auto pr-0 lg:pr-1 pb-32 sm:pb-36 custom-scrollbar flex-shrink-0 order-1 lg:order-1">
+        <div className="w-full lg:w-[220px] xl:w-[265px] 2xl:w-[330px] h-full max-h-full flex flex-col gap-2 min-h-0 overflow-y-auto pr-0 lg:pr-1 pb-32 sm:pb-36 custom-scrollbar flex-shrink-0 order-1 lg:order-1 transition-all duration-300">
           <ErrorBoundary name="Oyuncu Durumları Paneli">
             <PlayerPanel
               gameState={effectiveGameState}
@@ -1309,9 +1309,9 @@ export function App() {
         </div>
 
         {/* SAĞ PANEL: Sağ Panel Kenar Zar Tablası (%70) & Olaylar ve Canlı Sohbet (%30) */}
-        <aside className="w-full lg:w-[290px] xl:w-[320px] 2xl:w-[340px] h-full max-h-full flex flex-col gap-2 min-h-0 flex-shrink-0 order-3 lg:order-3">
+        <aside className="w-full lg:w-[205px] xl:w-[245px] 2xl:w-[305px] h-full max-h-full flex flex-col gap-2 min-h-0 flex-shrink-0 order-3 lg:order-3 transition-all duration-300">
           {/* ÜST: 3D Zar Tablası (Sağ tarafın %70'i) */}
-          <div className="flex-[7] h-[70%] min-h-[280px] flex-shrink-0 flex flex-col min-h-0">
+          <div className="flex-[7] h-[70%] min-h-[200px] sm:min-h-[240px] xl:min-h-[280px] flex-shrink-0 flex flex-col min-h-0">
             <ErrorBoundary name="Zar Tablası">
               <DiceSidebarTray
                 gameState={gameState}
