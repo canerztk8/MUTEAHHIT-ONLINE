@@ -53,13 +53,13 @@ export function getTileArrowTarget(tileId) {
     else c = 11 - safeId;
 
     innerX = COL_CENTERS[c];
-    innerY = 88.8; // Kartın üst iç kenarında, aşağı karta doğru bakar
+    innerY = 91.8; // Kartın alt kenarında, aşağı karta doğru bakar (tahta merkezine taşmaz)
     rot = 0;
   } else if (safeId >= 11 && safeId <= 19) {
     c = 1;
     r = 11 - (safeId - 10);
 
-    innerX = 11.2; // Kartın sağ iç kenarında, sola karta doğru bakar
+    innerX = 8.2; // Kartın sol kenarında, sola karta doğru bakar (tahta merkezine taşmaz)
     innerY = ROW_CENTERS[r];
     rot = 90;
   } else if (safeId >= 20 && safeId <= 30) {
@@ -69,13 +69,13 @@ export function getTileArrowTarget(tileId) {
     else c = safeId - 19;
 
     innerX = COL_CENTERS[c];
-    innerY = 11.2; // Kartın alt iç kenarında, yukarı karta doğru bakar
+    innerY = 8.2; // Kartın üst kenarında, yukarı karta doğru bakar (tahta merkezine taşmaz)
     rot = 180;
   } else {
     c = 11;
     r = safeId - 29;
 
-    innerX = 88.8; // Kartın sol iç kenarında, sağa karta doğru bakar
+    innerX = 91.8; // Kartın sağ kenarında, sağa karta doğru bakar (tahta merkezine taşmaz)
     innerY = ROW_CENTERS[r];
     rot = 270;
   }
@@ -112,11 +112,11 @@ const GlidingBoardArrow = React.memo(function GlidingBoardArrow({
   let finalX = target.x;
   let finalY = target.y;
   if (offsetAxis === 'left') {
-    if (target.isBottom || target.isTop) finalX -= 1.4;
-    else finalY -= 1.4;
+    if (target.isBottom || target.isTop) finalX -= 2.2;
+    else finalY -= 2.2;
   } else if (offsetAxis === 'right') {
-    if (target.isBottom || target.isTop) finalX += 1.4;
-    else finalY += 1.4;
+    if (target.isBottom || target.isTop) finalX += 2.2;
+    else finalY += 2.2;
   }
 
   return (
@@ -417,14 +417,14 @@ const TileCell = React.memo(function TileCell({
         />
       )}
 
-      {/* Sıradaki Diğer Oyuncunun Bulunduğu Kare İçin Yumuşak Zemin Işıması */}
-      {isActiveTurnTile && !isMyTile && !isDemandHighlighted && (
+      {/* Sıradaki Diğer Oyuncunun / Botun Bulunduğu Kare İçin Yumuşak Zemin Işıması (Soft Subtle Glow - Asla Kalın Çizgi Üretmez) */}
+      {isActiveTurnTile && !isDemandHighlighted && (
         <div
-          className="absolute inset-0 z-10 pointer-events-none rounded-xs transition-opacity duration-200"
+          className="absolute inset-0 z-10 pointer-events-none rounded-xs transition-opacity duration-200 ring-inset ring-1"
           style={{
-            backgroundColor: `${activeTurnPlayer?.color || '#38bdf8'}18`,
-            boxShadow: `inset 0 0 16px ${activeTurnPlayer?.color || '#38bdf8'}40`,
-            border: `2px solid ${activeTurnPlayer?.color || '#38bdf8'}`
+            backgroundColor: `${activeTurnPlayer?.color || '#38bdf8'}0e`,
+            boxShadow: `inset 0 0 12px ${activeTurnPlayer?.color || '#38bdf8'}25`,
+            borderColor: `${activeTurnPlayer?.color || '#38bdf8'}35`
           }}
         />
       )}
@@ -811,9 +811,33 @@ export function Board({
   const prevPositionsRef = useRef({});
   const activeIntervalsRef = useRef({});
 
-  // İlk mount anında prevPositionsRef'i de doldur
+  // Oyuncu listesi değiştiğinde veya botlar eklendiğinde displayedPositions ve prevPositionsRef senkronizasyonunu sağla
   useEffect(() => {
     if (players) {
+      setDisplayedPositions((prev) => {
+        let changed = false;
+        const next = { ...prev };
+        players.forEach((p) => {
+          if (next[p.id] === undefined) {
+            next[p.id] = p.position ?? 0;
+            changed = true;
+          }
+        });
+        return changed ? next : prev;
+      });
+
+      setPawn3DPositions((prev) => {
+        let changed = false;
+        const next = { ...prev };
+        players.forEach((p) => {
+          if (next[p.id] === undefined) {
+            next[p.id] = p.position ?? 0;
+            changed = true;
+          }
+        });
+        return changed ? next : prev;
+      });
+
       players.forEach((p) => {
         if (prevPositionsRef.current[p.id] === undefined) {
           prevPositionsRef.current[p.id] = p.position ?? 0;
@@ -1779,9 +1803,9 @@ export function Board({
               ? 'demand-highlight-auction'
               : 'demand-highlight-trade';
           } else if (isActiveTurnTile && isMyTile) {
-            ringClass = 'ring-2 ring-amber-400 border-amber-400 shadow-[0_0_18px_rgba(245,158,11,0.75)]';
+            ringClass = 'ring-1.5 ring-amber-400/85 border-amber-400/85 shadow-[0_0_12px_rgba(245,158,11,0.5)]';
           } else if (isActiveTurnTile) {
-            ringClass = `shadow-[0_0_14px_${activeTurnPlayer?.color || '#38bdf8'}]`;
+            ringClass = isDarkMode ? 'border-slate-700 shadow-xs' : 'border-slate-300 shadow-xs';
           } else if (isMyTile) {
             if (isMyTurn) {
               ringClass = 'ring-2 ring-amber-400 border-amber-400 shadow-[0_0_18px_rgba(245,158,11,0.75)]';
