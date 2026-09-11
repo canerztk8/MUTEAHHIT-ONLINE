@@ -1151,19 +1151,21 @@ export function App() {
   // Oyun Sahnesi
   return (
     <div className="h-screen max-h-[100dvh] overflow-hidden bg-transparent text-slate-900 dark:text-slate-100 flex flex-col selection:bg-amber-400 selection:text-black">
-      {/* 👁️ Canlı Yayın / İzleyici Modu Üst Barı (Tahtanın Üstünü Kapatmayacak Şekilde Sol Üstte) */}
+      {/* 👁️ Canlı Yayın / İzleyici Modu Üst Barı */}
       {isSpectator && (
-        <div className="fixed top-2 left-2.5 z-40 flex items-center gap-1.5 pointer-events-auto bg-slate-950/90 dark:bg-slate-900/95 backdrop-blur-md border border-sky-500/60 px-2.5 py-1 rounded-xl shadow-lg shadow-sky-500/15 animate-fadeIn">
-          <span className="flex h-2 w-2 relative">
+        <div className="fixed top-2.5 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2.5 pointer-events-auto bg-slate-950/90 dark:bg-slate-900/95 backdrop-blur-md border border-sky-500/60 px-3.5 py-1.5 rounded-2xl shadow-xl shadow-sky-500/15 animate-fadeIn">
+          <span className="flex h-2.5 w-2.5 relative">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-sky-500"></span>
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-sky-500"></span>
           </span>
-          <span className="text-[10px] sm:text-xs font-bold text-sky-400 font-space uppercase tracking-wider flex items-center gap-1">
-            <span>👁️ CANLI İZLEYİCİ</span>
+          <span className="text-xs font-bold text-sky-400 font-space uppercase tracking-wider flex items-center gap-1.5">
+            <span>👁️ CANLI MAÇ YAYINI</span>
+            <span className="text-slate-500">•</span>
+            <span className="text-slate-200 font-medium normal-case text-[11px]">İzleyicisiniz</span>
           </span>
           <button
             onClick={() => handleLeaveGame(false)}
-            className="ml-1 px-2 py-0.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 text-[9px] sm:text-[10px] font-bold transition cursor-pointer active:scale-95"
+            className="ml-2 px-2.5 py-0.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 text-[10px] font-bold transition cursor-pointer active:scale-95"
             title="İzlemeyi Bırak ve Ana Menüye Dön"
           >
             Ayrıl
@@ -1236,7 +1238,7 @@ export function App() {
       <main className="h-full w-full max-w-[1920px] mx-auto p-1.5 sm:p-2.5 flex flex-col lg:flex-row items-center justify-between gap-2 sm:gap-3 overflow-hidden min-h-0 relative">
         
         {/* SOL PANEL: Oyuncu Listesi, Tapu Kartları */}
-        <div className="w-full lg:w-[220px] xl:w-[265px] 2xl:w-[330px] h-full max-h-full flex flex-col gap-2 min-h-0 overflow-y-auto pr-0 lg:pr-1 pb-32 sm:pb-36 custom-scrollbar flex-shrink-0 order-1 lg:order-1 transition-all duration-300">
+        <div className="w-full lg:w-[320px] xl:w-[350px] 2xl:w-[370px] h-full max-h-full flex flex-col gap-2 min-h-0 overflow-y-auto pr-0 lg:pr-1 pb-32 sm:pb-36 custom-scrollbar flex-shrink-0 order-1 lg:order-1">
           <ErrorBoundary name="Oyuncu Durumları Paneli">
             <PlayerPanel
               gameState={effectiveGameState}
@@ -1309,9 +1311,9 @@ export function App() {
         </div>
 
         {/* SAĞ PANEL: Sağ Panel Kenar Zar Tablası (%70) & Olaylar ve Canlı Sohbet (%30) */}
-        <aside className="w-full lg:w-[205px] xl:w-[245px] 2xl:w-[305px] h-full max-h-full flex flex-col gap-2 min-h-0 flex-shrink-0 order-3 lg:order-3 transition-all duration-300">
+        <aside className="w-full lg:w-[290px] xl:w-[320px] 2xl:w-[340px] h-full max-h-full flex flex-col gap-2 min-h-0 flex-shrink-0 order-3 lg:order-3">
           {/* ÜST: 3D Zar Tablası (Sağ tarafın %70'i) */}
-          <div className="flex-[7] h-[70%] min-h-[200px] sm:min-h-[240px] xl:min-h-[280px] flex-shrink-0 flex flex-col min-h-0">
+          <div className="flex-[7] h-[70%] min-h-[280px] flex-shrink-0 flex flex-col min-h-0">
             <ErrorBoundary name="Zar Tablası">
               <DiceSidebarTray
                 gameState={gameState}

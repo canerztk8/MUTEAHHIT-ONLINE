@@ -306,16 +306,16 @@ export function DiceSidebarTray({
   return (
     <div className="w-full h-full max-h-full flex flex-col gap-2 min-h-0">
       {/* ÜST BAŞLIK BARI: Oda Kodu, Ses, Ayrıl & Kontroller (Logo ve Başlık Talebe Göre Kaldırıldı) */}
-      <div className="cardstock-panel rounded-2xl p-1.5 sm:p-2 flex items-center justify-between gap-1 shadow-md flex-shrink-0 text-slate-900 dark:text-slate-100 tile-paper-press">
-        <div className="flex items-center gap-1 min-w-0">
+      <div className="cardstock-panel rounded-2xl p-2 sm:p-2.5 flex items-center justify-between gap-1.5 shadow-md flex-shrink-0 text-slate-900 dark:text-slate-100 tile-paper-press">
+        <div className="flex items-center gap-1.5 min-w-0">
           {roomCode ? (
             <button
               onClick={onCopyLink}
-              className="flex items-center gap-1 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 px-1.5 sm:px-2 py-1 rounded-xl text-[10px] sm:text-xs font-semibold text-slate-800 dark:text-slate-200 transition shadow-xs cursor-pointer"
+              className="flex items-center gap-1.5 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 px-2.5 py-1 rounded-xl text-[11px] sm:text-xs font-semibold text-slate-800 dark:text-slate-200 transition shadow-xs cursor-pointer"
               title="Oda Davet Linkini Kopyala"
             >
               <span className="font-mono text-amber-700 dark:text-amber-400 font-bold font-jetbrains">{roomCode}</span>
-              {copiedLink ? <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400" /> : <Copy className="w-3 h-3 text-slate-400" />}
+              {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-slate-400" />}
             </button>
           ) : <div />}
 
