@@ -1174,16 +1174,16 @@ export function App() {
       )}
 
       {/* Üst Kısayollar (Karanlık Mod, Canlı Ağ Durumu & DevTools) */}
-      <div className="fixed top-2.5 right-2.5 z-40 flex items-center gap-2 pointer-events-auto">
+      <div className="fixed top-2.5 right-2.5 z-40 flex items-center gap-2 pointer-events-none">
         {/* 📡 Canlı Ping & Bağlantı Tipi HUD Göstergesi */}
         {connected && network && (
           <div
-            className={`px-2.5 py-1 rounded-xl text-[10.5px] font-bold font-space border backdrop-blur-md shadow-md flex items-center gap-1.5 select-none transition-all ${
+            className={`pointer-events-none px-2 py-0.5 rounded-lg text-[9.5px] font-bold font-space border backdrop-blur-[1px] flex items-center gap-1.5 select-none transition-all ${
               network.isHost
-                ? 'bg-slate-900/90 border-emerald-500/60 text-emerald-400 shadow-emerald-950/30'
+                ? 'bg-slate-950/15 border-emerald-500/25 text-emerald-400/80 shadow-xs'
                 : network.isRelayActive
-                  ? 'bg-slate-900/90 border-amber-500/60 text-amber-400 shadow-amber-950/30'
-                  : 'bg-slate-900/90 border-sky-500/60 text-sky-400 shadow-sky-950/30'
+                  ? 'bg-slate-950/15 border-amber-500/25 text-amber-400/80 shadow-xs'
+                  : 'bg-slate-950/15 border-sky-500/25 text-sky-400/80 shadow-xs'
             }`}
             title={
               network.isHost
@@ -1193,14 +1193,14 @@ export function App() {
                   : 'WebRTC P2P — Doğrudan Cihazdan Cihaza Bağlantı'
             }
           >
-            <span className={`w-2 h-2 rounded-full ${
+            <span className={`w-1.5 h-1.5 rounded-full opacity-80 ${
               network.isHost
-                ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]'
+                ? 'bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.5)]'
                 : network.isRelayActive
-                  ? 'bg-amber-400 animate-pulse shadow-[0_0_8px_rgba(251,191,36,0.8)]'
-                  : 'bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.8)]'
+                  ? 'bg-amber-400 animate-pulse shadow-[0_0_6px_rgba(251,191,36,0.5)]'
+                  : 'bg-sky-400 shadow-[0_0_6px_rgba(56,189,248,0.5)]'
             }`} />
-            <span>
+            <span className="opacity-90">
               {network.isHost
                 ? 'HOST'
                 : `${ping !== null ? ping + 'ms' : '...'} (${network.isRelayActive ? 'RELAY' : 'P2P'})`}
@@ -1211,7 +1211,7 @@ export function App() {
         {devToolsUnlocked && (
           <button
             onClick={() => setShowDevTools(prev => !prev)}
-            className="px-2.5 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-amber-400 border border-amber-500/80 shadow-lg backdrop-blur-md flex items-center gap-1.5 text-xs font-black font-space cursor-pointer transition active:scale-95 animate-pulse"
+            className="pointer-events-auto px-2.5 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-amber-400 border border-amber-500/80 shadow-lg backdrop-blur-md flex items-center gap-1.5 text-xs font-black font-space cursor-pointer transition active:scale-95 animate-pulse"
             title="Müteahhit DevTools Test Panelini Aç / Kapat"
           >
             <Wrench className="w-3.5 h-3.5 text-amber-400" />
@@ -1219,7 +1219,7 @@ export function App() {
           </button>
         )}
 
-        <div className="lg:hidden">
+        <div className="lg:hidden pointer-events-auto">
           <button
             onClick={toggleDarkMode}
             title={isDarkMode ? 'Aydınlık Moda Geç' : 'Karanlık Moda Geç'}
