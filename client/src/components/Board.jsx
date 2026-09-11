@@ -233,7 +233,7 @@ const TileCell = React.memo(function TileCell({
         contain: (isDemandHighlighted || isMyTile || isActiveTurnTile) ? 'none' : 'paint layout'
       }}
       className={`tile relative flex flex-col justify-between border transition-all duration-200 ease-out cursor-pointer ${
-        (isDemandHighlighted || isMyTile || isActiveTurnTile) ? 'overflow-visible z-30' : 'overflow-hidden'
+        (isDemandHighlighted || isMyTile || isActiveTurnTile) ? 'overflow-visible z-35' : 'overflow-hidden'
       } group tile-paper-press ${
         tile.id === 0 && isApocalypse
           ? 'bg-gradient-to-br from-rose-950 via-red-950 to-slate-950 text-rose-100 border-2 border-rose-500 shadow-[inset_0_0_25px_rgba(225,29,72,0.85)]'
@@ -445,7 +445,7 @@ const TileCell = React.memo(function TileCell({
           return (
             <div
               key={isSelf ? 'self-arrow' : 'turn-arrow'}
-              className={`absolute z-30 pointer-events-none flex items-center justify-center ${containerClasses}`}
+              className={`absolute z-40 pointer-events-none flex items-center justify-center ${containerClasses}`}
             >
               {arrowSvg}
             </div>
@@ -1756,14 +1756,14 @@ export function Board({
               ? 'demand-highlight-auction'
               : 'demand-highlight-trade';
           } else if (isActiveTurnTile && isMyTile) {
-            ringClass = 'ring-2 ring-amber-400 border-amber-400 shadow-[0_0_18px_rgba(245,158,11,0.75)] z-20';
+            ringClass = 'ring-2 ring-amber-400 border-amber-400 shadow-[0_0_18px_rgba(245,158,11,0.75)]';
           } else if (isActiveTurnTile) {
-            ringClass = 'ring-2 ring-sky-400 border-sky-400 shadow-[0_0_14px_rgba(14,165,233,0.7)] z-20';
+            ringClass = 'ring-2 ring-sky-400 border-sky-400 shadow-[0_0_14px_rgba(14,165,233,0.7)]';
           } else if (isMyTile) {
             if (isMyTurn) {
-              ringClass = 'ring-2 ring-amber-400 border-amber-400 shadow-[0_0_18px_rgba(245,158,11,0.75)] z-20';
+              ringClass = 'ring-2 ring-amber-400 border-amber-400 shadow-[0_0_18px_rgba(245,158,11,0.75)]';
             } else {
-              ringClass = 'ring-1.5 ring-amber-400/85 border-amber-400/85 shadow-[0_0_12px_rgba(245,158,11,0.5)] z-20';
+              ringClass = 'ring-1.5 ring-amber-400/85 border-amber-400/85 shadow-[0_0_12px_rgba(245,158,11,0.5)]';
             }
           } else if (owner) {
             ringClass = isDarkMode ? 'border-slate-700 hover:border-amber-500 shadow-sm' : 'border-slate-300 hover:border-amber-500 shadow-sm';
