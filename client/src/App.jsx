@@ -17,6 +17,7 @@ import { TradeModal } from './components/TradeModal.jsx';
 import { WinnerModal } from './components/WinnerModal.jsx';
 import { EliminationModal } from './components/EliminationModal.jsx';
 import { DevToolsModal } from './components/DevToolsModal.jsx';
+import { sounds } from './sound/soundEffects.js';
 import { Volume2, VolumeX, Copy, Check, Users, Sparkles, LogOut, Wrench, Sun, Moon, X } from 'lucide-react';
 
 // 🃏 Son 3 Çekilen Kart Geçmişi Modalı (Deste kartına tıklanınca açılır)
