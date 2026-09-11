@@ -225,10 +225,10 @@ const TileCell = React.memo(function TileCell({
       onMouseEnter={() => onMouseEnter(tile)}
       style={{
         ...gridPos,
-        contain: isDemandHighlighted ? 'none' : 'paint layout'
+        contain: (isDemandHighlighted || isMyTile || isActiveTurnTile) ? 'none' : 'paint layout'
       }}
       className={`tile relative flex flex-col justify-between border transition-all duration-100 cursor-pointer ${
-        isDemandHighlighted ? 'overflow-visible' : 'overflow-hidden'
+        (isDemandHighlighted || isMyTile || isActiveTurnTile) ? 'overflow-visible z-30' : 'overflow-hidden'
       } group tile-paper-press ${
         tile.id === 0 && isApocalypse
           ? 'bg-gradient-to-br from-rose-950 via-red-950 to-slate-950 text-rose-100 border-2 border-rose-500 shadow-[inset_0_0_25px_rgba(225,29,72,0.85)]'
@@ -341,31 +341,71 @@ const TileCell = React.memo(function TileCell({
         );
       })()}
 
-      {/* Karakterimizin Bulunduğu Yeri Gösteren Belirgin Ok */}
+      {/* Karakterimizin Bulunduğu Yeri Gösteren Belirgin Pin / Rozet */}
       {isMyTile && (
-        <div className={`absolute -top-3 sm:-top-3.5 z-50 flex flex-col items-center pointer-events-none drop-shadow-[0_2px_8px_rgba(245,158,11,0.85)] ${
-          isActiveTurnTile ? 'left-[32%] -translate-x-1/2' : 'left-1/2 -translate-x-1/2'
-        }`}>
-          <div className={`text-slate-950 font-black text-[7px] sm:text-[8px] px-1.5 py-0.5 rounded-full shadow-md border border-white tracking-wider flex items-center gap-0.5 whitespace-nowrap leading-none ${isMyTurn ? 'bg-gradient-to-r from-amber-400 to-yellow-300' : 'bg-amber-400/80'}`}>
-            <span>SEN</span>
+        <div
+          className={`absolute -top-3.5 sm:-top-4 z-40 flex flex-col items-center pointer-events-none drop-shadow-[0_2px_8px_rgba(0,0,0,0.7)] ${
+            isActiveTurnTile ? 'left-[28%] -translate-x-1/2' : 'left-1/2 -translate-x-1/2'
+          }`}
+        >
+          <div
+            className={`font-black text-[7.5px] sm:text-[8.5px] px-2 py-0.5 rounded-full border-2 border-white tracking-wider flex items-center gap-1 whitespace-nowrap leading-none shadow-md ${
+              isMyTurn
+                ? 'bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 text-slate-950 ring-2 ring-amber-400/80 animate-pulse'
+                : 'bg-gradient-to-r from-amber-500 to-amber-600 text-white ring-1 ring-amber-300/80'
+            }`}
+          >
+            <span className="text-[8px] sm:text-[9.5px] leading-none">📍</span>
+            <span className="font-space font-extrabold">SEN</span>
+            {isMyTurn && (
+              <span className="hidden xs:inline text-[6.5px] sm:text-[7.5px] font-bold opacity-90">
+                (SIRAN)
+              </span>
+            )}
           </div>
-          <div className="text-amber-500 text-[9px] sm:text-[11px] -mt-0.5 leading-none">▼</div>
+          <svg
+            className={`w-2.5 h-1.5 -mt-[1px] drop-shadow-sm flex-shrink-0 ${
+              isMyTurn ? 'text-amber-400' : 'text-amber-500'
+            }`}
+            viewBox="0 0 10 6"
+            fill="currentColor"
+          >
+            <polygon points="0,0 10,0 5,6" />
+          </svg>
         </div>
       )}
 
-      {/* Sıradaki Diğer Oyuncunun Bulunduğu Yeri Gösteren Şık Takip Oku */}
+      {/* Sıradaki Diğer Oyuncunun Bulunduğu Yeri Gösteren Şık Takip Pini */}
       {isActiveTurnTile && (
-        <div className={`absolute -top-3 sm:-top-3.5 z-50 pointer-events-none drop-shadow-[0_2px_8px_rgba(56,189,248,0.85)] ${
-          isMyTile ? 'left-[68%] -translate-x-1/2' : 'left-1/2 -translate-x-1/2'
-        }`}>
+        <div
+          className={`absolute -top-3.5 sm:-top-4 z-40 flex flex-col items-center pointer-events-none drop-shadow-[0_2px_8px_rgba(0,0,0,0.7)] ${
+            isMyTile ? 'left-[72%] -translate-x-1/2' : 'left-1/2 -translate-x-1/2'
+          }`}
+        >
           <div className="flex flex-col items-center animate-bounce">
             <div
-              className="text-white font-black text-[7.5px] sm:text-[8.5px] px-1.5 py-0.5 rounded-full shadow-md border border-white tracking-wider flex items-center gap-0.5 whitespace-nowrap leading-none shadow-[0_0_8px_rgba(56,189,248,0.8)]"
-              style={{ backgroundColor: activeTurnPlayer?.color || '#38bdf8' }}
+              className="text-white font-black text-[7.5px] sm:text-[8.5px] px-2 py-0.5 rounded-full border-2 border-white tracking-wider flex items-center gap-1 whitespace-nowrap leading-none shadow-md"
+              style={{
+                backgroundColor: activeTurnPlayer?.color || '#0284c7',
+                boxShadow: `0 0 10px ${activeTurnPlayer?.color || '#38bdf8'}90`
+              }}
             >
-              <span>{activeTurnPlayer?.name}</span>
+              <span className="text-[8px] sm:text-[9.5px] leading-none">🎲</span>
+              <span className="font-space font-extrabold max-w-[50px] sm:max-w-[70px] truncate">
+                {activeTurnPlayer?.name || 'Rakip'}
+              </span>
+              <span className="hidden xs:inline text-[6.5px] sm:text-[7.5px] font-bold opacity-90">
+                (SIRADA)
+              </span>
             </div>
-            <div className="text-sky-500 text-[9px] sm:text-[11px] -mt-0.5 leading-none">▼</div>
+            <svg
+              className="w-2.5 h-1.5 -mt-[1px] drop-shadow-sm flex-shrink-0"
+              style={{ color: activeTurnPlayer?.color || '#0284c7' }}
+              viewBox="0 0 10 6"
+              fill="currentColor"
+            >
+              <polygon points="0,0 10,0 5,6" />
+            </svg>
           </div>
         </div>
       )}
@@ -1604,14 +1644,14 @@ export function Board({
               ? 'demand-highlight-auction'
               : 'demand-highlight-trade';
           } else if (isActiveTurnTile && isMyTile) {
-            ringClass = 'ring-2 ring-amber-500 border-amber-500 shadow-[0_0_16px_rgba(245,158,11,0.85)] z-30';
+            ringClass = 'ring-2 ring-amber-400 border-amber-400 shadow-[0_0_18px_rgba(245,158,11,0.9)] z-30';
           } else if (isActiveTurnTile) {
-            ringClass = 'ring-2 ring-sky-500 border-sky-400 shadow-[0_0_14px_rgba(14,165,233,0.7)] z-30';
+            ringClass = 'ring-2 ring-sky-400 border-sky-400 shadow-[0_0_16px_rgba(14,165,233,0.85)] z-30';
           } else if (isMyTile) {
             if (isMyTurn) {
-              ringClass = 'ring-2 ring-amber-500 border-amber-400 shadow-[0_0_16px_rgba(245,158,11,0.85)] z-30';
+              ringClass = 'ring-2 ring-amber-400 border-amber-400 shadow-[0_0_18px_rgba(245,158,11,0.9)] z-30';
             } else {
-              ringClass = 'ring-1 ring-amber-400 border-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.4)] z-20';
+              ringClass = 'ring-2 ring-amber-400/80 border-amber-400/80 shadow-[0_0_12px_rgba(245,158,11,0.65)] z-20';
             }
           } else if (owner) {
             ringClass = isDarkMode ? 'border-slate-700 hover:border-amber-500 shadow-sm' : 'border-slate-300 hover:border-amber-500 shadow-sm';
