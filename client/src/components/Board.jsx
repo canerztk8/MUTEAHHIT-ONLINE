@@ -53,13 +53,13 @@ export function getTileArrowTarget(tileId) {
     else c = 11 - safeId;
 
     innerX = COL_CENTERS[c];
-    innerY = 91.8; // Kartın alt kenarında, aşağı karta doğru bakar (tahta merkezine taşmaz)
+    innerY = 88.8; // Kartın üst kısmında, aşağı karta doğru bakar (ekran görüntüsündeki gibi)
     rot = 0;
   } else if (safeId >= 11 && safeId <= 19) {
     c = 1;
     r = 11 - (safeId - 10);
 
-    innerX = 8.2; // Kartın sol kenarında, sola karta doğru bakar (tahta merkezine taşmaz)
+    innerX = 11.2; // Kartın sağ iç kenarında, sola karta doğru bakar
     innerY = ROW_CENTERS[r];
     rot = 90;
   } else if (safeId >= 20 && safeId <= 30) {
@@ -69,13 +69,13 @@ export function getTileArrowTarget(tileId) {
     else c = safeId - 19;
 
     innerX = COL_CENTERS[c];
-    innerY = 8.2; // Kartın üst kenarında, yukarı karta doğru bakar (tahta merkezine taşmaz)
+    innerY = 10.3; // Kartın alt kenarında, yukarı karta doğru bakar (tahta merkezine taşmaz)
     rot = 180;
   } else {
     c = 11;
     r = safeId - 29;
 
-    innerX = 91.8; // Kartın sağ kenarında, sağa karta doğru bakar (tahta merkezine taşmaz)
+    innerX = 88.8; // Kartın sol iç kenarında, sağa karta doğru bakar
     innerY = ROW_CENTERS[r];
     rot = 270;
   }
