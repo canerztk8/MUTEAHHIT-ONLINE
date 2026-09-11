@@ -104,7 +104,9 @@ const GlidingBoardArrow = React.memo(function GlidingBoardArrow({
   glowColor,
   isVisible,
   offsetAxis = 'none',
-  title = 'Konum Oku'
+  title = 'Konum Oku',
+  scale = 1,
+  opacity = 1
 }) {
   const target = useMemo(() => getTileArrowTarget(tileId ?? 0), [tileId]);
   const smoothRot = useNormalizedRotation(target.rotation);
@@ -125,9 +127,9 @@ const GlidingBoardArrow = React.memo(function GlidingBoardArrow({
       style={{
         left: `${finalX}%`,
         top: `${finalY}%`,
-        transform: `translate(-50%, -50%) rotate(${smoothRot}deg)`,
+        transform: `translate(-50%, -50%) rotate(${smoothRot}deg) scale(${scale})`,
         transition: 'left 125ms cubic-bezier(0.2, 0, 0.2, 1), top 125ms cubic-bezier(0.2, 0, 0.2, 1), transform 125ms ease-out, opacity 250ms ease-out',
-        opacity: isVisible ? 1 : 0
+        opacity: isVisible ? opacity : 0
       }}
       title={title}
     >
@@ -406,25 +408,25 @@ const TileCell = React.memo(function TileCell({
         />
       )}
 
-      {/* Karakterimizin Bulunduğu Kare İçin Şık ve Yumuşak Zemin Işıması (Soft Ambient Card Glow) */}
+      {/* Karakterimizin Bulunduğu Kare İçin Şık ve Yumuşak Zemin Işıması (Soft Ambient Card Glow - %20 Artırıldı) */}
       {isMyTile && !isDemandHighlighted && (
         <div
           className={`absolute inset-0 z-10 pointer-events-none rounded-xs transition-opacity duration-200 ${
             isMyTurn
-              ? 'bg-amber-400/12 ring-inset ring-1.5 ring-amber-400/50 shadow-[inset_0_0_16px_rgba(245,158,11,0.25)]'
-              : 'bg-amber-400/8 ring-inset ring-1 ring-amber-400/35 shadow-[inset_0_0_12px_rgba(245,158,11,0.18)]'
+              ? 'bg-amber-400/16 ring-inset ring-1.5 ring-amber-400/60 shadow-[inset_0_0_20px_rgba(245,158,11,0.32)]'
+              : 'bg-amber-400/11 ring-inset ring-1 ring-amber-400/45 shadow-[inset_0_0_15px_rgba(245,158,11,0.24)]'
           }`}
         />
       )}
 
-      {/* Sıradaki Diğer Oyuncunun / Botun Bulunduğu Kare İçin Yumuşak Zemin Işıması (Soft Subtle Glow - Asla Kalın Çizgi Üretmez) */}
+      {/* Sıradaki Diğer Oyuncunun / Botun Bulunduğu Kare İçin Yumuşak Zemin Işıması (Soft Subtle Glow - %20 Artırıldı) */}
       {isActiveTurnTile && !isDemandHighlighted && (
         <div
           className="absolute inset-0 z-10 pointer-events-none rounded-xs transition-opacity duration-200 ring-inset ring-1"
           style={{
-            backgroundColor: `${activeTurnPlayer?.color || '#38bdf8'}0e`,
-            boxShadow: `inset 0 0 12px ${activeTurnPlayer?.color || '#38bdf8'}25`,
-            borderColor: `${activeTurnPlayer?.color || '#38bdf8'}35`
+            backgroundColor: `${activeTurnPlayer?.color || '#38bdf8'}14`,
+            boxShadow: `inset 0 0 16px ${activeTurnPlayer?.color || '#38bdf8'}32`,
+            borderColor: `${activeTurnPlayer?.color || '#38bdf8'}45`
           }}
         />
       )}
@@ -1813,14 +1815,14 @@ export function Board({
               ? 'demand-highlight-auction'
               : 'demand-highlight-trade';
           } else if (isActiveTurnTile && isMyTile) {
-            ringClass = 'ring-inset ring-1.5 ring-amber-400/85 border-amber-400/85 shadow-[0_0_12px_rgba(245,158,11,0.5)]';
+            ringClass = 'ring-inset ring-1.5 ring-amber-400/90 border-amber-400/90 shadow-[0_0_15px_rgba(245,158,11,0.65)]';
           } else if (isActiveTurnTile) {
             ringClass = isDarkMode ? 'border-slate-700 shadow-xs' : 'border-slate-300 shadow-xs';
           } else if (isMyTile) {
             if (isMyTurn) {
-              ringClass = 'ring-inset ring-2 ring-amber-400 border-amber-400 shadow-[0_0_18px_rgba(245,158,11,0.75)]';
+              ringClass = 'ring-inset ring-2 ring-amber-400 border-amber-400 shadow-[0_0_22px_rgba(245,158,11,0.90)]';
             } else {
-              ringClass = 'ring-inset ring-1.5 ring-amber-400/85 border-amber-400/85 shadow-[0_0_12px_rgba(245,158,11,0.5)]';
+              ringClass = 'ring-inset ring-1.5 ring-amber-400/90 border-amber-400/90 shadow-[0_0_15px_rgba(245,158,11,0.65)]';
             }
           } else if (owner) {
             ringClass = isDarkMode ? 'border-slate-700 hover:border-amber-500 shadow-sm' : 'border-slate-300 hover:border-amber-500 shadow-sm';
@@ -1858,23 +1860,26 @@ export function Board({
 
         {/* Kesintisiz Kayarak İlerleyen 2D Konum Okları Katmanı */}
         <div className="absolute inset-0 pointer-events-none z-45 overflow-hidden">
-          {/* 1) Kendi Oyuncumuzun Altın Sarısı Kayar Oku */}
+          {/* 1) Kendi Oyuncumuzun Altın Sarısı Kayar Oku (%10 daha kompakt ve hafif transparan) */}
           <GlidingBoardArrow
             tileId={displayedPositions[effectiveMyPlayerId] ?? myPlayer?.position ?? 0}
             color={activePlayer?.id === effectiveMyPlayerId ? '#fbbf24' : '#f59e0b'}
             glowColor="rgba(245,158,11,0.95)"
             isVisible={Boolean(myPlayer)}
+            scale={0.9}
+            opacity={0.86}
             offsetAxis={(targetOpponent && (displayedPositions[targetOpponent.id] ?? targetOpponent.position) === (displayedPositions[effectiveMyPlayerId] ?? myPlayer?.position)) ? 'left' : 'none'}
             title="Konumunuz"
           />
 
-          {/* 2) Sıradaki veya Hareket Halindeki Rakibin Kendi Renginde Kayar Oku (Hareket bitene kadar asla kaybolmaz) */}
+          {/* 2) Sıradaki veya Hareket Halindeki Rakibin Kendi Renginde Kayar Oku (Hareket bitene kadar asla kaybolmaz, %10 kompakt) */}
           {targetOpponent && (
             <GlidingBoardArrow
               tileId={displayedPositions[targetOpponent.id] ?? targetOpponent.position ?? 0}
               color={targetOpponent.color || '#38bdf8'}
               glowColor={`${targetOpponent.color || '#38bdf8'}ee`}
               isVisible={Boolean(targetOpponent)}
+              scale={0.9}
               offsetAxis={(displayedPositions[targetOpponent.id] ?? targetOpponent.position) === (displayedPositions[effectiveMyPlayerId] ?? myPlayer?.position) ? 'right' : 'none'}
               title={`${targetOpponent.name || 'Rakip'} Konumu`}
             />
