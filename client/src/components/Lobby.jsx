@@ -18,7 +18,6 @@ export function Lobby({
   isDarkMode = false,
   onToggleDarkMode,
   isPerformanceMode = false,
-  onTogglePerformanceMode,
   ping
 }) {
   const [name, setName] = useState(localStorage.getItem('muteahhit_name') || '');

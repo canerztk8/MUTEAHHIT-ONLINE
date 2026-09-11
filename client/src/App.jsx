@@ -1077,7 +1077,6 @@ export function App() {
             isDarkMode={isDarkMode}
             onToggleDarkMode={toggleDarkMode}
             isPerformanceMode={isPerformanceMode}
-            onTogglePerformanceMode={togglePerformanceMode}
             ping={ping}
           />
         </div>
@@ -1293,7 +1292,6 @@ export function App() {
                 isDarkMode={isDarkMode}
                 onToggleDarkMode={toggleDarkMode}
                 isPerformanceMode={isPerformanceMode}
-                onTogglePerformanceMode={togglePerformanceMode}
                 onTogglePause={handleTogglePause}
                 onRollStart={() => setIsDiceRolling(true)}
                 onRollSettled={() => setIsDiceRolling(false)}

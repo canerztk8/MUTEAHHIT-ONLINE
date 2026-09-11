@@ -19,7 +19,6 @@ export function DiceSidebarTray({
   isDarkMode = false,
   onToggleDarkMode,
   isPerformanceMode = false,
-  onTogglePerformanceMode,
   onTogglePause,
   onRollStart,
   onRollSettled
