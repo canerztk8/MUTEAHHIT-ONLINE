@@ -710,47 +710,55 @@ html.dark ::-webkit-scrollbar-thumb:hover {
   animation: trophyGlowPulse 2.4s infinite ease-in-out;
 }
 
-/* ⚡ Yüksek Performans Ana Modu: Opera GX ve zayıf GPU'larda ağır blur kompozitörünü devre dışı bırakır */
-.perf-mode * {
+/* ⚡ EVRENSEL 60 FPS KALICI ANA MOD:
+   Ağır GPU Gaussian blur ve composite işlemlerini kökten kapatır.
+   Tüm tarayıcılarda (Opera GX, Chrome, Safari, Edge) 60 FPS akıcılık garantiler. */
+*,
+*::before,
+*::after {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }
 
-/* Tüm Tailwind backdrop-blur varyasyonlarını (md, lg, xl, 2xl, [1px], [3px] vb.) kesin olarak sıfırla */
-.perf-mode [class*="backdrop-blur"] {
+[class*="backdrop-blur"],
+.backdrop-blur-2xl,
+.backdrop-blur-xl,
+.backdrop-blur-lg,
+.backdrop-blur-md,
+.backdrop-blur-sm,
+.backdrop-blur-\[1px\],
+.backdrop-blur-\[2px\],
+.backdrop-blur-\[3px\] {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }
 
-/* Arka plandaki devasa dekoratif Gaussian blur parıltı toplarını (blur-3xl, blur-2xl vb.) gizleyerek GPU rasterization'ı baypas et */
-.perf-mode [class*="blur-"],
-.perf-mode .blur-3xl,
-.perf-mode .blur-2xl,
-.perf-mode .blur-xl,
-.perf-mode .blur-lg,
-.perf-mode .blur-md,
-.perf-mode .blur-sm,
-.perf-mode .blur {
+/* Sadece arka plandaki devasa dekoratif Gaussian blur parıltı çemberlerini gizler (asla backdrop-blur kapsayıcılarını etkilemez) */
+.blur-3xl,
+.blur-2xl,
+.blur-xl,
+.blur-lg {
   filter: none !important;
   -webkit-filter: none !important;
   display: none !important;
 }
 
-.perf-mode .bg-slate-900\/60,
-.perf-mode .bg-slate-900\/70,
-.perf-mode .bg-slate-900\/75,
-.perf-mode .bg-slate-900\/80,
-.perf-mode .bg-slate-950\/60,
-.perf-mode .bg-slate-950\/70,
-.perf-mode .bg-slate-950\/80 {
+.bg-slate-900\/60,
+.bg-slate-900\/70,
+.bg-slate-900\/75,
+.bg-slate-900\/80,
+.bg-slate-950\/60,
+.bg-slate-950\/70,
+.bg-slate-950\/80 {
   background-color: rgba(15, 23, 42, 0.94) !important;
 }
 
-html:not(.dark).perf-mode .bg-white\/60,
-html:not(.dark).perf-mode .bg-white\/70,
-html:not(.dark).perf-mode .bg-white\/75,
-html:not(.dark).perf-mode .bg-white\/80 {
+html:not(.dark) .bg-white\/60,
+html:not(.dark) .bg-white\/70,
+html:not(.dark) .bg-white\/75,
+html:not(.dark) .bg-white\/80 {
   background-color: rgba(255, 255, 255, 0.96) !important;
 }
+
 
 

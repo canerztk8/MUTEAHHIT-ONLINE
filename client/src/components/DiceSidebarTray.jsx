@@ -335,20 +335,13 @@ export function DiceSidebarTray({
         {/* Oda Kodu, Karanlık Mod, Ses, Ayrıl */}
         <div className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
 
-          {/* ⚡ Performans Modu (Düşük GPU / Opera GX) */}
-          {onTogglePerformanceMode && (
-            <button
-              onClick={onTogglePerformanceMode}
-              title={isPerformanceMode ? 'Performans Modu Aktif (Bulanıklıklar ve animasyon yükü kapalı) - Tıkla ve Kapat' : 'Performans Modunu Aç (Kasan bilgisayarlar / Opera GX için bulanıklıkları kapatır)'}
-              className={`p-1.5 rounded-xl border transition cursor-pointer shadow-xs flex items-center justify-center ${
-                isPerformanceMode
-                  ? 'bg-amber-500 border-amber-400 text-slate-950 font-black shadow-amber-500/30'
-                  : 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200'
-              }`}
-            >
-              <Zap className={`w-3.5 h-3.5 ${isPerformanceMode ? 'fill-current text-slate-950' : 'text-amber-500'}`} />
-            </button>
-          )}
+          {/* ⚡ 60 FPS Yüksek Performans Ana Mod Rozeti */}
+          <div
+            title="60 FPS Yüksek Performans Ana Modu Devrede: Ağır GPU filtreleri ve Three.js dinamik gölgeleri kapalı."
+            className="p-1.5 rounded-xl border border-amber-400/70 bg-amber-500/20 text-amber-300 shadow-xs flex items-center justify-center select-none"
+          >
+            <Zap className="w-3.5 h-3.5 fill-current text-amber-400" />
+          </div>
 
           {/* 🌙 / ☀️ Karanlık Mod Değiştirici Buton */}
           <button

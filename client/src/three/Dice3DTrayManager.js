@@ -232,7 +232,7 @@ export class Dice3DTrayManager {
         theme_surface: 'green-felt',
         theme_colorset: 'white',
         theme_material: 'plastic',
-        shadows: true,
+        shadows: false, // ⚡ 60 FPS: WebGL dinamik gölge haritalama geçişini kaldırarak GPU çizim yükünü düşürür
         sounds: false, // Monopoly oyun ses sistemi (soundEffects.js) devrededir
         light_intensity: 0.85
       });

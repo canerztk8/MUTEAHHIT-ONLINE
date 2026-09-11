@@ -197,32 +197,14 @@ export function App() {
     } catch {}
   }, [isDarkMode]);
 
-  // ⚡ Yüksek Performans Ana Modu (Ağır GPU blur kompozitörünü devre dışı bırakır, 60 FPS garantiler)
-  const [isPerformanceMode, setIsPerformanceMode] = useState(() => {
-    try {
-      const saved = localStorage.getItem('muteahhit_perf_mode');
-      if (saved === '0') return false; // Kullanıcı özellikle kapattıysa
-      return true; // Varsayılan ANA MOD: AÇIK
-    } catch {
-      return true;
-    }
-  });
-
-  const togglePerformanceMode = () => {
-    setIsPerformanceMode(prev => {
-      const next = !prev;
-      try {
-        localStorage.setItem('muteahhit_perf_mode', next ? '1' : '0');
-      } catch {}
-      return next;
-    });
-  };
-
+  // ⚡ Yüksek Performans Kalıcı Ana Mod (Her zaman devrede, 60 FPS akıcılık)
+  const isPerformanceMode = true;
   useEffect(() => {
     try {
-      document.documentElement.classList.toggle('perf-mode', isPerformanceMode);
+      localStorage.removeItem('muteahhit_perf_mode');
+      document.documentElement.classList.add('perf-mode');
     } catch {}
-  }, [isPerformanceMode]);
+  }, []);
 
   // ─── P2P Ağ Durumu ─────────────────────────────────────────────────────────
   /** @type {[HostPeerService|ClientPeerService|null, function]} */
@@ -1185,21 +1167,18 @@ export function App() {
             <span>DEVTOOLS</span>
           </button>
         )}
-        {/* ⚡ Performans Modu (Opera GX & Düşük GPU Kalkanı) */}
-        <button
-          onClick={togglePerformanceMode}
-          title={isPerformanceMode ? 'Performans Modu Aktif (Bulanıklıklar ve GPU yükü devredışı) - Tıkla ve Kapat' : 'Performans Modunu Aç (Bulanıklıkları kapatır, FPS artırır)'}
-          className={`px-2.5 py-1.5 rounded-xl border transition shadow-lg cursor-pointer backdrop-blur-md flex items-center gap-1.5 text-xs font-black font-space active:scale-95 ${
-            isPerformanceMode
-              ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-amber-500/30'
-              : isDarkMode
-                ? 'bg-slate-900/90 border-slate-700 text-slate-300 hover:text-amber-400 hover:border-amber-400/50'
-                : 'bg-white/90 border-slate-300 text-slate-700 hover:text-amber-600 hover:border-amber-500/50'
+        {/* ⚡ 60 FPS Yüksek Performans Ana Mod Rozeti (Kalıcı Devrede) */}
+        <div
+          title="60 FPS Yüksek Performans Ana Modu Devrede: Ağır GPU filtreleri kapalı, akıcı motor aktif."
+          className={`px-2.5 py-1.5 rounded-xl border shadow-md flex items-center gap-1.5 text-xs font-black font-space select-none ${
+            isDarkMode
+              ? 'bg-slate-900/90 border-amber-500/60 text-amber-300 shadow-amber-500/10'
+              : 'bg-white/95 border-amber-400 text-slate-800 shadow-slate-900/5'
           }`}
         >
-          <Zap className={`w-3.5 h-3.5 ${isPerformanceMode ? 'fill-current text-slate-950' : 'text-amber-500'}`} />
-          <span className="hidden sm:inline">{isPerformanceMode ? 'PERFORMANS: AÇIK' : 'PERFORMANS'}</span>
-        </button>
+          <Zap className="w-3.5 h-3.5 fill-current text-amber-500" />
+          <span className="hidden sm:inline">60 FPS MODU</span>
+        </div>
 
         <div className="lg:hidden">
           <button
