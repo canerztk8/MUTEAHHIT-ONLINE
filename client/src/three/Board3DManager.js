@@ -369,8 +369,8 @@ export class Board3DManager {
 
       if (record.hopProgress < 1.0) {
         hasActiveAnimation = true;
-        // 175ms'lik adım süresine tam uyumlu ilerleme hızı (1.0 / 0.165s ≈ 6.0)
-        record.hopProgress = Math.min(1.0, record.hopProgress + dt * 6.0);
+        // 175ms'lik adım süresine tam uyumlu, piyonun kareye vaktinde oturmasını sağlayan dinamik zıplama hızı (1.0 / 0.118s ≈ 8.5)
+        record.hopProgress = Math.min(1.0, record.hopProgress + dt * 8.5);
         const t = record.hopProgress;
 
         // X ve Z ekseninde pürüzsüz smoothstep interpolasyonu
