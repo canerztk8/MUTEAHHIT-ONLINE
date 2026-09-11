@@ -292,9 +292,9 @@ const TileCell = React.memo(function TileCell({
         <div
           className="absolute inset-0 z-10 pointer-events-none rounded-xs transition-opacity duration-200"
           style={{
-            backgroundColor: `${activeTurnPlayer?.color || '#38bdf8'}12`,
-            boxShadow: `inset 0 0 14px ${activeTurnPlayer?.color || '#38bdf8'}30`,
-            border: `1px solid ${activeTurnPlayer?.color || '#38bdf8'}50`
+            backgroundColor: `${activeTurnPlayer?.color || '#38bdf8'}18`,
+            boxShadow: `inset 0 0 16px ${activeTurnPlayer?.color || '#38bdf8'}40`,
+            border: `2px solid ${activeTurnPlayer?.color || '#38bdf8'}`
           }}
         />
       )}
@@ -381,60 +381,60 @@ const TileCell = React.memo(function TileCell({
           let arrowSvg = null;
 
           if (isBottomEdge) {
-            // 0..10: Kareden yukarıda, aşağı karta doğru işaret eder
+            // 0..10: Kartın üst iç kenarında, aşağı karta doğru işaret eder
             const xPos = isBothOnTile
               ? (isSelf ? 'left-[32%] -translate-x-1/2' : 'left-[68%] -translate-x-1/2')
               : 'left-1/2 -translate-x-1/2';
-            containerClasses = `bottom-full mb-0.5 sm:mb-1 ${xPos}`;
+            containerClasses = `top-0.5 sm:top-1 ${xPos}`;
             arrowSvg = (
               <svg
-                className="w-3.5 h-2.5 sm:w-4 sm:h-3 animate-bounce flex-shrink-0"
-                style={{ filter: `drop-shadow(0 2px 5px ${glowColor})`, color: arrowColor }}
+                className="w-3 h-2.5 sm:w-3.5 sm:h-3 animate-bounce flex-shrink-0"
+                style={{ filter: `drop-shadow(0 2px 4px ${glowColor})`, color: arrowColor }}
                 viewBox="0 0 14 10"
               >
                 <polygon points="0,0 14,0 7,10" fill="currentColor" stroke="white" strokeWidth="1.2" strokeLinejoin="round" />
               </svg>
             );
           } else if (isTopEdge) {
-            // 20..30: Kareden aşağıda, yukarı karta doğru işaret eder
+            // 20..30: Kartın alt iç kenarında, yukarı karta doğru işaret eder
             const xPos = isBothOnTile
               ? (isSelf ? 'left-[32%] -translate-x-1/2' : 'left-[68%] -translate-x-1/2')
               : 'left-1/2 -translate-x-1/2';
-            containerClasses = `top-full mt-0.5 sm:mt-1 ${xPos}`;
+            containerClasses = `bottom-0.5 sm:bottom-1 ${xPos}`;
             arrowSvg = (
               <svg
-                className="w-3.5 h-2.5 sm:w-4 sm:h-3 animate-bounce flex-shrink-0"
-                style={{ filter: `drop-shadow(0 2px 5px ${glowColor})`, color: arrowColor }}
+                className="w-3 h-2.5 sm:w-3.5 sm:h-3 animate-bounce flex-shrink-0"
+                style={{ filter: `drop-shadow(0 2px 4px ${glowColor})`, color: arrowColor }}
                 viewBox="0 0 14 10"
               >
                 <polygon points="7,0 14,10 0,10" fill="currentColor" stroke="white" strokeWidth="1.2" strokeLinejoin="round" />
               </svg>
             );
           } else if (isLeftEdge) {
-            // 11..19: Kareden sağda, sola karta doğru işaret eder
+            // 11..19: Kartın sağ iç kenarında, sola karta doğru işaret eder
             const yPos = isBothOnTile
               ? (isSelf ? 'top-[32%] -translate-y-1/2' : 'top-[68%] -translate-y-1/2')
               : 'top-1/2 -translate-y-1/2';
-            containerClasses = `left-full ml-0.5 sm:ml-1 ${yPos}`;
+            containerClasses = `right-0.5 sm:right-1 ${yPos}`;
             arrowSvg = (
               <svg
-                className="w-2.5 h-3.5 sm:w-3 sm:h-4 animate-bounce flex-shrink-0"
-                style={{ filter: `drop-shadow(0 2px 5px ${glowColor})`, color: arrowColor }}
+                className="w-2.5 h-3 sm:w-3 sm:h-3.5 animate-bounce flex-shrink-0"
+                style={{ filter: `drop-shadow(0 2px 4px ${glowColor})`, color: arrowColor }}
                 viewBox="0 0 10 14"
               >
                 <polygon points="0,7 10,0 10,14" fill="currentColor" stroke="white" strokeWidth="1.2" strokeLinejoin="round" />
               </svg>
             );
           } else {
-            // 31..39: Kareden solda, sağa karta doğru işaret eder
+            // 31..39: Kartın sol iç kenarında, sağa karta doğru işaret eder
             const yPos = isBothOnTile
               ? (isSelf ? 'top-[32%] -translate-y-1/2' : 'top-[68%] -translate-y-1/2')
               : 'top-1/2 -translate-y-1/2';
-            containerClasses = `right-full mr-0.5 sm:mr-1 ${yPos}`;
+            containerClasses = `left-0.5 sm:left-1 ${yPos}`;
             arrowSvg = (
               <svg
-                className="w-2.5 h-3.5 sm:w-3 sm:h-4 animate-bounce flex-shrink-0"
-                style={{ filter: `drop-shadow(0 2px 5px ${glowColor})`, color: arrowColor }}
+                className="w-2.5 h-3 sm:w-3 sm:h-3.5 animate-bounce flex-shrink-0"
+                style={{ filter: `drop-shadow(0 2px 4px ${glowColor})`, color: arrowColor }}
                 viewBox="0 0 10 14"
               >
                 <polygon points="10,7 0,0 0,14" fill="currentColor" stroke="white" strokeWidth="1.2" strokeLinejoin="round" />
@@ -1758,7 +1758,7 @@ export function Board({
           } else if (isActiveTurnTile && isMyTile) {
             ringClass = 'ring-2 ring-amber-400 border-amber-400 shadow-[0_0_18px_rgba(245,158,11,0.75)]';
           } else if (isActiveTurnTile) {
-            ringClass = 'ring-2 ring-sky-400 border-sky-400 shadow-[0_0_14px_rgba(14,165,233,0.7)]';
+            ringClass = 'shadow-[0_0_14px_rgba(56,189,248,0.7)]';
           } else if (isMyTile) {
             if (isMyTurn) {
               ringClass = 'ring-2 ring-amber-400 border-amber-400 shadow-[0_0_18px_rgba(245,158,11,0.75)]';
