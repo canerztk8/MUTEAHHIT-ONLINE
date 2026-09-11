@@ -223,7 +223,7 @@ function PlayerPanelBase({ gameState, myPlayerId, onOpenTrade, onTileClick, onRe
                   >
                     <span className="text-base leading-none">{player.token?.icon || '●'}</span>
                   </div>
-                  <span className="font-bold text-xs text-slate-900 dark:text-slate-100 font-space truncate max-w-[85px] sm:max-w-[105px]">
+                  <span className="font-bold text-xs text-slate-900 dark:text-slate-100 font-space truncate max-w-[65px] sm:max-w-[80px] xl:max-w-[105px]">
                     {player.name}
                   </span>
                   {isMe && (
