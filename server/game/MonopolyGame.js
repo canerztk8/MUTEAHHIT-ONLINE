@@ -1361,34 +1361,11 @@ export class MonopolyGame {
       return this.endAuction();
     }
 
-    this.checkAuctionAffordability();
-
     return { success: true, auction: this.auction };
   }
 
   checkAuctionAffordability() {
-    if (this.phase !== 'AUCTION' || !this.auction) return;
-    if (this.auction.guaranteedWinner) return; // Zaten 3 saniyelik hızlı geri sayımda
-    const currentBid = this.auction.currentBid;
-    const highestBidderId = this.auction.highestBidderId;
-    if (!highestBidderId) return;
-
-    // Teklif veren dışındaki, pas geçmemiş ve iflas etmemiş oyuncular
-    const eligibleOpponents = this.players.filter(
-      p => !p.isBankrupt && !this.auction.passedPlayerIds.includes(p.id) && p.id !== highestBidderId
-    );
-
-    // Başka herhangi bir oyuncu asgari pey artışını (+10₺) karşılayabilir mi?
-    const canAnyoneBid = eligibleOpponents.some(p => p.money >= currentBid + 10);
-
-    if (!canAnyoneBid) {
-      // Kimse daha yüksek teklif veremez! Arsa kesin olarak en yüksek teklifi verene gidecek.
-      // Boşuna 15 saniye beklememek için süreyi 3 saniyeye indir
-      this.auction.guaranteedWinner = true;
-      this.auction.timer = 3;
-      this.auction.lastBidTime = Date.now();
-      this.addLog(`⚡ Başka teklif verebilecek oyuncu kalmadı! Açık artırma 3 saniye içinde sonuçlanıyor...`, 'buy');
-    }
+    // Kullanıcı talebi: Para yetersizliğinde açık artırma süresi 3 saniyeye düşürülmez, standart geri sayım korunur.
   }
 
   passAuction(playerId) {
@@ -1412,8 +1389,6 @@ export class MonopolyGame {
     if (remaining.length === 0 || (this.auction.highestBidderId && remaining.length === 1 && remaining[0].id === this.auction.highestBidderId)) {
       return this.endAuction();
     }
-
-    this.checkAuctionAffordability();
 
     return { success: true, auction: this.auction };
   }

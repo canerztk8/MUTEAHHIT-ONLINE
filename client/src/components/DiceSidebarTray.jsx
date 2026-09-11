@@ -13,8 +13,9 @@ export function DiceSidebarTray({
   roomCode,
   copiedLink = false,
   onCopyLink,
-  volume = 0.7,
+  volume = 0.6,
   onVolumeToggle,
+  onVolumeChange,
   onLeaveGame,
   isDarkMode = false,
   onToggleDarkMode,
@@ -47,6 +48,21 @@ export function DiceSidebarTray({
     (activePlayer?.money >= 0)
   );
   const canRollAny = Boolean((canRoll || isRollAgain) && !gameState?.isPaused);
+
+  // Ses Seviyesi Slider Menüsü State'i
+  const [showVolumeSlider, setShowVolumeSlider] = useState(false);
+  const volumeMenuRef = useRef(null);
+
+  useEffect(() => {
+    if (!showVolumeSlider) return;
+    const handleClickOutside = (e) => {
+      if (volumeMenuRef.current && !volumeMenuRef.current.contains(e.target)) {
+        setShowVolumeSlider(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showVolumeSlider]);
 
   // Zar atış tespiti – aynı atış için TEK key
   // Server bazen aynı atış için iki ayrı state güncellemesi gönderir:
@@ -346,13 +362,53 @@ export function DiceSidebarTray({
             {isDarkMode ? <Sun className="w-3.5 h-3.5 text-amber-400 animate-pulse" /> : <Moon className="w-3.5 h-3.5 text-indigo-600" />}
           </button>
 
-          <button
-            onClick={onVolumeToggle}
-            title={volume === 0 ? 'Sesi Aç' : 'Sessize Al'}
-            className="p-1.5 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-200 transition cursor-pointer shadow-xs"
-          >
-            {volume === 0 ? <VolumeX className="w-3.5 h-3.5 text-slate-400" /> : <Volume2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />}
-          </button>
+          {/* 🔊 Ses Ayarı & Slider Popover */}
+          <div className="relative" ref={volumeMenuRef}>
+            <button
+              onClick={() => setShowVolumeSlider(prev => !prev)}
+              title={volume === 0 ? 'Ses Kapalı (Ayar için tıkla)' : `Ses Seviyesi: %${Math.round(volume * 100)} (Ayar için tıkla)`}
+              className={`p-1.5 rounded-xl border transition cursor-pointer shadow-xs flex items-center justify-center ${
+                showVolumeSlider
+                  ? 'bg-amber-500/20 border-amber-500 text-amber-400'
+                  : 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200'
+              }`}
+            >
+              {volume === 0 ? <VolumeX className="w-3.5 h-3.5 text-slate-400" /> : <Volume2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />}
+            </button>
+
+            {/* Ses Seviyesi Slider Balonu */}
+            {showVolumeSlider && (
+              <div className="absolute right-0 top-full mt-2 z-50 w-48 p-2.5 rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-700 shadow-2xl animate-fadeIn flex flex-col gap-2">
+                <div className="flex items-center justify-between text-[10px] font-space font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  <span className="flex items-center gap-1">
+                    {volume === 0 ? 'Sessiz' : 'Oyun Sesi'}
+                  </span>
+                  <span className="font-jetbrains font-bold text-amber-500">
+                    %{Math.round(volume * 100)}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={onVolumeToggle}
+                    className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition cursor-pointer"
+                    title={volume === 0 ? 'Sesi Aç' : 'Sessize Al'}
+                  >
+                    {volume === 0 ? <VolumeX className="w-3.5 h-3.5 text-rose-500" /> : <Volume2 className="w-3.5 h-3.5 text-emerald-500" />}
+                  </button>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value={volume}
+                    onChange={(e) => onVolumeChange ? onVolumeChange(parseFloat(e.target.value)) : onVolumeToggle?.()}
+                    className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
 
           {isHost && onTogglePause && (
             <button

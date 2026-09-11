@@ -226,7 +226,7 @@ export class Dice3DTrayManager {
     try {
       this.box = new DiceBox(`#${container.id}`, {
         assetPath: '/assets/dice-box/',
-        baseScale: 50, // Klasik boyutu yarı yarıya küçültüldü (varsayılan 100 idi)
+        baseScale: 40, // Zar boyutu %20 küçültüldü (50 -> 40)
         gravity_multiplier: 450,
         strength: 1.15,
         theme_surface: 'green-felt',

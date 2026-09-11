@@ -360,6 +360,7 @@ const TileCell = React.memo(function TileCell({
     <div
       onClick={() => onTileClick(tile)}
       onMouseEnter={() => onMouseEnter(tile)}
+      onMouseLeave={() => onMouseLeave?.(tile)}
       style={{
         ...gridPos,
         contain: isDemandHighlighted ? 'none' : 'paint layout'
@@ -628,8 +629,19 @@ const TileCell = React.memo(function TileCell({
 
 // ⚡ Performans İzolasyonu: Fare kareler üzerinde gezinirken devasa Board bileşenini baştan render etmez
 const tileHoverListeners = new Set();
+let tileHoverTimeout = null;
 function notifyTileHover(tile) {
-  for (const fn of tileHoverListeners) fn(tile);
+  if (tileHoverTimeout) {
+    clearTimeout(tileHoverTimeout);
+    tileHoverTimeout = null;
+  }
+  if (tile) {
+    for (const fn of tileHoverListeners) fn(tile);
+  } else {
+    tileHoverTimeout = setTimeout(() => {
+      for (const fn of tileHoverListeners) fn(null);
+    }, 120);
+  }
 }
 
 const CenterInspectedTilePreview = React.memo(function CenterInspectedTilePreview({
@@ -654,6 +666,13 @@ const CenterInspectedTilePreview = React.memo(function CenterInspectedTilePrevie
   return (
     <div
       onClick={() => onTileClick(inspectedTile)}
+      onMouseEnter={() => {
+        if (tileHoverTimeout) {
+          clearTimeout(tileHoverTimeout);
+          tileHoverTimeout = null;
+        }
+      }}
+      onMouseLeave={() => notifyTileHover(null)}
       className={`pointer-events-auto w-full max-w-sm ${
         isDarkMode ? 'bg-[#0f172a]/95 border-slate-700 text-slate-100 shadow-[0_8px_24px_rgba(0,0,0,0.45)]' : 'bg-white/95 border-[#cbd5e1] text-[#0f172a] shadow-[0_8px_24px_rgba(0,0,0,0.12)]'
       } border rounded-xl px-2.5 py-1.5 flex items-center justify-between gap-2 animate-fadeIn cursor-pointer hover:border-amber-400 transition-colors backdrop-blur-md`}
@@ -1389,6 +1408,7 @@ export function Board({
     >
       {/* 11x11 Grid Tahta */}
       <div
+        onMouseLeave={handleTileMouseLeave}
         className={`relative w-full h-full grid gap-0.5 sm:gap-1 rounded-2xl p-0.5 sm:p-1 transition-colors duration-500 overflow-hidden ${
           isApocalypse
             ? 'bg-[#450a0a] border-4 border-rose-600 shadow-[0_0_65px_rgba(225,29,72,0.7)] ring-4 ring-rose-500/60'

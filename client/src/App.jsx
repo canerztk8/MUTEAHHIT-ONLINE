@@ -279,7 +279,7 @@ export function App() {
   const [copiedLink, setCopiedLink] = useState(false);
   const [volume, setVolumeState] = useState(() => {
     const saved = localStorage.getItem('muteahhit_vol');
-    return saved !== null ? Number(saved) : 0.7;
+    return saved !== null ? Number(saved) : 0.6;
   });
 
   const handleVolumeChange = (newVal) => {
@@ -1327,7 +1327,8 @@ export function App() {
                 copiedLink={copiedLink}
                 onCopyLink={copyRoomLink}
                 volume={volume}
-                onVolumeToggle={() => handleVolumeChange(volume === 0 ? 0.7 : 0)}
+                onVolumeChange={handleVolumeChange}
+                onVolumeToggle={() => handleVolumeChange(volume === 0 ? 0.6 : 0)}
                 onLeaveGame={() => handleLeaveGame(false)}
                 isDarkMode={isDarkMode}
                 onToggleDarkMode={toggleDarkMode}

@@ -1,7 +1,8 @@
 // Web Audio API Sound Synthesizer with Master Volume Control
 let audioCtx = null;
 let masterGain = null;
-let currentVolume = 0.7;
+const MASTER_VOLUME_SCALE = 0.85; // Oyunun tüm ses ve ses efektleri %15 kısıldı
+let currentVolume = 0.6; // Varsayılan seviye (%15 kısılarak 0.7 -> 0.6 yapıldı)
 
 function getAudioContext() {
   if (!audioCtx) {
@@ -9,7 +10,7 @@ function getAudioContext() {
     if (AudioContext) {
       audioCtx = new AudioContext();
       masterGain = audioCtx.createGain();
-      masterGain.gain.setValueAtTime(currentVolume, audioCtx.currentTime);
+      masterGain.gain.setValueAtTime(currentVolume * MASTER_VOLUME_SCALE, audioCtx.currentTime);
       masterGain.connect(audioCtx.destination);
     }
   }
@@ -137,7 +138,7 @@ const rawSounds = {
   setVolume(val) {
     currentVolume = Math.max(0, Math.min(1, val));
     if (audioCtx && masterGain) {
-      masterGain.gain.setValueAtTime(currentVolume, audioCtx.currentTime);
+      masterGain.gain.setValueAtTime(currentVolume * MASTER_VOLUME_SCALE, audioCtx.currentTime);
     }
   },
 
@@ -154,7 +155,7 @@ const rawSounds = {
         customDiceAudio.preload = 'auto';
       }
       if (customDiceAudio) {
-        customDiceAudio.volume = Math.min(1.0, currentVolume * 0.6);
+        customDiceAudio.volume = Math.min(1.0, currentVolume * 0.6 * MASTER_VOLUME_SCALE);
         customDiceAudio.currentTime = 0;
         const p = customDiceAudio.play();
         if (p !== undefined) {
@@ -654,7 +655,7 @@ const rawSounds = {
         customJailAudio.preload = 'auto';
       }
       if (customJailAudio) {
-        customJailAudio.volume = Math.min(1.0, currentVolume * 0.48);
+        customJailAudio.volume = Math.min(1.0, currentVolume * 0.48 * MASTER_VOLUME_SCALE);
         customJailAudio.currentTime = 0;
         const p = customJailAudio.play();
         if (p !== undefined) {
