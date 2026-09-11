@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Skull, Eye, LogOut, Trophy, AlertOctagon, X, Flame } from 'lucide-react';
 import { sounds } from '../sound/soundEffects.js';
 
@@ -12,32 +12,42 @@ export function EliminationModal({
   onShowWinner
 }) {
   const [secondsLeft, setSecondsLeft] = useState(5);
+  const playedElimIdRef = useRef(null);
+  const onCloseRef = useRef(onClose);
 
   useEffect(() => {
-    if (!elimination) return;
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
-    // Her elenme anında kesintisiz iflas buzzerı / hüznü çal
+  // Her elenme olayında (elimination.id) iflas sesini YALNIZCA BİR KEZ çal
+  useEffect(() => {
+    if (!elimination?.id) return;
+    if (playedElimIdRef.current === elimination.id) return;
+    playedElimIdRef.current = elimination.id;
+
     try {
       sounds.playBankruptcy();
     } catch (e) {}
+  }, [elimination?.id]);
 
-    // Başka bir oyuncu elendiyse 5 saniyelik otomatik kapanma geri sayımı
-    if (!isMe) {
-      setSecondsLeft(5);
-      const timer = setInterval(() => {
-        setSecondsLeft((prev) => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            if (onClose) onClose();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
+  // Başka bir oyuncu elendiyse 5 saniyelik otomatik kapanma geri sayımı (onClose yeniden oluşunca sıfırlanmaz)
+  useEffect(() => {
+    if (!elimination || isMe) return;
 
-      return () => clearInterval(timer);
-    }
-  }, [elimination, isMe, onClose]);
+    setSecondsLeft(5);
+    const timer = setInterval(() => {
+      setSecondsLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          if (onCloseRef.current) onCloseRef.current();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [elimination?.id, isMe]);
 
   if (!elimination) return null;
 

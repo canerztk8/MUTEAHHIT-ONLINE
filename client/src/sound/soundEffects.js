@@ -42,6 +42,7 @@ if (typeof window !== 'undefined') {
 }
 
 let lastImpactSoundTime = 0;
+let lastBankruptcyTime = 0;
 
 // ─── AudioBuffer Havuzu (Buffer Pooling) ──────────────────────────────────
 // Her zar çarpışmasında, kart çekiminde ve kodes kapısında yeni Float32Array
@@ -779,6 +780,10 @@ const rawSounds = {
   // 💀 İflas Zili & Kayıp Sireni (Dramatik İflas Buzzerı ve Hüzünlü İniş Tonları)
   playBankruptcy() {
     try {
+      const nowMs = Date.now();
+      if (nowMs - lastBankruptcyTime < 3000) return;
+      lastBankruptcyTime = nowMs;
+
       const ctx = getAudioContext();
       if (!ctx || currentVolume === 0) return;
       const now = ctx.currentTime;

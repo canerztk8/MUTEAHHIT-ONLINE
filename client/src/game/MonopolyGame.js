@@ -1746,7 +1746,7 @@ export class MonopolyGame {
 
     // Eğer oyuncunun hiç mülkü yoksa ve parası eksideyse derhal iflas etmelidir
     if (playerProps.length === 0 && player.money < 0) {
-      this.addLog(`💥 ${player.name} ipotek edecek mülkü veya satılacak binası olmadığından borcunu (${player.money}₺) kapatamadı ve resmi oyun kuralları gereği İFLAS ETTİ!`, 'bankrupt');
+      this.addLog(`💥 ${player.name} ipotek edecek mülkü veya satılacak binası olmadığından borcunu (${player.money}₺) kapatamadı ve resmi oyun kuralları gereği İFLAS ETTİ!`, 'warning');
       this.declareBankruptcy(playerId);
       return { success: true, totalGained: 0, bankrupt: true, newBalance: player.money };
     }
@@ -1806,7 +1806,7 @@ export class MonopolyGame {
 
     // KRİTİK: Tüm mülkler ipotek edildiği ve binalar satıldığı halde bakiye hala eksideyse, resmi kurallar gereği oyuncu kaçınılmaz olarak İFLAS eder!
     if (player.money < 0) {
-      this.addLog(`💥 ${player.name} tüm tapularını ipotek etmesine ve binalarını satmasına rağmen borcunu kapatamadı (${player.money}₺) ve resmi oyun kuralları gereği İFLAS ETTİ!`, 'bankrupt');
+      this.addLog(`💥 ${player.name} tüm tapularını ipotek etmesine ve binalarını satmasına rağmen borcunu kapatamadı (${player.money}₺) ve resmi oyun kuralları gereği İFLAS ETTİ!`, 'warning');
       this.declareBankruptcy(playerId);
       return { success: true, totalGained, bankrupt: true, newBalance: player.money };
     }
@@ -2162,7 +2162,7 @@ export class MonopolyGame {
       this.status = 'ended';
       this.phase = 'GAME_OVER';
       this.computeStandings(this.winner);
-      this.addLog(`🏆 OYUN BİTTİ! KAZANAN: ${this.winner.name}! Tebrikler! 🎉`, 'bankrupt');
+      this.addLog(`🏆 OYUN BİTTİ! KAZANAN: ${this.winner.name}! Tebrikler! 🎉`, 'winner');
       return this.winner;
     }
     return null;
@@ -2835,9 +2835,9 @@ export class MonopolyGame {
         this.winner = winner;
         this.status = 'ended';
         this.phase = 'GAME_OVER';
-        this.computeStandings(this.winner);
-        this.addLog(`🏆 [DEV] ${winner.name} şampiyon ilan edildi!`, 'bankrupt');
-        return { success: true };
+        this.computeStandings(winner);
+        this.addLog(`🏆 [DEV] ${winner.name} şampiyon ilan edildi!`, 'winner');
+        return { success: true, winner: winner.name };
       }
 
       case 'reset_game': {
