@@ -69,8 +69,8 @@ export function getTileArrowTarget(tileId) {
     else c = safeId - 19;
 
     innerX = COL_CENTERS[c];
-    innerY = 10.3; // Kartın alt kenarında, yukarı karta doğru bakar (tahta merkezine taşmaz)
-    rot = 180;
+    innerY = 2.0; // Kartın üst kenarında (renk çubuğunda), aşağı karta doğru bakar (alttaki sahip/isim çubuğunu asla kapatmaz)
+    rot = 0;
   } else {
     c = 11;
     r = safeId - 29;
@@ -1860,19 +1860,19 @@ export function Board({
 
         {/* Kesintisiz Kayarak İlerleyen 2D Konum Okları Katmanı */}
         <div className="absolute inset-0 pointer-events-none z-45 overflow-hidden">
-          {/* 1) Kendi Oyuncumuzun Altın Sarısı Kayar Oku (%10 daha kompakt ve hafif transparan) */}
+          {/* 1) Kendi Oyuncumuzun Altın Sarısı Kayar Oku (%10 kompakt ve transparan) */}
           <GlidingBoardArrow
             tileId={displayedPositions[effectiveMyPlayerId] ?? myPlayer?.position ?? 0}
             color={activePlayer?.id === effectiveMyPlayerId ? '#fbbf24' : '#f59e0b'}
             glowColor="rgba(245,158,11,0.95)"
             isVisible={Boolean(myPlayer)}
             scale={0.9}
-            opacity={0.86}
+            opacity={0.68}
             offsetAxis={(targetOpponent && (displayedPositions[targetOpponent.id] ?? targetOpponent.position) === (displayedPositions[effectiveMyPlayerId] ?? myPlayer?.position)) ? 'left' : 'none'}
             title="Konumunuz"
           />
 
-          {/* 2) Sıradaki veya Hareket Halindeki Rakibin Kendi Renginde Kayar Oku (Hareket bitene kadar asla kaybolmaz, %10 kompakt) */}
+          {/* 2) Sıradaki veya Hareket Halindeki Rakibin Kendi Renginde Kayar Oku (%10 kompakt ve transparan) */}
           {targetOpponent && (
             <GlidingBoardArrow
               tileId={displayedPositions[targetOpponent.id] ?? targetOpponent.position ?? 0}
@@ -1880,6 +1880,7 @@ export function Board({
               glowColor={`${targetOpponent.color || '#38bdf8'}ee`}
               isVisible={Boolean(targetOpponent)}
               scale={0.9}
+              opacity={0.72}
               offsetAxis={(displayedPositions[targetOpponent.id] ?? targetOpponent.position) === (displayedPositions[effectiveMyPlayerId] ?? myPlayer?.position) ? 'right' : 'none'}
               title={`${targetOpponent.name || 'Rakip'} Konumu`}
             />
