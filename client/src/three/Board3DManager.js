@@ -57,82 +57,6 @@ function createContactShadowMesh() {
   return mesh;
 }
 
-// ─── Prosedürel 3D Konum Oku (Chevron / Arrow Pointer) ─────────────────────────
-// Piyonun tam tepesinde süzülen, köşelerde 45° açıyla karta bakan şık ve hafif 3D ok.
-let cachedArrowGeo = null;
-function getArrowGeometry() {
-  if (!cachedArrowGeo) {
-    const shape = new THREE.Shape();
-    // Ok ucu +Z yönüne bakar (top-down görünümde South / aşağı)
-    shape.moveTo(0, 0.44);        // Uç
-    shape.lineTo(-0.24, 0.08);   // Sol kanat ucu
-    shape.lineTo(-0.11, 0.12);   // Sol iç oyuk
-    shape.lineTo(-0.11, -0.26);  // Sol gövde altı
-    shape.lineTo(0.11, -0.26);   // Sağ gövde altı
-    shape.lineTo(0.11, 0.12);    // Sağ iç oyuk
-    shape.lineTo(0.24, 0.08);    // Sağ kanat ucu
-    shape.closePath();
-
-    const extrudeSettings = {
-      depth: 0.10,
-      bevelEnabled: true,
-      bevelSegments: 2,
-      steps: 1,
-      bevelSize: 0.02,
-      bevelThickness: 0.02
-    };
-
-    const geo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-    // Geometriyi yatay XZ düzlemine yatır: +Z yönüne baksın
-    geo.rotateX(-Math.PI / 2);
-    geo.center();
-    cachedArrowGeo = geo;
-  }
-  return cachedArrowGeo;
-}
-
-function createLocationArrow(colorHex = '#fbbf24') {
-  const group = new THREE.Group();
-  group.name = 'player_location_arrow';
-
-  const geo = getArrowGeometry();
-  const mainColor = new THREE.Color(colorHex);
-
-  const mat = new THREE.MeshStandardMaterial({
-    color: mainColor,
-    emissive: mainColor,
-    emissiveIntensity: 0.88,
-    roughness: 0.22,
-    metalness: 0.18
-  });
-
-  const mesh = new THREE.Mesh(geo, mat);
-  mesh.castShadow = false;
-  mesh.receiveShadow = false;
-  group.add(mesh);
-
-  // Beyaz parıldayan kontur (Aura)
-  const edges = new THREE.EdgesGeometry(geo, 25);
-  const lineMat = new THREE.LineBasicMaterial({
-    color: 0xffffff,
-    transparent: true,
-    opacity: 0.92
-  });
-  const line = new THREE.LineSegments(edges, lineMat);
-  group.add(line);
-
-  group.userData = {
-    colorHex,
-    dispose: () => {
-      mat.dispose();
-      lineMat.dispose();
-      edges.dispose();
-    }
-  };
-
-  return group;
-}
-
 export class Board3DManager {
   constructor() {
     this.container = null;
@@ -256,11 +180,7 @@ export class Board3DManager {
     this.renderOnce();
   }
 
-  _disposeToken(root, shadow = null, arrow = null) {
-    if (arrow && this.scene) {
-      this.scene.remove(arrow);
-      arrow.userData?.dispose?.();
-    }
+  _disposeToken(root, shadow = null) {
     if (shadow && this.scene) {
       this.scene.remove(shadow);
       shadow.material?.dispose();
@@ -291,28 +211,8 @@ export class Board3DManager {
     return 0; // 31..39, 0
   }
 
-  // 3D Konum Oku Açısı: Tahtanın 4 köşesinde (0, 10, 20, 30) tam 45° çapraz, kenarlarında ise karta dik açı
-  _getTileArrowRotation(tileId) {
-    // 0: GO (Alt-Sağ Köşe) -> Tahta merkezinden sağ alta çapraz 45°
-    if (tileId === 0) return Math.PI / 4;
-    // 1..9: Alt Kenar -> Aşağı karta doğru (+Z)
-    if (tileId >= 1 && tileId <= 9) return 0;
-    // 10: Maliye / Kodes (Alt-Sol Köşe) -> Tahta merkezinden sol alta çapraz 45°
-    if (tileId === 10) return -Math.PI / 4;
-    // 11..19: Sol Kenar -> Sola karta doğru (-X)
-    if (tileId >= 11 && tileId <= 19) return -Math.PI / 2;
-    // 20: Ücretsiz Otopark (Üst-Sol Köşe) -> Tahta merkezinden sol üste çapraz 45°
-    if (tileId === 20) return -3 * Math.PI / 4;
-    // 21..29: Üst Kenar -> Yukarı karta doğru (-Z)
-    if (tileId >= 21 && tileId <= 29) return Math.PI;
-    // 30: Müfettiş (Üst-Sağ Köşe) -> Tahta merkezinden sağ üste çapraz 45°
-    if (tileId === 30) return 3 * Math.PI / 4;
-    // 31..39: Sağ Kenar -> Sağa karta doğru (+X)
-    return Math.PI / 2;
-  }
-
   // Oyuncu 3D piyonlarının Three.js sahnesiyle canlı senkronizasyonu
-  syncPlayers(players, displayedPositions = {}, myPlayerId = null, currentTurnPlayerId = null) {
+  syncPlayers(players, displayedPositions = {}) {
     if (!this.scene) return;
     if (!players || !Array.isArray(players)) return;
 
@@ -334,14 +234,14 @@ export class Board3DManager {
       if (!activePlayerIds.has(pId)) {
         if (record?.root) {
           this.scene.remove(record.root);
-          this._disposeToken(record.root, record.shadow, record.arrow);
+          this._disposeToken(record.root, record.shadow);
         }
         this.playerTokens.delete(pId);
         hasMovement = true;
       }
     }
 
-    // 3. Her aktif oyuncunun 3D piyonunu ve konum okunu senkronize et
+    // 3. Her aktif oyuncunun 3D piyonunu senkronize et
     for (const p of players) {
       if (p.isBankrupt) continue;
 
@@ -355,12 +255,6 @@ export class Board3DManager {
       const targetX = worldPos.x + offset.x;
       const targetZ = worldPos.z + offset.z;
       const targetRotY = this._getBoardTrackRotation(tileId);
-
-      const isMe = p.id === myPlayerId;
-      const isTurn = Boolean(currentTurnPlayerId && p.id === currentTurnPlayerId);
-      const shouldHaveArrow = isMe || isTurn;
-      const arrowColor = isMe ? '#fbbf24' : (p.color || '#38bdf8');
-      const arrowRot = this._getTileArrowRotation(tileId);
 
       let record = this.playerTokens.get(p.id);
 
@@ -380,25 +274,13 @@ export class Board3DManager {
         shadow.position.set(targetX, 0.005, targetZ);
         this.scene.add(shadow);
 
-        let arrow = null;
-        if (shouldHaveArrow) {
-          arrow = createLocationArrow(arrowColor);
-          arrow.position.set(targetX, 0.97, targetZ);
-          arrow.rotation.y = arrowRot;
-          this.scene.add(arrow);
-        }
-
         record = {
           root,
           shadow,
-          arrow,
           currentTile: tileId,
           startPos: new THREE.Vector3(targetX, 0.02, targetZ),
           targetPos: new THREE.Vector3(targetX, 0.02, targetZ),
-          startRotY: targetRotY,
           targetRotY,
-          startArrowRot: arrowRot,
-          targetArrowRot: arrowRot,
           hopProgress: 1.0,
           tokenId: p.token?.id,
           color: p.color
@@ -431,50 +313,12 @@ export class Board3DManager {
           hasMovement = true;
         }
 
-        // 3D Konum Oku Yönetimi (Bizim oyuncumuzda daima, rakipte ise sadece sıra ondayken)
-        if (shouldHaveArrow) {
-          if (!record.arrow) {
-            const arrow = createLocationArrow(arrowColor);
-            arrow.position.set(record.root.position.x, record.root.position.y + 0.97, record.root.position.z);
-            arrow.rotation.y = arrowRot;
-            this.scene.add(arrow);
-            record.arrow = arrow;
-            record.startArrowRot = arrowRot;
-            record.targetArrowRot = arrowRot;
-            hasMovement = true;
-          } else if (record.arrow.userData.colorHex !== arrowColor) {
-            this.scene.remove(record.arrow);
-            record.arrow.userData?.dispose?.();
-            const arrow = createLocationArrow(arrowColor);
-            arrow.position.set(record.root.position.x, record.root.position.y + 0.97, record.root.position.z);
-            arrow.rotation.y = arrowRot;
-            this.scene.add(arrow);
-            record.arrow = arrow;
-            record.startArrowRot = arrowRot;
-            record.targetArrowRot = arrowRot;
-            hasMovement = true;
-          }
-        } else if (record.arrow) {
-          this.scene.remove(record.arrow);
-          record.arrow.userData?.dispose?.();
-          record.arrow = null;
-          hasMovement = true;
-        }
-
         record.targetRotY = targetRotY;
 
         // Kare değişimi -> Zıplama animasyonunu (parabolik hop) başlat
         if (record.currentTile !== tileId) {
           record.startPos.copy(record.root.position);
           record.targetPos.set(targetX, 0.02, targetZ);
-          record.startRotY = record.root.rotation.y;
-          record.targetRotY = targetRotY;
-
-          if (record.arrow) {
-            record.startArrowRot = record.arrow.rotation.y;
-            record.targetArrowRot = arrowRot;
-          }
-
           record.hopProgress = 0.0;
           record.currentTile = tileId;
           hasMovement = true;
@@ -483,9 +327,6 @@ export class Board3DManager {
           if (Math.abs(record.targetPos.x - targetX) > 0.01 || Math.abs(record.targetPos.z - targetZ) > 0.01) {
             record.targetPos.set(targetX, 0.02, targetZ);
             hasMovement = true;
-          }
-          if (record.arrow) {
-            record.targetArrowRot = arrowRot;
           }
         }
       }
@@ -530,8 +371,8 @@ export class Board3DManager {
 
       if (record.hopProgress < 1.0) {
         hasActiveAnimation = true;
-        // 160ms'lik adım süresine tam uyumlu, pürüzsüz ve doğal parabolik yay temposu (1.0 / 0.160s = 6.25)
-        record.hopProgress = Math.min(1.0, record.hopProgress + dt * 6.25);
+        // 175ms'lik adım süresine tam uyumlu, pürüzsüz ve doğal parabolik yay temposu (1.0 / 0.153s ≈ 6.5)
+        record.hopProgress = Math.min(1.0, record.hopProgress + dt * 6.5);
         const t = record.hopProgress;
 
         // X ve Z ekseninde pürüzsüz smoothstep interpolasyonu
@@ -554,70 +395,54 @@ export class Board3DManager {
           record.shadow.material.opacity = Math.max(0.18, 0.68 - (arc / hopHeight) * 0.45);
         }
 
-        // 2. YÖN DÖNÜŞÜ (Hop easeT'ye kilitli, yere temas anında 100% tamamlanan pürüzsüz köşe dönüşü)
+        // 2. YÖN DÖNÜŞÜ (Smooth rotation towards movement track)
         if (record.targetRotY !== undefined) {
-          const startRot = record.startRotY !== undefined ? record.startRotY : record.root.rotation.y;
-          const rotDiff = Math.atan2(Math.sin(record.targetRotY - startRot), Math.cos(record.targetRotY - startRot));
-          record.root.rotation.y = normalizeAngle(startRot + rotDiff * easeT);
+          record.root.rotation.y = lerpAngle(record.root.rotation.y, record.targetRotY, dt * 12.0);
         }
 
         // 3. SQUASH & STRETCH FİZİĞİ:
+        // Havada yükselirken dikey uzama (stretch), yere temas anında mikro yaylanma (squash)
         let scaleY = 1.0;
         let scaleXZ = 1.0;
         if (t < 0.82) {
+          // Havalanma ve tepe noktası: hafifçe uzama
           const stretch = (arc / hopHeight) * 0.15;
           scaleY = 1.0 + stretch;
           scaleXZ = 1.0 - stretch * 0.5;
         } else {
+          // Yere iniş (Landing): yaylanma
           const landT = (t - 0.82) / 0.18; // 0..1
           const squash = Math.sin(landT * Math.PI) * 0.15;
           scaleY = 1.0 - squash;
           scaleXZ = 1.0 + squash * 0.6;
         }
         record.root.scale.set(scaleXZ, scaleY, scaleXZ);
-
-        // 4. 3D KONUM OKU (Piyonla havada %100 senkronize zıplama ve köşe 45° açısına pürüzsüz dönüş)
-        if (record.arrow) {
-          const floatBob = Math.sin(now * 0.0038) * 0.06;
-          record.arrow.position.x = record.root.position.x;
-          record.arrow.position.z = record.root.position.z;
-          record.arrow.position.y = record.root.position.y + 0.95 + floatBob;
-
-          if (record.targetArrowRot !== undefined) {
-            const startArrow = record.startArrowRot !== undefined ? record.startArrowRot : record.arrow.rotation.y;
-            const arrowDiff = Math.atan2(Math.sin(record.targetArrowRot - startArrow), Math.cos(record.targetArrowRot - startArrow));
-            record.arrow.rotation.y = normalizeAngle(startArrow + arrowDiff * easeT);
-          }
-        }
       } else {
-        // Dinlenme (Idle): pürüzsüzce orijinal ölçeğe ve zemine tam otur
+        // Dinlenme (Idle): pürüzsüzce orijinal ölçeğe ve zemine yerleş (Sıfır bellek tahsisi)
         record.root.scale.lerp(VECTOR_ONE, 0.22);
-        record.root.position.copy(record.targetPos);
-        record.root.position.y = 0.02;
+
+        const distSq = record.root.position.distanceToSquared(record.targetPos);
+        if (distSq > 0.0001) {
+          hasActiveAnimation = true;
+          record.root.position.lerp(record.targetPos, 0.25);
+        } else {
+          record.root.position.copy(record.targetPos);
+        }
 
         if (record.shadow) {
-          record.shadow.position.x = record.targetPos.x;
-          record.shadow.position.z = record.targetPos.z;
+          record.shadow.position.x = record.root.position.x;
+          record.shadow.position.z = record.root.position.z;
           record.shadow.scale.lerp(VECTOR_ONE, 0.22);
           record.shadow.material.opacity = THREE.MathUtils.lerp(record.shadow.material.opacity, 0.68, 0.22);
         }
 
         if (record.targetRotY !== undefined) {
-          record.root.rotation.y = record.targetRotY;
-          record.startRotY = record.targetRotY;
-        }
-
-        // 4. 3D KONUM OKU (Dinlenme anında piyonun tepesinde hafif süzülme - floating bobbing)
-        if (record.arrow) {
-          hasActiveAnimation = true;
-          const floatBob = Math.sin(now * 0.0038) * 0.06;
-          record.arrow.position.x = record.targetPos.x;
-          record.arrow.position.z = record.targetPos.z;
-          record.arrow.position.y = 0.97 + floatBob;
-
-          if (record.targetArrowRot !== undefined) {
-            record.arrow.rotation.y = record.targetArrowRot;
-            record.startArrowRot = record.targetArrowRot;
+          const diff = Math.abs(Math.atan2(Math.sin(record.targetRotY - record.root.rotation.y), Math.cos(record.targetRotY - record.root.rotation.y)));
+          if (diff > 0.005) {
+            hasActiveAnimation = true;
+            record.root.rotation.y = lerpAngle(record.root.rotation.y, record.targetRotY, 0.2);
+          } else {
+            record.root.rotation.y = record.targetRotY;
           }
         }
       }
@@ -650,10 +475,6 @@ export class Board3DManager {
     }
     if (this.playerTokens) {
       for (const record of this.playerTokens.values()) {
-        if (record?.arrow) {
-          this.scene?.remove(record.arrow);
-          record.arrow.userData?.dispose?.();
-        }
         if (record?.shadow) {
           this.scene?.remove(record.shadow);
           record.shadow.geometry?.dispose();
