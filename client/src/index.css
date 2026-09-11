@@ -715,14 +715,25 @@ html.dark ::-webkit-scrollbar-thumb:hover {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }
-.perf-mode .backdrop-blur-2xl,
-.perf-mode .backdrop-blur-xl,
-.perf-mode .backdrop-blur-lg,
-.perf-mode .backdrop-blur-md,
-.perf-mode .backdrop-blur-sm,
-.perf-mode .backdrop-blur-\[3px\] {
+
+/* Tüm Tailwind backdrop-blur varyasyonlarını (md, lg, xl, 2xl, [1px], [3px] vb.) kesin olarak sıfırla */
+.perf-mode [class*="backdrop-blur"] {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+}
+
+/* Arka plandaki devasa dekoratif Gaussian blur parıltı toplarını (blur-3xl, blur-2xl vb.) gizleyerek GPU rasterization'ı baypas et */
+.perf-mode [class*="blur-"],
+.perf-mode .blur-3xl,
+.perf-mode .blur-2xl,
+.perf-mode .blur-xl,
+.perf-mode .blur-lg,
+.perf-mode .blur-md,
+.perf-mode .blur-sm,
+.perf-mode .blur {
+  filter: none !important;
+  -webkit-filter: none !important;
+  display: none !important;
 }
 
 .perf-mode .bg-slate-900\/60,
