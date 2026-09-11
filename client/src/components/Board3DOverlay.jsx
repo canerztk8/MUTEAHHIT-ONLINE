@@ -5,6 +5,7 @@ export function Board3DOverlay({
   gameState,
   displayedPositions = {},
   myPlayerId,
+  currentTurnPlayerId,
   onRollDice,
   canRoll = false
 }) {
@@ -32,7 +33,7 @@ export function Board3DOverlay({
 
     // Sahne kurulduğu anda mevcut oyuncu piyonlarını anında render et
     if (gameState?.players) {
-      manager.syncPlayers(gameState.players, displayedPositions);
+      manager.syncPlayers(gameState.players, displayedPositions, myPlayerId, currentTurnPlayerId);
     }
 
     return () => {
@@ -51,14 +52,16 @@ export function Board3DOverlay({
   // Oyuncu piyonlarının 3D dünyada senkronize edilmesi ve adım adım zıplaması
   const playersSyncKey = React.useMemo(() => {
     if (!gameState?.players) return '';
-    return gameState.players
-      .map(p => `${p.id}:${displayedPositions[p.id] ?? p.position}:${p.color}:${p.token?.id || ''}:${p.isBankrupt}`)
-      .join('|');
-  }, [gameState?.players, displayedPositions]);
+    return (
+      gameState.players
+        .map(p => `${p.id}:${displayedPositions[p.id] ?? p.position}:${p.color}:${p.token?.id || ''}:${p.isBankrupt}`)
+        .join('|') + `|my:${myPlayerId}|turn:${currentTurnPlayerId}`
+    );
+  }, [gameState?.players, displayedPositions, myPlayerId, currentTurnPlayerId]);
 
   useEffect(() => {
     if (managerRef.current && gameState?.players) {
-      managerRef.current.syncPlayers(gameState.players, displayedPositions);
+      managerRef.current.syncPlayers(gameState.players, displayedPositions, myPlayerId, currentTurnPlayerId);
     }
   }, [playersSyncKey]);
 

@@ -364,102 +364,6 @@ const TileCell = React.memo(function TileCell({
         );
       })()}
 
-      {/* Kartın Üstünde Hafif Minimal Konum Oku (Cardboard İçine Bakan Şık İşaretçi) */}
-      {(isMyTile || isActiveTurnTile) && !isDemandHighlighted && (() => {
-        const isBothOnTile = isMyTile && isActiveTurnTile;
-
-        const renderMinimalArrow = (isSelf) => {
-          const arrowColor = isSelf
-            ? (isMyTurn ? '#fbbf24' : '#f59e0b')
-            : (activeTurnPlayer?.color || '#38bdf8');
-
-          const glowColor = isSelf
-            ? 'rgba(245,158,11,0.95)'
-            : `${activeTurnPlayer?.color || '#38bdf8'}ee`;
-
-          let containerClasses = '';
-          let arrowSvg = null;
-
-          if (isBottomEdge) {
-            // 0..10: Kareden yukarıda, aşağı karta doğru işaret eder
-            const xPos = isBothOnTile
-              ? (isSelf ? 'left-[32%] -translate-x-1/2' : 'left-[68%] -translate-x-1/2')
-              : 'left-1/2 -translate-x-1/2';
-            containerClasses = `bottom-full mb-0.5 sm:mb-1 ${xPos}`;
-            arrowSvg = (
-              <svg
-                className="w-3.5 h-2.5 sm:w-4 sm:h-3 animate-bounce flex-shrink-0"
-                style={{ filter: `drop-shadow(0 2px 5px ${glowColor})`, color: arrowColor }}
-                viewBox="0 0 14 10"
-              >
-                <polygon points="0,0 14,0 7,10" fill="currentColor" stroke="white" strokeWidth="1.2" strokeLinejoin="round" />
-              </svg>
-            );
-          } else if (isTopEdge) {
-            // 20..30: Kareden aşağıda, yukarı karta doğru işaret eder
-            const xPos = isBothOnTile
-              ? (isSelf ? 'left-[32%] -translate-x-1/2' : 'left-[68%] -translate-x-1/2')
-              : 'left-1/2 -translate-x-1/2';
-            containerClasses = `top-full mt-0.5 sm:mt-1 ${xPos}`;
-            arrowSvg = (
-              <svg
-                className="w-3.5 h-2.5 sm:w-4 sm:h-3 animate-bounce flex-shrink-0"
-                style={{ filter: `drop-shadow(0 2px 5px ${glowColor})`, color: arrowColor }}
-                viewBox="0 0 14 10"
-              >
-                <polygon points="7,0 14,10 0,10" fill="currentColor" stroke="white" strokeWidth="1.2" strokeLinejoin="round" />
-              </svg>
-            );
-          } else if (isLeftEdge) {
-            // 11..19: Kareden sağda, sola karta doğru işaret eder
-            const yPos = isBothOnTile
-              ? (isSelf ? 'top-[32%] -translate-y-1/2' : 'top-[68%] -translate-y-1/2')
-              : 'top-1/2 -translate-y-1/2';
-            containerClasses = `left-full ml-0.5 sm:ml-1 ${yPos}`;
-            arrowSvg = (
-              <svg
-                className="w-2.5 h-3.5 sm:w-3 sm:h-4 animate-bounce flex-shrink-0"
-                style={{ filter: `drop-shadow(0 2px 5px ${glowColor})`, color: arrowColor }}
-                viewBox="0 0 10 14"
-              >
-                <polygon points="0,7 10,0 10,14" fill="currentColor" stroke="white" strokeWidth="1.2" strokeLinejoin="round" />
-              </svg>
-            );
-          } else {
-            // 31..39: Kareden solda, sağa karta doğru işaret eder
-            const yPos = isBothOnTile
-              ? (isSelf ? 'top-[32%] -translate-y-1/2' : 'top-[68%] -translate-y-1/2')
-              : 'top-1/2 -translate-y-1/2';
-            containerClasses = `right-full mr-0.5 sm:mr-1 ${yPos}`;
-            arrowSvg = (
-              <svg
-                className="w-2.5 h-3.5 sm:w-3 sm:h-4 animate-bounce flex-shrink-0"
-                style={{ filter: `drop-shadow(0 2px 5px ${glowColor})`, color: arrowColor }}
-                viewBox="0 0 10 14"
-              >
-                <polygon points="10,7 0,0 0,14" fill="currentColor" stroke="white" strokeWidth="1.2" strokeLinejoin="round" />
-              </svg>
-            );
-          }
-
-          return (
-            <div
-              key={isSelf ? 'self-arrow' : 'turn-arrow'}
-              className={`absolute z-30 pointer-events-none flex items-center justify-center ${containerClasses}`}
-            >
-              {arrowSvg}
-            </div>
-          );
-        };
-
-        return (
-          <>
-            {isMyTile && renderMinimalArrow(true)}
-            {isActiveTurnTile && renderMinimalArrow(false)}
-          </>
-        );
-      })()}
-
       {/* Mülk Renk Çubuğu & Binalar */}
       {tile.groupColor && tile.type === 'property' && (
         <div
@@ -1805,6 +1709,7 @@ export function Board({
         gameState={gameState}
         displayedPositions={pawn3DPositions}
         myPlayerId={myPlayerId}
+        currentTurnPlayerId={activePlayer?.id}
         onRollDice={onRollDice}
         canRoll={canRoll}
       />
