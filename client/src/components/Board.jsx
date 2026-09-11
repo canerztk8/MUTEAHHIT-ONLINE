@@ -232,7 +232,7 @@ const TileCell = React.memo(function TileCell({
         ...gridPos,
         contain: (isDemandHighlighted || isMyTile || isActiveTurnTile) ? 'none' : 'paint layout'
       }}
-      className={`tile relative flex flex-col justify-between border transition-all duration-200 ease-out cursor-pointer ${
+      className={`tile relative flex flex-col justify-between border transition-all duration-100 ease-out cursor-pointer ${
         (isDemandHighlighted || isMyTile || isActiveTurnTile) ? 'overflow-visible z-35' : 'overflow-hidden'
       } group tile-paper-press ${
         tile.id === 0 && isApocalypse
@@ -1104,17 +1104,17 @@ export function Board({
                 current = nextTile;
                 const isFinalStep = step >= totalSteps;
 
-                // 1) 3D Piyon t=0ms anında derhal zıplamaya başlar:
+                // 1) Piyon ve konum oku derhal hedef kareye yönelir (ok asla piyonun gerisinde kalmaz):
                 setPawn3DPositions((prev) => ({ ...prev, [p.id]: isFinalStep ? targetPos : nextTile }));
+                setDisplayedPositions((prev) => ({ ...prev, [p.id]: isFinalStep ? targetPos : nextTile }));
                 sounds.playStep();
 
                 if (isFinalStep) {
                   clearInterval(interval);
                   delete activeIntervalsRef.current[p.id];
 
-                  // Piyonun son kareye temas anı (~125ms): ok ve parıltı hedefe varır, hareket tamamlanır
+                  // Piyonun son kareye temas anında (~140ms) hareket tamamlanır
                   const finalTouchdown = setTimeout(() => {
-                    setDisplayedPositions((prev) => ({ ...prev, [p.id]: targetPos }));
                     setIsMovingPawn(false);
 
                     // Piyon tam kareye ulaştı: bekleyen kira bildirimi ve ses efektini tetikle
@@ -1128,14 +1128,8 @@ export function Board({
                     if (onPawnLanded) {
                       onPawnLanded(p.id, targetPos);
                     }
-                  }, 125);
+                  }, 140);
                   activeIntervalsRef.current[`final_${p.id}`] = finalTouchdown;
-                } else {
-                  // Ara adımlarda piyon yere indiğinde (~125ms) 2D ok ve kart parıltısı yeni kareye geçer
-                  const touchdownTimeout = setTimeout(() => {
-                    setDisplayedPositions((prev) => ({ ...prev, [p.id]: nextTile }));
-                  }, 125);
-                  activeIntervalsRef.current[`touchdown_${p.id}`] = touchdownTimeout;
                 }
               }, 175);
 
@@ -1174,6 +1168,7 @@ export function Board({
                   const isFinalStep = step >= totalSteps;
 
                   setPawn3DPositions((prev) => ({ ...prev, [p.id]: isFinalStep ? targetPos : nextTile }));
+                  setDisplayedPositions((prev) => ({ ...prev, [p.id]: isFinalStep ? targetPos : nextTile }));
                   sounds.playStep();
 
                   if (isFinalStep) {
@@ -1181,7 +1176,6 @@ export function Board({
                     delete activeIntervalsRef.current[p.id];
 
                     const finalTouchdown = setTimeout(() => {
-                      setDisplayedPositions((prev) => ({ ...prev, [p.id]: targetPos }));
                       setIsMovingPawn(false);
 
                       if (pendingRentRef.current) {
@@ -1195,11 +1189,6 @@ export function Board({
                       }
                     }, 80);
                     activeIntervalsRef.current[`final_${p.id}`] = finalTouchdown;
-                  } else {
-                    const touchdownTimeout = setTimeout(() => {
-                      setDisplayedPositions((prev) => ({ ...prev, [p.id]: nextTile }));
-                    }, 80);
-                    activeIntervalsRef.current[`touchdown_${p.id}`] = touchdownTimeout;
                   }
                 }, 110);
 
@@ -1240,6 +1229,7 @@ export function Board({
                 const isFinalStep = step >= stepsToInspector;
 
                 setPawn3DPositions((prev) => ({ ...prev, [p.id]: isFinalStep ? 30 : nextTile }));
+                setDisplayedPositions((prev) => ({ ...prev, [p.id]: isFinalStep ? 30 : nextTile }));
                 sounds.playStep();
 
                 if (isFinalStep) {
@@ -1247,7 +1237,6 @@ export function Board({
                   delete activeIntervalsRef.current[p.id];
 
                   const finalTouchdown = setTimeout(() => {
-                    setDisplayedPositions((prev) => ({ ...prev, [p.id]: 30 }));
                     sounds.playJail();
 
                     // 30. karede (Müfettiş) teftiş uyarısını oyuncu görsün, ardından 900ms sonra 10. kareye (Maliye) sevk et
@@ -1266,11 +1255,6 @@ export function Board({
                     activeIntervalsRef.current[`transfer_${p.id}`] = jailTransferTimeout;
                   }, 125);
                   activeIntervalsRef.current[`final_${p.id}`] = finalTouchdown;
-                } else {
-                  const touchdownTimeout = setTimeout(() => {
-                    setDisplayedPositions((prev) => ({ ...prev, [p.id]: nextTile }));
-                  }, 125);
-                  activeIntervalsRef.current[`touchdown_${p.id}`] = touchdownTimeout;
                 }
               }, 175);
 
