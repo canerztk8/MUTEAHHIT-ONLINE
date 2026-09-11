@@ -118,6 +118,12 @@ function getPeerConfig() {
 // Client ACTION'ı relay:msg ile gönderir (sadece diğerlerine iletilir).
 
 function getRelayUrl() {
+  const envHost = import.meta.env.VITE_PEER_HOST;
+  if (envHost) {
+    const protocol = (import.meta.env.VITE_PEER_SECURE === 'false') ? 'ws:' : 'wss:';
+    const port = import.meta.env.VITE_PEER_PORT ? `:${import.meta.env.VITE_PEER_PORT}` : '';
+    return `${protocol}//${envHost}${port}/wsrelay`;
+  }
   const hostname = window.location.hostname;
   const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';

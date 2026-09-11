@@ -1,0 +1,8 @@
+node_modules
+client
+.git
+.agents
+.antigravity
+test
+scripts
+preview*

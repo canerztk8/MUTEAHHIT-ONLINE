@@ -219,11 +219,6 @@ const TileCell = React.memo(function TileCell({
   onMouseEnter,
   onMouseLeave
 }) {
-  const isBottomEdge = tile.id >= 0 && tile.id <= 10;
-  const isTopEdge = tile.id >= 20 && tile.id <= 30;
-  const isLeftEdge = tile.id >= 11 && tile.id <= 19;
-  const isRightEdge = tile.id >= 31 && tile.id <= 39;
-
   return (
     <div
       onClick={() => onTileClick(tile)}
@@ -232,8 +227,8 @@ const TileCell = React.memo(function TileCell({
         ...gridPos,
         contain: (isDemandHighlighted || isMyTile || isActiveTurnTile) ? 'none' : 'paint layout'
       }}
-      className={`tile relative flex flex-col justify-between border transition-all duration-100 cursor-pointer ${
-        (isDemandHighlighted || isMyTile || isActiveTurnTile) ? 'overflow-visible z-30' : 'overflow-hidden'
+      className={`tile relative flex flex-col justify-between border transition-all duration-200 ease-out cursor-pointer ${
+        isDemandHighlighted ? 'overflow-visible z-30' : (isMyTile || isActiveTurnTile) ? 'overflow-hidden z-20' : 'overflow-hidden'
       } group tile-paper-press ${
         tile.id === 0 && isApocalypse
           ? 'bg-gradient-to-br from-rose-950 via-red-950 to-slate-950 text-rose-100 border-2 border-rose-500 shadow-[inset_0_0_25px_rgba(225,29,72,0.85)]'
@@ -276,8 +271,36 @@ const TileCell = React.memo(function TileCell({
         />
       )}
 
+      {/* Karakterimizin Bulunduğu Kare İçin Şık ve Yumuşak Zemin Işıması (Soft Ambient Card Glow) */}
+      {isMyTile && !isDemandHighlighted && (
+        <div
+          className={`absolute inset-0 z-10 pointer-events-none rounded-xs transition-opacity duration-200 ${
+            isMyTurn
+              ? 'bg-amber-400/12 ring-inset ring-1.5 ring-amber-400/50 shadow-[inset_0_0_16px_rgba(245,158,11,0.25)]'
+              : 'bg-amber-400/8 ring-inset ring-1 ring-amber-400/35 shadow-[inset_0_0_12px_rgba(245,158,11,0.18)]'
+          }`}
+        />
+      )}
+
+      {/* Sıradaki Diğer Oyuncunun Bulunduğu Kare İçin Yumuşak Zemin Işıması */}
+      {isActiveTurnTile && !isMyTile && !isDemandHighlighted && (
+        <div
+          className="absolute inset-0 z-10 pointer-events-none rounded-xs transition-opacity duration-200"
+          style={{
+            backgroundColor: `${activeTurnPlayer?.color || '#38bdf8'}12`,
+            boxShadow: `inset 0 0 14px ${activeTurnPlayer?.color || '#38bdf8'}30`,
+            border: `1px solid ${activeTurnPlayer?.color || '#38bdf8'}50`
+          }}
+        />
+      )}
+
       {/* Açık Artırma veya Takas Talep Belirgin Konum İşareti (İçeriden Tahtaya Doğru Yönelen Kusursuz Ortalanmış İşaretçi) */}
       {isDemandHighlighted && (() => {
+        const isBottomEdge = tile.id >= 0 && tile.id <= 10;
+        const isTopEdge = tile.id >= 20 && tile.id <= 30;
+        const isLeftEdge = tile.id >= 11 && tile.id <= 19;
+        const isRightEdge = tile.id >= 31 && tile.id <= 39;
+
         const containerClasses = isTopEdge
           ? 'top-full inset-x-0 pt-1 flex flex-col items-center demand-indicator-top'
           : isLeftEdge
@@ -341,127 +364,6 @@ const TileCell = React.memo(function TileCell({
         );
       })()}
 
-      {/* Karakterimizin veya Sıradaki Oyuncunun Konumunu Gösteren Cardboard'un İçine Bakan Belirgin Pin / Rozet */}
-      {(isMyTile || isActiveTurnTile) && (() => {
-        const isBothOnTile = isMyTile && isActiveTurnTile;
-
-        const renderPin = (isSelf) => {
-          let containerPos = '';
-          if (isBottomEdge) {
-            // 0..10 (Alt Kenar): Kareden yukarıda, cardboard merkezine doğru, aşağı (kareye) işaret eder
-            const xPos = isBothOnTile
-              ? (isSelf ? 'left-[26%] -translate-x-1/2' : 'left-[74%] -translate-x-1/2')
-              : 'left-1/2 -translate-x-1/2';
-            containerPos = `bottom-full mb-1 sm:mb-1.5 ${xPos} flex-col items-center`;
-          } else if (isTopEdge) {
-            // 20..30 (Üst Kenar): Kareden aşağıda, cardboard merkezine doğru, yukarı (kareye) işaret eder
-            const xPos = isBothOnTile
-              ? (isSelf ? 'left-[26%] -translate-x-1/2' : 'left-[74%] -translate-x-1/2')
-              : 'left-1/2 -translate-x-1/2';
-            containerPos = `top-full mt-1 sm:mt-1.5 ${xPos} flex-col items-center`;
-          } else if (isLeftEdge) {
-            // 11..19 (Sol Kenar): Kareden sağda, cardboard merkezine doğru, sola (kareye) işaret eder
-            const yPos = isBothOnTile
-              ? (isSelf ? 'top-[26%] -translate-y-1/2' : 'top-[74%] -translate-y-1/2')
-              : 'top-1/2 -translate-y-1/2';
-            containerPos = `left-full ml-1 sm:ml-1.5 ${yPos} flex-row items-center`;
-          } else {
-            // 31..39 (Sağ Kenar): Kareden solda, cardboard merkezine doğru, sağa (kareye) işaret eder
-            const yPos = isBothOnTile
-              ? (isSelf ? 'top-[26%] -translate-y-1/2' : 'top-[74%] -translate-y-1/2')
-              : 'top-1/2 -translate-y-1/2';
-            containerPos = `right-full mr-1 sm:mr-1.5 ${yPos} flex-row items-center`;
-          }
-
-          const pinColor = isSelf
-            ? (isMyTurn ? '#f59e0b' : '#d97706')
-            : (activeTurnPlayer?.color || '#0284c7');
-
-          let arrowSvg = null;
-          if (isBottomEdge) {
-            arrowSvg = (
-              <svg className="w-2.5 h-1.5 -mt-[1px] drop-shadow-sm flex-shrink-0" style={{ color: pinColor }} viewBox="0 0 10 6" fill="currentColor">
-                <polygon points="0,0 10,0 5,6" />
-              </svg>
-            );
-          } else if (isTopEdge) {
-            arrowSvg = (
-              <svg className="w-2.5 h-1.5 -mb-[1px] drop-shadow-sm flex-shrink-0" style={{ color: pinColor }} viewBox="0 0 10 6" fill="currentColor">
-                <polygon points="5,0 10,6 0,6" />
-              </svg>
-            );
-          } else if (isLeftEdge) {
-            arrowSvg = (
-              <svg className="w-1.5 h-2.5 -mr-[1px] drop-shadow-sm flex-shrink-0" style={{ color: pinColor }} viewBox="0 0 6 10" fill="currentColor">
-                <polygon points="0,5 6,0 6,10" />
-              </svg>
-            );
-          } else {
-            arrowSvg = (
-              <svg className="w-1.5 h-2.5 -ml-[1px] drop-shadow-sm flex-shrink-0" style={{ color: pinColor }} viewBox="0 0 6 10" fill="currentColor">
-                <polygon points="6,5 0,0 0,10" />
-              </svg>
-            );
-          }
-
-          const badgePill = (
-            <div
-              className={`font-black text-[7px] sm:text-[8.5px] px-1.5 sm:px-2 py-0.5 rounded-full border-2 border-white tracking-wider flex items-center gap-1 whitespace-nowrap leading-none shadow-md ${
-                isSelf
-                  ? (isMyTurn
-                      ? 'bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 text-slate-950 ring-2 ring-amber-400/90 shadow-[0_0_12px_rgba(245,158,11,0.85)] animate-pulse'
-                      : 'bg-gradient-to-r from-amber-500 to-amber-600 text-white ring-1 ring-amber-300/80 shadow-md')
-                  : 'text-white shadow-md'
-              }`}
-              style={!isSelf ? {
-                backgroundColor: activeTurnPlayer?.color || '#0284c7',
-                boxShadow: `0 0 10px ${activeTurnPlayer?.color || '#38bdf8'}90`
-              } : undefined}
-            >
-              <span className="text-[8px] sm:text-[9.5px] leading-none">{isSelf ? '📍' : '🎲'}</span>
-              <span className="font-space font-extrabold max-w-[45px] sm:max-w-[65px] truncate">
-                {isSelf ? 'SEN' : (activeTurnPlayer?.name || 'Rakip')}
-              </span>
-              {isSelf && isMyTurn && (
-                <span className="hidden xs:inline text-[6px] sm:text-[7px] font-bold opacity-90">
-                  (SIRAN)
-                </span>
-              )}
-              {!isSelf && (
-                <span className="hidden xs:inline text-[6px] sm:text-[7px] font-bold opacity-90">
-                  (SIRADA)
-                </span>
-              )}
-            </div>
-          );
-
-          return (
-            <div
-              key={isSelf ? 'self-pin' : 'turn-pin'}
-              className={`absolute z-40 flex pointer-events-none drop-shadow-[0_2px_8px_rgba(0,0,0,0.7)] ${containerPos} ${!isSelf ? 'animate-bounce' : ''}`}
-            >
-              {(isTopEdge || isLeftEdge) ? (
-                <>
-                  {arrowSvg}
-                  {badgePill}
-                </>
-              ) : (
-                <>
-                  {badgePill}
-                  {arrowSvg}
-                </>
-              )}
-            </div>
-          );
-        };
-
-        return (
-          <>
-            {isMyTile && renderPin(true)}
-            {isActiveTurnTile && renderPin(false)}
-          </>
-        );
-      })()}
 
       {/* Mülk Renk Çubuğu & Binalar */}
       {tile.groupColor && tile.type === 'property' && (
@@ -1697,14 +1599,14 @@ export function Board({
               ? 'demand-highlight-auction'
               : 'demand-highlight-trade';
           } else if (isActiveTurnTile && isMyTile) {
-            ringClass = 'ring-2 ring-amber-400 border-amber-400 shadow-[0_0_18px_rgba(245,158,11,0.9)] z-30';
+            ringClass = 'ring-2 ring-amber-400 border-amber-400 shadow-[0_0_18px_rgba(245,158,11,0.75)] z-20';
           } else if (isActiveTurnTile) {
-            ringClass = 'ring-2 ring-sky-400 border-sky-400 shadow-[0_0_16px_rgba(14,165,233,0.85)] z-30';
+            ringClass = 'ring-2 ring-sky-400 border-sky-400 shadow-[0_0_14px_rgba(14,165,233,0.7)] z-20';
           } else if (isMyTile) {
             if (isMyTurn) {
-              ringClass = 'ring-2 ring-amber-400 border-amber-400 shadow-[0_0_18px_rgba(245,158,11,0.9)] z-30';
+              ringClass = 'ring-2 ring-amber-400 border-amber-400 shadow-[0_0_18px_rgba(245,158,11,0.75)] z-20';
             } else {
-              ringClass = 'ring-2 ring-amber-400/80 border-amber-400/80 shadow-[0_0_12px_rgba(245,158,11,0.65)] z-20';
+              ringClass = 'ring-1.5 ring-amber-400/85 border-amber-400/85 shadow-[0_0_12px_rgba(245,158,11,0.5)] z-20';
             }
           } else if (owner) {
             ringClass = isDarkMode ? 'border-slate-700 hover:border-amber-500 shadow-sm' : 'border-slate-300 hover:border-amber-500 shadow-sm';
