@@ -360,10 +360,10 @@ const TileCell = React.memo(function TileCell({
       onMouseEnter={() => onMouseEnter(tile)}
       style={{
         ...gridPos,
-        contain: (isDemandHighlighted || isMyTile || isActiveTurnTile) ? 'none' : 'paint layout'
+        contain: isDemandHighlighted ? 'none' : 'paint layout'
       }}
-      className={`tile relative flex flex-col justify-between border transition-all duration-100 ease-out cursor-pointer ${
-        (isDemandHighlighted || isMyTile || isActiveTurnTile) ? 'overflow-visible z-35' : 'overflow-hidden'
+      className={`tile relative flex flex-col justify-between border transition-colors duration-150 cursor-pointer ${
+        isDemandHighlighted ? 'overflow-visible z-35' : 'overflow-hidden'
       } group tile-paper-press ${
         tile.id === 0 && isApocalypse
           ? 'bg-gradient-to-br from-rose-950 via-red-950 to-slate-950 text-rose-100 border-2 border-rose-500 shadow-[inset_0_0_25px_rgba(225,29,72,0.85)]'
@@ -1387,7 +1387,7 @@ export function Board({
     >
       {/* 11x11 Grid Tahta */}
       <div
-        className={`relative w-full h-full grid gap-0.5 sm:gap-1 rounded-2xl p-0.5 sm:p-1 transition-all duration-700 ${
+        className={`relative w-full h-full grid gap-0.5 sm:gap-1 rounded-2xl p-0.5 sm:p-1 transition-colors duration-500 overflow-hidden ${
           isApocalypse
             ? 'bg-[#450a0a] border-4 border-rose-600 shadow-[0_0_65px_rgba(225,29,72,0.7)] ring-4 ring-rose-500/60'
             : isDarkMode
@@ -1395,13 +1395,13 @@ export function Board({
             : 'bg-[#CBD5E1] border-4 border-[#0F172A] board-cardboard-elevation'
         }`}
         style={{
-          gridTemplateColumns: '1.45fr repeat(9, 1fr) 1.45fr',
-          gridTemplateRows: '1.45fr repeat(9, 1fr) 1.45fr'
+          gridTemplateColumns: 'minmax(0, 1.45fr) repeat(9, minmax(0, 1fr)) minmax(0, 1.45fr)',
+          gridTemplateRows: 'minmax(0, 1.45fr) repeat(9, minmax(0, 1fr)) minmax(0, 1.45fr)'
         }}
       >
             {/* Ortadaki Merkez Alan (Center of Board) - Ankara Kalesi Arka Plan / Mimari Pafta Zemin */}
             <div
-              className={`relative flex flex-col items-center justify-between rounded-2xl p-2 sm:p-3 text-center overflow-hidden shadow-inner transition-all duration-700 ${
+              className={`relative flex flex-col items-center justify-between rounded-2xl p-2 sm:p-3 text-center overflow-hidden shadow-inner transition-colors duration-500 ${
                 isApocalypse
                   ? 'bg-gradient-to-b from-[#1c0408] via-[#120306] to-[#0a0204] border border-rose-800/80 shadow-[inset_0_0_50px_rgba(225,29,72,0.45)]'
                   : isDarkMode
@@ -1813,14 +1813,14 @@ export function Board({
               ? 'demand-highlight-auction'
               : 'demand-highlight-trade';
           } else if (isActiveTurnTile && isMyTile) {
-            ringClass = 'ring-1.5 ring-amber-400/85 border-amber-400/85 shadow-[0_0_12px_rgba(245,158,11,0.5)]';
+            ringClass = 'ring-inset ring-1.5 ring-amber-400/85 border-amber-400/85 shadow-[0_0_12px_rgba(245,158,11,0.5)]';
           } else if (isActiveTurnTile) {
             ringClass = isDarkMode ? 'border-slate-700 shadow-xs' : 'border-slate-300 shadow-xs';
           } else if (isMyTile) {
             if (isMyTurn) {
-              ringClass = 'ring-2 ring-amber-400 border-amber-400 shadow-[0_0_18px_rgba(245,158,11,0.75)]';
+              ringClass = 'ring-inset ring-2 ring-amber-400 border-amber-400 shadow-[0_0_18px_rgba(245,158,11,0.75)]';
             } else {
-              ringClass = 'ring-1.5 ring-amber-400/85 border-amber-400/85 shadow-[0_0_12px_rgba(245,158,11,0.5)]';
+              ringClass = 'ring-inset ring-1.5 ring-amber-400/85 border-amber-400/85 shadow-[0_0_12px_rgba(245,158,11,0.5)]';
             }
           } else if (owner) {
             ringClass = isDarkMode ? 'border-slate-700 hover:border-amber-500 shadow-sm' : 'border-slate-300 hover:border-amber-500 shadow-sm';
@@ -1856,28 +1856,30 @@ export function Board({
           );
         })}
 
-        {/* Kesintisiz Kayarak İlerleyen 2D Konum Okları (Gliding Location Arrows) */}
-        {/* 1) Kendi Oyuncumuzun Altın Sarısı Kayar Oku */}
-        <GlidingBoardArrow
-          tileId={displayedPositions[effectiveMyPlayerId] ?? myPlayer?.position ?? 0}
-          color={activePlayer?.id === effectiveMyPlayerId ? '#fbbf24' : '#f59e0b'}
-          glowColor="rgba(245,158,11,0.95)"
-          isVisible={Boolean(myPlayer)}
-          offsetAxis={(targetOpponent && (displayedPositions[targetOpponent.id] ?? targetOpponent.position) === (displayedPositions[effectiveMyPlayerId] ?? myPlayer?.position)) ? 'left' : 'none'}
-          title="Konumunuz"
-        />
-
-        {/* 2) Sıradaki veya Hareket Halindeki Rakibin Kendi Renginde Kayar Oku (Hareket bitene kadar asla kaybolmaz) */}
-        {targetOpponent && (
+        {/* Kesintisiz Kayarak İlerleyen 2D Konum Okları Katmanı */}
+        <div className="absolute inset-0 pointer-events-none z-45 overflow-hidden">
+          {/* 1) Kendi Oyuncumuzun Altın Sarısı Kayar Oku */}
           <GlidingBoardArrow
-            tileId={displayedPositions[targetOpponent.id] ?? targetOpponent.position ?? 0}
-            color={targetOpponent.color || '#38bdf8'}
-            glowColor={`${targetOpponent.color || '#38bdf8'}ee`}
-            isVisible={Boolean(targetOpponent)}
-            offsetAxis={(displayedPositions[targetOpponent.id] ?? targetOpponent.position) === (displayedPositions[effectiveMyPlayerId] ?? myPlayer?.position) ? 'right' : 'none'}
-            title={`${targetOpponent.name || 'Rakip'} Konumu`}
+            tileId={displayedPositions[effectiveMyPlayerId] ?? myPlayer?.position ?? 0}
+            color={activePlayer?.id === effectiveMyPlayerId ? '#fbbf24' : '#f59e0b'}
+            glowColor="rgba(245,158,11,0.95)"
+            isVisible={Boolean(myPlayer)}
+            offsetAxis={(targetOpponent && (displayedPositions[targetOpponent.id] ?? targetOpponent.position) === (displayedPositions[effectiveMyPlayerId] ?? myPlayer?.position)) ? 'left' : 'none'}
+            title="Konumunuz"
           />
-        )}
+
+          {/* 2) Sıradaki veya Hareket Halindeki Rakibin Kendi Renginde Kayar Oku (Hareket bitene kadar asla kaybolmaz) */}
+          {targetOpponent && (
+            <GlidingBoardArrow
+              tileId={displayedPositions[targetOpponent.id] ?? targetOpponent.position ?? 0}
+              color={targetOpponent.color || '#38bdf8'}
+              glowColor={`${targetOpponent.color || '#38bdf8'}ee`}
+              isVisible={Boolean(targetOpponent)}
+              offsetAxis={(displayedPositions[targetOpponent.id] ?? targetOpponent.position) === (displayedPositions[effectiveMyPlayerId] ?? myPlayer?.position) ? 'right' : 'none'}
+              title={`${targetOpponent.name || 'Rakip'} Konumu`}
+            />
+          )}
+        </div>
       </div>
 
       {/* 3D Three.js Şeffaf Katman: 3D Piyonlar - TAHTA KARELERİNİN ÜSTÜNDE PARLAYAN 3D MODELLER */}
