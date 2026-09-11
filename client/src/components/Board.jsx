@@ -19,6 +19,7 @@ function getGridPosition(id) {
 
 // 40 Karenin grid koordinatlarını bellekte sabit tutarak referans eşitliğini koru (TileCell React.memo bypassını önler)
 const GRID_POSITIONS = Array.from({ length: 40 }, (_, id) => getGridPosition(id));
+const EMPTY_PLAYERS = Object.freeze([]);
 
 // ─── İzole Tur Süresi Sayacı (250ms interval tahtayı baştan render etmez) ──────
 const TurnTimerCell = React.memo(function TurnTimerCell({
@@ -160,6 +161,39 @@ const AuctionCountdownBadge = React.memo(function AuctionCountdownBadge({
     </div>
   );
 });
+
+function areTilePropsEqual(prev, next) {
+  if (prev.tile?.id !== next.tile?.id) return false;
+  if (prev.isMyTile !== next.isMyTile) return false;
+  if (prev.isMyTurn !== next.isMyTurn) return false;
+  if (prev.isActiveTurnTile !== next.isActiveTurnTile) return false;
+  if (prev.isAuctionTile !== next.isAuctionTile) return false;
+  if (prev.isDemandHighlighted !== next.isDemandHighlighted) return false;
+  if (prev.isTradeOffered !== next.isTradeOffered) return false;
+  if (prev.isTradeRequested !== next.isTradeRequested) return false;
+  if (prev.ringClass !== next.ringClass) return false;
+  if (prev.isDarkMode !== next.isDarkMode) return false;
+  if (prev.isApocalypse !== next.isApocalypse) return false;
+
+  // propState (ev, ipotek, sahip) karşılaştırması
+  if (prev.propState?.houses !== next.propState?.houses) return false;
+  if (prev.propState?.mortgaged !== next.propState?.mortgaged) return false;
+  if (prev.propState?.ownerId !== next.propState?.ownerId) return false;
+
+  // owner karşılaştırması
+  if (prev.owner?.id !== next.owner?.id) return false;
+  if (prev.owner?.color !== next.owner?.color) return false;
+  if (prev.owner?.name !== next.owner?.name) return false;
+
+  // activeTurnPlayer (yalnızca bu kare aktif oyuncunun karesiyse veya aktif kareden ayrıldıysa kontrol et)
+  if (prev.isActiveTurnTile || next.isActiveTurnTile) {
+    if (prev.activeTurnPlayer?.id !== next.activeTurnPlayer?.id) return false;
+    if (prev.activeTurnPlayer?.color !== next.activeTurnPlayer?.color) return false;
+    if (prev.activeTurnPlayer?.name !== next.activeTurnPlayer?.name) return false;
+  }
+
+  return true;
+}
 
 // ─── Memoized Tekil Kare Bileşeni (40 Karenin Gereksiz Re-render Olmasını Önler) ──
 const TileCell = React.memo(function TileCell({
@@ -462,7 +496,7 @@ const TileCell = React.memo(function TileCell({
       )}
     </div>
   );
-});
+}, areTilePropsEqual);
 
 export function Board({
   gameState,
@@ -1506,7 +1540,7 @@ export function Board({
           const gridPos = GRID_POSITIONS[tile.id] || getGridPosition(tile.id);
           const propState = properties[tile.id];
           const owner = propState?.ownerId ? playersById.get(propState.ownerId) : null;
-          const playersOnTile = playersOnTileMap[tile.id] || [];
+          const playersOnTile = playersOnTileMap[tile.id] || EMPTY_PLAYERS;
 
           const activeTurnPlayer = players[currentTurnIndex];
           const isMyTurn = activeTurnPlayer?.id === myPlayerId;

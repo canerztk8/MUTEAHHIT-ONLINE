@@ -474,4 +474,53 @@ function PlayerPanelBase({ gameState, myPlayerId, onOpenTrade, onTileClick, onRe
   );
 }
 
-export const PlayerPanel = React.memo(PlayerPanelBase);
+function arePlayerPanelPropsEqual(prev, next) {
+  if (prev.myPlayerId !== next.myPlayerId) return false;
+  if (!prev.gameState || !next.gameState) return prev.gameState === next.gameState;
+
+  if (prev.gameState.currentTurnIndex !== next.gameState.currentTurnIndex) return false;
+  if (prev.gameState.status !== next.gameState.status) return false;
+  if (prev.gameState.phase !== next.gameState.phase) return false;
+
+  const p1 = prev.gameState.players || [];
+  const p2 = next.gameState.players || [];
+  if (p1.length !== p2.length) return false;
+
+  for (let i = 0; i < p1.length; i++) {
+    const a = p1[i];
+    const b = p2[i];
+    if (!a || !b) return false;
+    if (
+      a.id !== b.id ||
+      a.money !== b.money ||
+      a.position !== b.position ||
+      a.inJail !== b.inJail ||
+      a.isBankrupt !== b.isBankrupt ||
+      a.isHost !== b.isHost ||
+      a.difficulty !== b.difficulty ||
+      a.ping !== b.ping
+    ) {
+      return false;
+    }
+  }
+
+  // Mülkler kontrolü (ev, otel, ipotek veya sahip değişti mi)
+  const pr1 = prev.gameState.properties;
+  const pr2 = next.gameState.properties;
+  if (pr1 !== pr2) {
+    if (!pr1 || !pr2) return false;
+    for (const id in pr2) {
+      if (
+        pr1[id]?.ownerId !== pr2[id]?.ownerId ||
+        pr1[id]?.houses !== pr2[id]?.houses ||
+        pr1[id]?.mortgaged !== pr2[id]?.mortgaged
+      ) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
+export const PlayerPanel = React.memo(PlayerPanelBase, arePlayerPanelPropsEqual);

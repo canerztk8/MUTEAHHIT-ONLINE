@@ -18,6 +18,8 @@ export function DiceSidebarTray({
   onLeaveGame,
   isDarkMode = false,
   onToggleDarkMode,
+  isPerformanceMode = false,
+  onTogglePerformanceMode,
   onTogglePause,
   onRollStart,
   onRollSettled
@@ -130,11 +132,15 @@ export function DiceSidebarTray({
       return;
     }
 
+    let lastSec = -1;
     const interval = setInterval(() => {
       const elapsed = Math.floor((Date.now() - gameState.turnStartTime) / 1000);
       const remaining = Math.max(0, (gameState.turnTimeLimit || 75) - elapsed);
-      setSecondsLeft(remaining);
-    }, 250);
+      if (remaining !== lastSec) {
+        lastSec = remaining;
+        setSecondsLeft(remaining);
+      }
+    }, 500);
 
     return () => clearInterval(interval);
   }, [gameState?.turnStartTime, gameState?.turnTimeLimit, gameState?.status, gameState?.currentTurnIndex, gameState?.isPaused, gameState?.pausedAt, gameState?.pausedRemainingTurnMs, gameState?.phase]);
@@ -328,6 +334,21 @@ export function DiceSidebarTray({
 
         {/* Oda Kodu, Karanlık Mod, Ses, Ayrıl */}
         <div className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
+
+          {/* ⚡ Performans Modu (Düşük GPU / Opera GX) */}
+          {onTogglePerformanceMode && (
+            <button
+              onClick={onTogglePerformanceMode}
+              title={isPerformanceMode ? 'Performans Modu Aktif (Bulanıklıklar ve animasyon yükü kapalı) - Tıkla ve Kapat' : 'Performans Modunu Aç (Kasan bilgisayarlar / Opera GX için bulanıklıkları kapatır)'}
+              className={`p-1.5 rounded-xl border transition cursor-pointer shadow-xs flex items-center justify-center ${
+                isPerformanceMode
+                  ? 'bg-amber-500 border-amber-400 text-slate-950 font-black shadow-amber-500/30'
+                  : 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200'
+              }`}
+            >
+              <Zap className={`w-3.5 h-3.5 ${isPerformanceMode ? 'fill-current text-slate-950' : 'text-amber-500'}`} />
+            </button>
+          )}
 
           {/* 🌙 / ☀️ Karanlık Mod Değiştirici Buton */}
           <button

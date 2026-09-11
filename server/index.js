@@ -114,7 +114,8 @@ relayWss.on('connection', (ws) => {
 
         const outgoing = JSON.stringify({ type: 'relay:msg', payload: msg.payload, from: playerId });
         room.forEach((pid, client) => {
-          if (client.readyState === 1) client.send(outgoing);
+          // Gönderen istemciye (Host) gereksiz echo geri gönderme!
+          if (client !== ws && client.readyState === 1) client.send(outgoing);
         });
       }
     } catch (e) {

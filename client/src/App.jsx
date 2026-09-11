@@ -18,7 +18,7 @@ import { WinnerModal } from './components/WinnerModal.jsx';
 import { EliminationModal } from './components/EliminationModal.jsx';
 import { DevToolsModal } from './components/DevToolsModal.jsx';
 import { sounds } from './sound/soundEffects.js';
-import { Volume2, VolumeX, Copy, Check, Users, Sparkles, LogOut, Wrench, Sun, Moon, X } from 'lucide-react';
+import { Volume2, VolumeX, Copy, Check, Users, Sparkles, LogOut, Wrench, Sun, Moon, X, Zap } from 'lucide-react';
 
 // 🃏 Son 3 Çekilen Kart Geçmişi Modalı (Deste kartına tıklanınca açılır)
 function CardHistoryModal({ deckType, logs, onClose }) {
@@ -196,6 +196,33 @@ export function App() {
       }
     } catch {}
   }, [isDarkMode]);
+
+  // ⚡ Yüksek Performans Ana Modu (Ağır GPU blur kompozitörünü devre dışı bırakır, 60 FPS garantiler)
+  const [isPerformanceMode, setIsPerformanceMode] = useState(() => {
+    try {
+      const saved = localStorage.getItem('muteahhit_perf_mode');
+      if (saved === '0') return false; // Kullanıcı özellikle kapattıysa
+      return true; // Varsayılan ANA MOD: AÇIK
+    } catch {
+      return true;
+    }
+  });
+
+  const togglePerformanceMode = () => {
+    setIsPerformanceMode(prev => {
+      const next = !prev;
+      try {
+        localStorage.setItem('muteahhit_perf_mode', next ? '1' : '0');
+      } catch {}
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    try {
+      document.documentElement.classList.toggle('perf-mode', isPerformanceMode);
+    } catch {}
+  }, [isPerformanceMode]);
 
   // ─── P2P Ağ Durumu ─────────────────────────────────────────────────────────
   /** @type {[HostPeerService|ClientPeerService|null, function]} */
@@ -1067,6 +1094,8 @@ export function App() {
             onLeaveRoom={handleLeaveGame}
             isDarkMode={isDarkMode}
             onToggleDarkMode={toggleDarkMode}
+            isPerformanceMode={isPerformanceMode}
+            onTogglePerformanceMode={togglePerformanceMode}
             ping={ping}
           />
         </div>
@@ -1156,6 +1185,22 @@ export function App() {
             <span>DEVTOOLS</span>
           </button>
         )}
+        {/* ⚡ Performans Modu (Opera GX & Düşük GPU Kalkanı) */}
+        <button
+          onClick={togglePerformanceMode}
+          title={isPerformanceMode ? 'Performans Modu Aktif (Bulanıklıklar ve GPU yükü devredışı) - Tıkla ve Kapat' : 'Performans Modunu Aç (Bulanıklıkları kapatır, FPS artırır)'}
+          className={`px-2.5 py-1.5 rounded-xl border transition shadow-lg cursor-pointer backdrop-blur-md flex items-center gap-1.5 text-xs font-black font-space active:scale-95 ${
+            isPerformanceMode
+              ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-amber-500/30'
+              : isDarkMode
+                ? 'bg-slate-900/90 border-slate-700 text-slate-300 hover:text-amber-400 hover:border-amber-400/50'
+                : 'bg-white/90 border-slate-300 text-slate-700 hover:text-amber-600 hover:border-amber-500/50'
+          }`}
+        >
+          <Zap className={`w-3.5 h-3.5 ${isPerformanceMode ? 'fill-current text-slate-950' : 'text-amber-500'}`} />
+          <span className="hidden sm:inline">{isPerformanceMode ? 'PERFORMANS: AÇIK' : 'PERFORMANS'}</span>
+        </button>
+
         <div className="lg:hidden">
           <button
             onClick={toggleDarkMode}
@@ -1268,6 +1313,8 @@ export function App() {
                 onLeaveGame={() => handleLeaveGame(false)}
                 isDarkMode={isDarkMode}
                 onToggleDarkMode={toggleDarkMode}
+                isPerformanceMode={isPerformanceMode}
+                onTogglePerformanceMode={togglePerformanceMode}
                 onTogglePause={handleTogglePause}
                 onRollStart={() => setIsDiceRolling(true)}
                 onRollSettled={() => setIsDiceRolling(false)}

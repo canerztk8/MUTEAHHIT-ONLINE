@@ -1033,6 +1033,22 @@ export class HostPeerService {
     this._disconnectTimers.set(peerId, timer);
   }
 
+  _isRelayBroadcastNeeded() {
+    if (!this._relay?.isConnected) return false;
+    // Eğer oyundaki insan oyuncu sayısı > 1 ise ve bu oyunculardan en az birinin açık bir WebRTC bağlantısı yoksa relay şarttır
+    const humanPlayers = this._game?.players?.filter(p => !p.isBot && p.id !== this.peerId) || [];
+    if (humanPlayers.length === 0) {
+      return (this._spectators && this._spectators.size > 0);
+    }
+    // Tüm insan oyuncuların açık WebRTC DataChannel bağlantısı var mı?
+    const allHaveWebRTC = humanPlayers.every(p => {
+      const conn = this._connections.get(p.id);
+      return conn && conn.open;
+    });
+    // İzleyiciler varsa veya en az bir oyuncunun WebRTC bağlantısı henüz yoksa/koptuysa relay'e gönder
+    return !allHaveWebRTC || (this._spectators && this._spectators.size > 0);
+  }
+
   _broadcastState() {
     if (!this._game) return;
     this._game.spectatorCount = this._spectators ? this._spectators.size : 0;
@@ -1040,12 +1056,13 @@ export class HostPeerService {
     this._onState(state); // Host'un kendi UI'ını güncelle
 
     const msg = createSyncState(state);
-    // WebRTC DataChannel üzerinden gönder
+    // WebRTC DataChannel üzerinden doğrudan gönder
     for (const conn of this._connections.values()) {
       this._sendTo(conn, msg);
     }
-    // WebSocket Relay üzerinden de gönder (WARP/VPN kullanıcılar için)
-    if (this._relay?.isConnected) {
+    // WebSocket Relay üzerinden yalnızca gerektiğinde (WebRTC bağlanamayan veya izleyici varsa) gönder
+    // Böylece P2P aktifken Host'un V8 çöp toplayıcı (GC) ve ağ çıkış yükü yarı yarıya hafifler
+    if (this._isRelayBroadcastNeeded()) {
       this._relay.broadcast(msg);
     }
 
@@ -1056,7 +1073,7 @@ export class HostPeerService {
         this._onState(s2);
         const m2 = createSyncState(s2);
         for (const c of this._connections.values()) this._sendTo(c, m2);
-        if (this._relay?.isConnected) this._relay.broadcast(m2);
+        if (this._isRelayBroadcastNeeded()) this._relay.broadcast(m2);
       });
     }
   }
@@ -1067,7 +1084,7 @@ export class HostPeerService {
     for (const conn of this._connections.values()) {
       this._sendTo(conn, msg);
     }
-    if (this._relay?.isConnected) {
+    if (this._isRelayBroadcastNeeded()) {
       this._relay.broadcast(msg);
     }
   }

@@ -1,12 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Play, Bot, Copy, Check, Sparkles, LogIn, PlusCircle, LogOut, Trash2, Cpu, Sun, Moon } from 'lucide-react';
+import { Users, Play, Bot, Copy, Check, Sparkles, LogIn, PlusCircle, LogOut, Trash2, Cpu, Sun, Moon, Zap } from 'lucide-react';
 import { PLAYER_TOKENS, PLAYER_COLORS } from '../game/boardData.js';
 import { TopDownPawnPreview } from './TopDownPawnPreview.jsx';
 import { TopDownPawnSvg } from './TopDownPawnSvg.jsx';
 import { ACTION } from '../network/protocol.js';
 
 
-export function Lobby({ network, gameState, currentRoomCode, onStartGame, onCreateRoom, onJoinRoom, myPlayerId, onLeaveRoom, isDarkMode = false, onToggleDarkMode, ping }) {
+export function Lobby({
+  network,
+  gameState,
+  currentRoomCode,
+  onStartGame,
+  onCreateRoom,
+  onJoinRoom,
+  myPlayerId,
+  onLeaveRoom,
+  isDarkMode = false,
+  onToggleDarkMode,
+  isPerformanceMode = false,
+  onTogglePerformanceMode,
+  ping
+}) {
   const [name, setName] = useState(localStorage.getItem('muteahhit_name') || '');
   const [selectedToken, setSelectedToken] = useState(PLAYER_TOKENS[0]);
   const [selectedColor, setSelectedColor] = useState(PLAYER_COLORS[0]);
@@ -184,6 +198,21 @@ export function Lobby({ network, gameState, currentRoomCode, onStartGame, onCrea
               <span className={`text-[11px] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'} font-medium`}>
                 {isHost ? '👑 Oda Kurucususunuz' : '👤 Oyuncu'}
               </span>
+              {onTogglePerformanceMode && (
+                <button
+                  onClick={onTogglePerformanceMode}
+                  title={isPerformanceMode ? 'Yüksek Hız Modu Aktif (Tıkla ve Normal Kaliteye Geç)' : 'Yüksek Hız Modunu Aç (Opera GX ve zayıf GPU için FPS artırır)'}
+                  className={`p-1.5 rounded-xl border transition cursor-pointer shadow-xs flex items-center justify-center ${
+                    isPerformanceMode
+                      ? 'bg-emerald-500/25 border-emerald-400 text-emerald-300 shadow-sm'
+                      : isDarkMode
+                      ? 'bg-slate-800/80 hover:bg-slate-700 border-slate-700 text-slate-400'
+                      : 'bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-600'
+                  }`}
+                >
+                  <Zap className={`w-3.5 h-3.5 ${isPerformanceMode ? 'text-emerald-400 fill-emerald-400' : ''}`} />
+                </button>
+              )}
               {onToggleDarkMode && (
                 <button
                   onClick={onToggleDarkMode}

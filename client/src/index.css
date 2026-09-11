@@ -710,3 +710,36 @@ html.dark ::-webkit-scrollbar-thumb:hover {
   animation: trophyGlowPulse 2.4s infinite ease-in-out;
 }
 
+/* ⚡ Yüksek Performans Ana Modu: Opera GX ve zayıf GPU'larda ağır blur kompozitörünü devre dışı bırakır */
+.perf-mode * {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+.perf-mode .backdrop-blur-2xl,
+.perf-mode .backdrop-blur-xl,
+.perf-mode .backdrop-blur-lg,
+.perf-mode .backdrop-blur-md,
+.perf-mode .backdrop-blur-sm,
+.perf-mode .backdrop-blur-\[3px\] {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.perf-mode .bg-slate-900\/60,
+.perf-mode .bg-slate-900\/70,
+.perf-mode .bg-slate-900\/75,
+.perf-mode .bg-slate-900\/80,
+.perf-mode .bg-slate-950\/60,
+.perf-mode .bg-slate-950\/70,
+.perf-mode .bg-slate-950\/80 {
+  background-color: rgba(15, 23, 42, 0.94) !important;
+}
+
+html:not(.dark).perf-mode .bg-white\/60,
+html:not(.dark).perf-mode .bg-white\/70,
+html:not(.dark).perf-mode .bg-white\/75,
+html:not(.dark).perf-mode .bg-white\/80 {
+  background-color: rgba(255, 255, 255, 0.96) !important;
+}
+
+
