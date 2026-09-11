@@ -63,8 +63,7 @@ export class Board3DManager {
     this.renderer.setSize(width, height);
     // Yüksek DPI ekranlarda GPU fill-rate yükünü hafifleten 1.5x tavan
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
-    this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.shadowMap.enabled = false; // ⚡ 60 FPS: İkincil shadow pass kaldırılarak GPU çizim yükü yarıya indirildi
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.15;
 
@@ -81,7 +80,7 @@ export class Board3DManager {
 
     const dirLight = new THREE.DirectionalLight(0xfff7ed, 1.4);
     dirLight.position.set(8, 22, 10);
-    dirLight.castShadow = true;
+    dirLight.castShadow = false;
     dirLight.shadow.mapSize.width = 1024;
     dirLight.shadow.mapSize.height = 1024;
     dirLight.shadow.camera.near = 1;

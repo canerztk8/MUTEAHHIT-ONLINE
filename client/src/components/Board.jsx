@@ -56,7 +56,7 @@ const TurnTimerCell = React.memo(function TurnTimerCell({
     const updateCountdown = () => {
       const elapsed = Math.floor((Date.now() - gameState.turnStartTime) / 1000);
       const remaining = Math.max(0, (gameState.turnTimeLimit || 75) - elapsed);
-      setSecondsLeft(remaining);
+      setSecondsLeft(prev => (prev !== remaining ? remaining : prev));
 
       if (
         remaining === 0 &&
@@ -73,7 +73,7 @@ const TurnTimerCell = React.memo(function TurnTimerCell({
     };
 
     updateCountdown();
-    const interval = setInterval(updateCountdown, 250);
+    const interval = setInterval(updateCountdown, 500);
     return () => clearInterval(interval);
   }, [
     gameState?.turnStartTime,
@@ -136,7 +136,7 @@ const AuctionCountdownBadge = React.memo(function AuctionCountdownBadge({
       const lastBidTime = auction?.lastBidTime || Date.now();
       const elapsed = Math.floor((Date.now() - lastBidTime) / 1000);
       const rem = Math.max(0, timerLimit - elapsed);
-      setSecondsLeft(rem);
+      setSecondsLeft(prev => (prev !== rem ? rem : prev));
 
       if (rem === 0 && !hasEmittedTimeoutRef.current) {
         hasEmittedTimeoutRef.current = true;
@@ -150,7 +150,7 @@ const AuctionCountdownBadge = React.memo(function AuctionCountdownBadge({
     };
 
     updateAuctionCountdown();
-    const interval = setInterval(updateAuctionCountdown, 250);
+    const interval = setInterval(updateAuctionCountdown, 500);
     return () => clearInterval(interval);
   }, [auction?.lastBidTime, auction?.timer, onTimeoutAuction]);
 
@@ -912,7 +912,7 @@ export function Board({
                   const timeout = setTimeout(startStepMovement, 35);
                   activeIntervalsRef.current[`timeout_${p.id}`] = timeout;
                 }
-              }, 25);
+              }, 60);
               activeIntervalsRef.current[`poll_${p.id}`] = pollInterval;
             }
           } else {
@@ -1016,7 +1016,7 @@ export function Board({
                 const timeout = setTimeout(startInspectorMovement, 35);
                 activeIntervalsRef.current[`timeout_${p.id}`] = timeout;
               }
-            }, 25);
+            }, 60);
             activeIntervalsRef.current[`poll_${p.id}`] = pollInterval;
           } else {
             // Doğrudan kodese yerleşme (örneğin kart çekimi)
