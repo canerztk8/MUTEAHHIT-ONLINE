@@ -2,11 +2,17 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 
-const dracoLoader = new DRACOLoader();
-dracoLoader.setDecoderPath('/draco/gltf/');
+let cachedGltfLoader = null;
+function getGLTFLoader() {
+  if (!cachedGltfLoader) {
+    const dracoLoader = new DRACOLoader();
+    dracoLoader.setDecoderPath('/draco/gltf/');
+    cachedGltfLoader = new GLTFLoader();
+    cachedGltfLoader.setDRACOLoader(dracoLoader);
+  }
+  return cachedGltfLoader;
+}
 
-const gltfLoader = new GLTFLoader();
-gltfLoader.setDRACOLoader(dracoLoader);
 const loadedModelCache = new Map();
 
 /**
@@ -885,7 +891,7 @@ export function loadGLTFModel(url) {
   }
 
   const promise = new Promise((resolve, reject) => {
-    gltfLoader.load(
+    getGLTFLoader().load(
       url,
       (gltf) => {
         loadedModelCache.set(url, gltf.scene);

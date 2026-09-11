@@ -34,8 +34,18 @@ function getContactShadowTexture() {
   return cachedShadowTexture;
 }
 
+const VECTOR_ONE = new THREE.Vector3(1, 1, 1);
+let cachedShadowGeo = null;
+
+function getContactShadowGeo() {
+  if (!cachedShadowGeo) {
+    cachedShadowGeo = new THREE.PlaneGeometry(0.78, 0.78);
+  }
+  return cachedShadowGeo;
+}
+
 function createContactShadowMesh() {
-  const geo = new THREE.PlaneGeometry(0.78, 0.78);
+  const geo = getContactShadowGeo();
   const mat = new THREE.MeshBasicMaterial({
     map: getContactShadowTexture(),
     transparent: true,
@@ -171,7 +181,6 @@ export class Board3DManager {
   _disposeToken(root, shadow = null) {
     if (shadow && this.scene) {
       this.scene.remove(shadow);
-      shadow.geometry?.dispose();
       shadow.material?.dispose();
     }
     if (!root) return;
@@ -406,8 +415,8 @@ export class Board3DManager {
         }
         record.root.scale.set(scaleXZ, scaleY, scaleXZ);
       } else {
-        // Dinlenme (Idle): pürüzsüzce orijinal ölçeğe ve zemine yerleş
-        record.root.scale.lerp(new THREE.Vector3(1, 1, 1), 0.22);
+        // Dinlenme (Idle): pürüzsüzce orijinal ölçeğe ve zemine yerleş (Sıfır bellek tahsisi)
+        record.root.scale.lerp(VECTOR_ONE, 0.22);
 
         const distSq = record.root.position.distanceToSquared(record.targetPos);
         if (distSq > 0.0001) {
@@ -420,7 +429,7 @@ export class Board3DManager {
         if (record.shadow) {
           record.shadow.position.x = record.root.position.x;
           record.shadow.position.z = record.root.position.z;
-          record.shadow.scale.lerp(new THREE.Vector3(1, 1, 1), 0.22);
+          record.shadow.scale.lerp(VECTOR_ONE, 0.22);
           record.shadow.material.opacity = THREE.MathUtils.lerp(record.shadow.material.opacity, 0.68, 0.22);
         }
 

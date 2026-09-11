@@ -23,6 +23,25 @@ function getDestination(ctx) {
   return masterGain || ctx.destination;
 }
 
+// 🔋 Page Visibility API: Sekme gizlendiğinde AudioContext'i askıya alıp pil/CPU tasarrufu sağla
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      if (audioCtx && audioCtx.state === 'running') {
+        try {
+          audioCtx.suspend();
+        } catch (_) {}
+      }
+    } else {
+      if (audioCtx && audioCtx.state === 'suspended') {
+        try {
+          audioCtx.resume();
+        } catch (_) {}
+      }
+    }
+  });
+}
+
 // İsteğe bağlı harici özel zar sesi (client/public/sounds/dice.mp3 veya dice.wav)
 let customDiceAudio = null;
 if (typeof window !== 'undefined') {
