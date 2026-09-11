@@ -475,7 +475,7 @@ export function App() {
         setIsPawnMoving(false);
         isPawnMovingRef.current = false;
         setIsDiceRolling(false);
-      }, 2200);
+      }, 4200);
     } else if (hasPawnMoved && state.status === 'playing') {
       setIsPawnMoving(true);
       isPawnMovingRef.current = true;
@@ -484,7 +484,7 @@ export function App() {
         setIsPawnMoving(false);
         isPawnMovingRef.current = false;
         setIsDiceRolling(false);
-      }, 2200);
+      }, 4200);
     }
 
     const isMovementTurnInProgress = hasPawnMoved || isNewDiceRoll || isPawnMovingRef.current;

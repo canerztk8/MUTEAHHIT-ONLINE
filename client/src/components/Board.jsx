@@ -126,7 +126,7 @@ const GlidingBoardArrow = React.memo(function GlidingBoardArrow({
         left: `${finalX}%`,
         top: `${finalY}%`,
         transform: `translate(-50%, -50%) rotate(${smoothRot}deg)`,
-        transition: 'left 155ms cubic-bezier(0.2, 0, 0.2, 1), top 155ms cubic-bezier(0.2, 0, 0.2, 1), transform 155ms ease-out, opacity 250ms ease-out',
+        transition: 'left 125ms cubic-bezier(0.2, 0, 0.2, 1), top 125ms cubic-bezier(0.2, 0, 0.2, 1), transform 125ms ease-out, opacity 250ms ease-out',
         opacity: isVisible ? 1 : 0
       }}
       title={title}
@@ -774,6 +774,16 @@ export function Board({
   const isHost = Boolean(myPlayer?.isHost);
   const isApocalypse = false;
 
+  // Eğer bir rakip piyonu şu an tahtada aktif olarak adım adım ilerliyorsa (henüz hedefine varmadıysa),
+  // tur sonraki oyuncuya devredilmiş olsa bile o rakip hedefine varana kadar oku ve kare çerçevesi asla kaybolmaz!
+  const activelyMovingOpponent = players?.find(
+    (p) => p.id !== effectiveMyPlayerId &&
+           displayedPositions[p.id] !== undefined &&
+           p.position !== undefined &&
+           displayedPositions[p.id] !== p.position
+  );
+  const targetOpponent = activelyMovingOpponent || (activePlayer && activePlayer.id !== effectiveMyPlayerId ? activePlayer : null);
+
   const isDiceRollingRef = useRef(isDiceRolling);
   isDiceRollingRef.current = isDiceRolling;
   useEffect(() => {
@@ -1176,7 +1186,7 @@ export function Board({
                   clearInterval(interval);
                   delete activeIntervalsRef.current[p.id];
 
-                  // Piyonun son kareye temas anında (~140ms) hareket tamamlanır
+                  // Piyonun son kareye temas anında (~100ms) hareket tamamlanır
                   const finalTouchdown = setTimeout(() => {
                     setIsMovingPawn(false);
 
@@ -1191,29 +1201,29 @@ export function Board({
                     if (onPawnLanded) {
                       onPawnLanded(p.id, targetPos);
                     }
-                  }, 140);
+                  }, 100);
                   activeIntervalsRef.current[`final_${p.id}`] = finalTouchdown;
                 }
-              }, 175);
+              }, 125);
 
               activeIntervalsRef.current[p.id] = interval;
             };
 
             if (isBackward) {
-              const timeout = setTimeout(startStepMovement, 300);
+              const timeout = setTimeout(startStepMovement, 250);
               activeIntervalsRef.current[`timeout_${p.id}`] = timeout;
             } else {
-              // Zarlar 3D tepside durulana kadar bekle; durulunca piyon derhal (35ms içinde) adımlamaya başlasın
+              // Zarlar 3D tepside durulana kadar bekle; durulunca piyon derhal (25ms içinde) adımlamaya başlasın
               const startTime = Date.now();
               const pollInterval = setInterval(() => {
                 const elapsed = Date.now() - startTime;
-                if (!isDiceRollingRef.current || elapsed >= 1800) {
+                if (!isDiceRollingRef.current || elapsed >= 1200) {
                   clearInterval(pollInterval);
                   delete activeIntervalsRef.current[`poll_${p.id}`];
-                  const timeout = setTimeout(startStepMovement, 35);
+                  const timeout = setTimeout(startStepMovement, 25);
                   activeIntervalsRef.current[`timeout_${p.id}`] = timeout;
                 }
-              }, 60);
+              }, 50);
               activeIntervalsRef.current[`poll_${p.id}`] = pollInterval;
             }
           } else {
@@ -1775,10 +1785,10 @@ export function Board({
           const owner = propState?.ownerId ? playersById.get(propState.ownerId) : null;
           const playersOnTile = playersOnTileMap[tile.id] || EMPTY_PLAYERS;
 
-          const activeTurnPlayer = players[currentTurnIndex];
-          const isMyTurn = activeTurnPlayer?.id === effectiveMyPlayerId;
+          const activeTurnPlayer = targetOpponent;
+          const isMyTurn = activePlayer?.id === effectiveMyPlayerId;
           const activePlayerPos = activeTurnPlayer ? (displayedPositions[activeTurnPlayer.id] ?? activeTurnPlayer.position) : null;
-          const isActiveTurnTile = activeTurnPlayer && activeTurnPlayer.id !== effectiveMyPlayerId && activePlayerPos === tile.id;
+          const isActiveTurnTile = Boolean(activeTurnPlayer && activePlayerPos === tile.id);
 
           const myPlayer = playersById.get(effectiveMyPlayerId);
           const myPos = displayedPositions[effectiveMyPlayerId] ?? myPlayer?.position;
@@ -1853,19 +1863,19 @@ export function Board({
           color={activePlayer?.id === effectiveMyPlayerId ? '#fbbf24' : '#f59e0b'}
           glowColor="rgba(245,158,11,0.95)"
           isVisible={Boolean(myPlayer)}
-          offsetAxis={(activePlayer && activePlayer.id !== effectiveMyPlayerId && (displayedPositions[activePlayer.id] ?? activePlayer.position) === (displayedPositions[effectiveMyPlayerId] ?? myPlayer?.position)) ? 'left' : 'none'}
+          offsetAxis={(targetOpponent && (displayedPositions[targetOpponent.id] ?? targetOpponent.position) === (displayedPositions[effectiveMyPlayerId] ?? myPlayer?.position)) ? 'left' : 'none'}
           title="Konumunuz"
         />
 
-        {/* 2) Sıradaki Rakibin Kendi Renginde Kayar Oku (Sıra başka rakibe geçince ona kayar, sıra bize gelince kapanır) */}
-        {activePlayer && activePlayer.id !== effectiveMyPlayerId && (
+        {/* 2) Sıradaki veya Hareket Halindeki Rakibin Kendi Renginde Kayar Oku (Hareket bitene kadar asla kaybolmaz) */}
+        {targetOpponent && (
           <GlidingBoardArrow
-            tileId={displayedPositions[activePlayer.id] ?? activePlayer.position ?? 0}
-            color={activePlayer.color || '#38bdf8'}
-            glowColor={`${activePlayer.color || '#38bdf8'}ee`}
-            isVisible={Boolean(activePlayer.id !== effectiveMyPlayerId)}
-            offsetAxis={(displayedPositions[activePlayer.id] ?? activePlayer.position) === (displayedPositions[effectiveMyPlayerId] ?? myPlayer?.position) ? 'right' : 'none'}
-            title={`${activePlayer.name || 'Rakip'} Konumu`}
+            tileId={displayedPositions[targetOpponent.id] ?? targetOpponent.position ?? 0}
+            color={targetOpponent.color || '#38bdf8'}
+            glowColor={`${targetOpponent.color || '#38bdf8'}ee`}
+            isVisible={Boolean(targetOpponent)}
+            offsetAxis={(displayedPositions[targetOpponent.id] ?? targetOpponent.position) === (displayedPositions[effectiveMyPlayerId] ?? myPlayer?.position) ? 'right' : 'none'}
+            title={`${targetOpponent.name || 'Rakip'} Konumu`}
           />
         )}
       </div>
