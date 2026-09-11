@@ -774,16 +774,6 @@ export function Board({
   const isHost = Boolean(myPlayer?.isHost);
   const isApocalypse = false;
 
-  // Eğer bir rakip piyonu şu an tahtada aktif olarak adım adım ilerliyorsa (henüz hedefine varmadıysa),
-  // tur sonraki oyuncuya devredilmiş olsa bile o rakip hedefine varana kadar oku ve kare çerçevesi asla kaybolmaz!
-  const activelyMovingOpponent = players?.find(
-    (p) => p.id !== effectiveMyPlayerId &&
-           displayedPositions[p.id] !== undefined &&
-           p.position !== undefined &&
-           displayedPositions[p.id] !== p.position
-  );
-  const targetOpponent = activelyMovingOpponent || (activePlayer && activePlayer.id !== effectiveMyPlayerId ? activePlayer : null);
-
   const isDiceRollingRef = useRef(isDiceRolling);
   isDiceRollingRef.current = isDiceRolling;
   useEffect(() => {
@@ -820,6 +810,16 @@ export function Board({
   });
   const prevPositionsRef = useRef({});
   const activeIntervalsRef = useRef({});
+
+  // Eğer bir rakip piyonu şu an tahtada aktif olarak adım adım ilerliyorsa (henüz hedefine varmadıysa),
+  // tur sonraki oyuncuya devredilmiş olsa bile o rakip hedefine varana kadar oku ve kare çerçevesi asla kaybolmaz!
+  const activelyMovingOpponent = players?.find(
+    (p) => p.id !== effectiveMyPlayerId &&
+           displayedPositions[p.id] !== undefined &&
+           p.position !== undefined &&
+           displayedPositions[p.id] !== p.position
+  );
+  const targetOpponent = activelyMovingOpponent || (activePlayer && activePlayer.id !== effectiveMyPlayerId ? activePlayer : null);
 
   // Oyuncu listesi değiştiğinde veya botlar eklendiğinde displayedPositions ve prevPositionsRef senkronizasyonunu sağla
   useEffect(() => {
