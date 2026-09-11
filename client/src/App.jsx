@@ -1267,7 +1267,7 @@ export function App() {
               onTileClick={(tile) => setSelectedTileModal(tile)}
               selectedTileModal={selectedTileModal}
               onCloseTileModal={() => setSelectedTileModal(null)}
-              myPlayerId={myPlayerId}
+              myPlayerId={myPlayer?.id || myPlayerId}
               isDiceRolling={isDiceRolling}
               onRollDice={handleRollDice}
               onRollAgain={handleRollAgain}

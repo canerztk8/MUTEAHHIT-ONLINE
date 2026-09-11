@@ -21,6 +21,136 @@ function getGridPosition(id) {
 const GRID_POSITIONS = Array.from({ length: 40 }, (_, id) => getGridPosition(id));
 const EMPTY_PLAYERS = Object.freeze([]);
 
+// 11x11 Grid kolon ve satır merkez oranları (1.45fr köşe, 1fr kenar -> toplam 11.9fr)
+const COL_CENTERS = [
+  0,
+  6.092,  // 1 (Sol Köşe)
+  16.387, // 2
+  24.790, // 3
+  33.193, // 4
+  41.597, // 5
+  50.000, // 6
+  58.403, // 7
+  66.807, // 8
+  75.210, // 9
+  83.613, // 10
+  93.908  // 11 (Sağ Köşe)
+];
+const ROW_CENTERS = COL_CENTERS;
+
+export function getTileArrowTarget(tileId) {
+  const safeId = ((Number(tileId) % 40) + 40) % 40;
+  let r = 1;
+  let c = 1;
+  let rot = 0;
+  let innerX = 50;
+  let innerY = 50;
+
+  if (safeId >= 0 && safeId <= 10) {
+    r = 11;
+    if (safeId === 0) c = 11;
+    else if (safeId === 10) c = 1;
+    else c = 11 - safeId;
+
+    innerX = COL_CENTERS[c];
+    innerY = 88.8; // Kartın üst iç kenarında, aşağı karta doğru bakar
+    rot = 0;
+  } else if (safeId >= 11 && safeId <= 19) {
+    c = 1;
+    r = 11 - (safeId - 10);
+
+    innerX = 11.2; // Kartın sağ iç kenarında, sola karta doğru bakar
+    innerY = ROW_CENTERS[r];
+    rot = 90;
+  } else if (safeId >= 20 && safeId <= 30) {
+    r = 1;
+    if (safeId === 20) c = 1;
+    else if (safeId === 30) c = 11;
+    else c = safeId - 19;
+
+    innerX = COL_CENTERS[c];
+    innerY = 11.2; // Kartın alt iç kenarında, yukarı karta doğru bakar
+    rot = 180;
+  } else {
+    c = 11;
+    r = safeId - 29;
+
+    innerX = 88.8; // Kartın sol iç kenarında, sağa karta doğru bakar
+    innerY = ROW_CENTERS[r];
+    rot = 270;
+  }
+
+  return {
+    x: innerX,
+    y: innerY,
+    rotation: rot,
+    isBottom: safeId <= 10,
+    isTop: safeId >= 20 && safeId <= 30
+  };
+}
+
+function useNormalizedRotation(targetDeg) {
+  const angleRef = useRef(targetDeg);
+  const diff = (targetDeg - angleRef.current) % 360;
+  const shortest = diff > 180 ? diff - 360 : diff < -180 ? diff + 360 : diff;
+  angleRef.current += shortest;
+  return angleRef.current;
+}
+
+// ─── Kesintisiz Kayarak İlerleyen Konum Oku (Gliding Location Arrow) ───────────
+const GlidingBoardArrow = React.memo(function GlidingBoardArrow({
+  tileId,
+  color,
+  glowColor,
+  isVisible,
+  offsetAxis = 'none',
+  title = 'Konum Oku'
+}) {
+  const target = useMemo(() => getTileArrowTarget(tileId ?? 0), [tileId]);
+  const smoothRot = useNormalizedRotation(target.rotation);
+
+  let finalX = target.x;
+  let finalY = target.y;
+  if (offsetAxis === 'left') {
+    if (target.isBottom || target.isTop) finalX -= 1.4;
+    else finalY -= 1.4;
+  } else if (offsetAxis === 'right') {
+    if (target.isBottom || target.isTop) finalX += 1.4;
+    else finalY += 1.4;
+  }
+
+  return (
+    <div
+      className="absolute pointer-events-none z-45 flex items-center justify-center will-change-transform"
+      style={{
+        left: `${finalX}%`,
+        top: `${finalY}%`,
+        transform: `translate(-50%, -50%) rotate(${smoothRot}deg)`,
+        transition: 'left 155ms cubic-bezier(0.2, 0, 0.2, 1), top 155ms cubic-bezier(0.2, 0, 0.2, 1), transform 155ms ease-out, opacity 250ms ease-out',
+        opacity: isVisible ? 1 : 0
+      }}
+      title={title}
+    >
+      <svg
+        className="w-3.5 h-3 sm:w-4 sm:h-3.5 animate-bounce flex-shrink-0"
+        style={{
+          filter: `drop-shadow(0 2px 4px ${glowColor})`,
+          color: color
+        }}
+        viewBox="0 0 14 10"
+      >
+        <polygon
+          points="0,0 14,0 7,10"
+          fill="currentColor"
+          stroke="white"
+          strokeWidth="1.2"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </div>
+  );
+});
+
 // ─── İzole Tur Süresi Sayacı (250ms interval tahtayı baştan render etmez) ──────
 const TurnTimerCell = React.memo(function TurnTimerCell({
   gameState,
@@ -364,101 +494,7 @@ const TileCell = React.memo(function TileCell({
         );
       })()}
 
-      {/* Kartın Üstünde Hafif Minimal Konum Oku (Cardboard İçine Bakan Şık İşaretçi) */}
-      {(isMyTile || isActiveTurnTile) && !isDemandHighlighted && (() => {
-        const isBothOnTile = isMyTile && isActiveTurnTile;
 
-        const renderMinimalArrow = (isSelf) => {
-          const arrowColor = isSelf
-            ? (isMyTurn ? '#fbbf24' : '#f59e0b')
-            : (activeTurnPlayer?.color || '#38bdf8');
-
-          const glowColor = isSelf
-            ? 'rgba(245,158,11,0.95)'
-            : `${activeTurnPlayer?.color || '#38bdf8'}ee`;
-
-          let containerClasses = '';
-          let arrowSvg = null;
-
-          if (isBottomEdge) {
-            // 0..10: Kartın üst iç kenarında, aşağı karta doğru işaret eder
-            const xPos = isBothOnTile
-              ? (isSelf ? 'left-[32%] -translate-x-1/2' : 'left-[68%] -translate-x-1/2')
-              : 'left-1/2 -translate-x-1/2';
-            containerClasses = `top-0.5 sm:top-1 ${xPos}`;
-            arrowSvg = (
-              <svg
-                className="w-3 h-2.5 sm:w-3.5 sm:h-3 animate-bounce flex-shrink-0"
-                style={{ filter: `drop-shadow(0 2px 4px ${glowColor})`, color: arrowColor }}
-                viewBox="0 0 14 10"
-              >
-                <polygon points="0,0 14,0 7,10" fill="currentColor" stroke="white" strokeWidth="1.2" strokeLinejoin="round" />
-              </svg>
-            );
-          } else if (isTopEdge) {
-            // 20..30: Kartın alt iç kenarında, yukarı karta doğru işaret eder
-            const xPos = isBothOnTile
-              ? (isSelf ? 'left-[32%] -translate-x-1/2' : 'left-[68%] -translate-x-1/2')
-              : 'left-1/2 -translate-x-1/2';
-            containerClasses = `bottom-0.5 sm:bottom-1 ${xPos}`;
-            arrowSvg = (
-              <svg
-                className="w-3 h-2.5 sm:w-3.5 sm:h-3 animate-bounce flex-shrink-0"
-                style={{ filter: `drop-shadow(0 2px 4px ${glowColor})`, color: arrowColor }}
-                viewBox="0 0 14 10"
-              >
-                <polygon points="7,0 14,10 0,10" fill="currentColor" stroke="white" strokeWidth="1.2" strokeLinejoin="round" />
-              </svg>
-            );
-          } else if (isLeftEdge) {
-            // 11..19: Kartın sağ iç kenarında, sola karta doğru işaret eder
-            const yPos = isBothOnTile
-              ? (isSelf ? 'top-[32%] -translate-y-1/2' : 'top-[68%] -translate-y-1/2')
-              : 'top-1/2 -translate-y-1/2';
-            containerClasses = `right-0.5 sm:right-1 ${yPos}`;
-            arrowSvg = (
-              <svg
-                className="w-2.5 h-3 sm:w-3 sm:h-3.5 animate-bounce flex-shrink-0"
-                style={{ filter: `drop-shadow(0 2px 4px ${glowColor})`, color: arrowColor }}
-                viewBox="0 0 10 14"
-              >
-                <polygon points="0,7 10,0 10,14" fill="currentColor" stroke="white" strokeWidth="1.2" strokeLinejoin="round" />
-              </svg>
-            );
-          } else {
-            // 31..39: Kartın sol iç kenarında, sağa karta doğru işaret eder
-            const yPos = isBothOnTile
-              ? (isSelf ? 'top-[32%] -translate-y-1/2' : 'top-[68%] -translate-y-1/2')
-              : 'top-1/2 -translate-y-1/2';
-            containerClasses = `left-0.5 sm:left-1 ${yPos}`;
-            arrowSvg = (
-              <svg
-                className="w-2.5 h-3 sm:w-3 sm:h-3.5 animate-bounce flex-shrink-0"
-                style={{ filter: `drop-shadow(0 2px 4px ${glowColor})`, color: arrowColor }}
-                viewBox="0 0 10 14"
-              >
-                <polygon points="10,7 0,0 0,14" fill="currentColor" stroke="white" strokeWidth="1.2" strokeLinejoin="round" />
-              </svg>
-            );
-          }
-
-          return (
-            <div
-              key={isSelf ? 'self-arrow' : 'turn-arrow'}
-              className={`absolute z-40 pointer-events-none flex items-center justify-center ${containerClasses}`}
-            >
-              {arrowSvg}
-            </div>
-          );
-        };
-
-        return (
-          <>
-            {isMyTile && renderMinimalArrow(true)}
-            {isActiveTurnTile && renderMinimalArrow(false)}
-          </>
-        );
-      })()}
 
       {/* Mülk Renk Çubuğu & Binalar */}
       {tile.groupColor && tile.type === 'property' && (
@@ -730,8 +766,11 @@ export function Board({
   isSpectator = false
 }) {
   const { players, properties, currentTurnIndex, freeParkingPool, turnStartTime, turnTimeLimit = 75 } = gameState;
+  const effectiveMyPlayerId = (myPlayerId && players?.some(p => p.id === myPlayerId))
+    ? myPlayerId
+    : (players?.find(p => !p.isBot)?.id || players?.[0]?.id || myPlayerId);
   const activePlayer = players[currentTurnIndex];
-  const myPlayer = players?.find(p => p.id === myPlayerId);
+  const myPlayer = players?.find(p => p.id === effectiveMyPlayerId);
   const isHost = Boolean(myPlayer?.isHost);
   const isApocalypse = false;
 
@@ -743,7 +782,7 @@ export function Board({
 
   // Aktif kullanıcının zar atma yetkisi
   const canRoll =
-    activePlayer?.id === myPlayerId &&
+    activePlayer?.id === effectiveMyPlayerId &&
     (gameState.phase === 'WAITING_ROLL' || (gameState.phase === 'TURN_ACTIONS' && gameState.canRollAgain)) &&
     (activePlayer?.money >= 0) &&
     gameState.status === 'playing';
@@ -1314,7 +1353,7 @@ export function Board({
     >
       {/* 11x11 Grid Tahta */}
       <div
-        className={`w-full h-full grid gap-0.5 sm:gap-1 rounded-2xl p-0.5 sm:p-1 transition-all duration-700 ${
+        className={`relative w-full h-full grid gap-0.5 sm:gap-1 rounded-2xl p-0.5 sm:p-1 transition-all duration-700 ${
           isApocalypse
             ? 'bg-[#450a0a] border-4 border-rose-600 shadow-[0_0_65px_rgba(225,29,72,0.7)] ring-4 ring-rose-500/60'
             : isDarkMode
@@ -1713,12 +1752,12 @@ export function Board({
           const playersOnTile = playersOnTileMap[tile.id] || EMPTY_PLAYERS;
 
           const activeTurnPlayer = players[currentTurnIndex];
-          const isMyTurn = activeTurnPlayer?.id === myPlayerId;
+          const isMyTurn = activeTurnPlayer?.id === effectiveMyPlayerId;
           const activePlayerPos = activeTurnPlayer ? (displayedPositions[activeTurnPlayer.id] ?? activeTurnPlayer.position) : null;
-          const isActiveTurnTile = activeTurnPlayer && activeTurnPlayer.id !== myPlayerId && activePlayerPos === tile.id;
+          const isActiveTurnTile = activeTurnPlayer && activeTurnPlayer.id !== effectiveMyPlayerId && activePlayerPos === tile.id;
 
-          const myPlayer = playersById.get(myPlayerId);
-          const myPos = displayedPositions[myPlayerId] ?? myPlayer?.position;
+          const myPlayer = playersById.get(effectiveMyPlayerId);
+          const myPos = displayedPositions[effectiveMyPlayerId] ?? myPlayer?.position;
           const isMyTile = myPos === tile.id;
           const isCorner = [0, 10, 20, 30].includes(tile.id);
           const isSideTile = (tile.id >= 11 && tile.id <= 19) || (tile.id >= 31 && tile.id <= 39);
@@ -1742,7 +1781,7 @@ export function Board({
           } else if (isActiveTurnTile && isMyTile) {
             ringClass = 'ring-2 ring-amber-400 border-amber-400 shadow-[0_0_18px_rgba(245,158,11,0.75)]';
           } else if (isActiveTurnTile) {
-            ringClass = 'shadow-[0_0_14px_rgba(56,189,248,0.7)]';
+            ringClass = `shadow-[0_0_14px_${activeTurnPlayer?.color || '#38bdf8'}]`;
           } else if (isMyTile) {
             if (isMyTurn) {
               ringClass = 'ring-2 ring-amber-400 border-amber-400 shadow-[0_0_18px_rgba(245,158,11,0.75)]';
@@ -1782,13 +1821,36 @@ export function Board({
             />
           );
         })}
+
+        {/* Kesintisiz Kayarak İlerleyen 2D Konum Okları (Gliding Location Arrows) */}
+        {/* 1) Kendi Oyuncumuzun Altın Sarısı Kayar Oku */}
+        <GlidingBoardArrow
+          tileId={displayedPositions[effectiveMyPlayerId] ?? myPlayer?.position ?? 0}
+          color={activePlayer?.id === effectiveMyPlayerId ? '#fbbf24' : '#f59e0b'}
+          glowColor="rgba(245,158,11,0.95)"
+          isVisible={Boolean(myPlayer)}
+          offsetAxis={(activePlayer && activePlayer.id !== effectiveMyPlayerId && (displayedPositions[activePlayer.id] ?? activePlayer.position) === (displayedPositions[effectiveMyPlayerId] ?? myPlayer?.position)) ? 'left' : 'none'}
+          title="Konumunuz"
+        />
+
+        {/* 2) Sıradaki Rakibin Kendi Renginde Kayar Oku (Sıra başka rakibe geçince ona kayar, sıra bize gelince kapanır) */}
+        {activePlayer && activePlayer.id !== effectiveMyPlayerId && (
+          <GlidingBoardArrow
+            tileId={displayedPositions[activePlayer.id] ?? activePlayer.position ?? 0}
+            color={activePlayer.color || '#38bdf8'}
+            glowColor={`${activePlayer.color || '#38bdf8'}ee`}
+            isVisible={Boolean(activePlayer.id !== effectiveMyPlayerId)}
+            offsetAxis={(displayedPositions[activePlayer.id] ?? activePlayer.position) === (displayedPositions[effectiveMyPlayerId] ?? myPlayer?.position) ? 'right' : 'none'}
+            title={`${activePlayer.name || 'Rakip'} Konumu`}
+          />
+        )}
       </div>
 
       {/* 3D Three.js Şeffaf Katman: 3D Piyonlar - TAHTA KARELERİNİN ÜSTÜNDE PARLAYAN 3D MODELLER */}
       <Board3DOverlay
         gameState={gameState}
         displayedPositions={pawn3DPositions}
-        myPlayerId={myPlayerId}
+        myPlayerId={effectiveMyPlayerId}
         onRollDice={onRollDice}
         canRoll={canRoll}
       />
