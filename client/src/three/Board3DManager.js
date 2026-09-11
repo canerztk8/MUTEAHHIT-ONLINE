@@ -12,6 +12,41 @@ function lerpAngle(current, target, alpha) {
   return normalizeAngle(current + diff * alpha);
 }
 
+// ─── Prosedürel Dinamik Zemin Temas Gölgesi (Contact Drop Shadow) ──────────────
+// Ağır WebGL gölge haritası pass'leri yerine, sıfır GPU yüküyle çalışan 60 FPS
+// radyal gradyan temas gölgesi. Piyon zıpladıkça küçülüp solar, indikçe netleşir.
+let cachedShadowTexture = null;
+function getContactShadowTexture() {
+  if (!cachedShadowTexture && typeof document !== 'undefined') {
+    const canvas = document.createElement('canvas');
+    canvas.width = 128;
+    canvas.height = 128;
+    const ctx = canvas.getContext('2d');
+    const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 60);
+    grad.addColorStop(0, 'rgba(0, 0, 0, 0.72)');
+    grad.addColorStop(0.35, 'rgba(0, 0, 0, 0.45)');
+    grad.addColorStop(0.7, 'rgba(0, 0, 0, 0.16)');
+    grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 128, 128);
+    cachedShadowTexture = new THREE.CanvasTexture(canvas);
+  }
+  return cachedShadowTexture;
+}
+
+function createContactShadowMesh() {
+  const geo = new THREE.PlaneGeometry(0.78, 0.78);
+  const mat = new THREE.MeshBasicMaterial({
+    map: getContactShadowTexture(),
+    transparent: true,
+    opacity: 0.68,
+    depthWrite: false
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.rotation.x = -Math.PI / 2;
+  return mesh;
+}
+
 export class Board3DManager {
   constructor() {
     this.container = null;
@@ -142,7 +177,12 @@ export class Board3DManager {
     this.renderOnce();
   }
 
-  _disposeToken(root) {
+  _disposeToken(root, shadow = null) {
+    if (shadow && this.scene) {
+      this.scene.remove(shadow);
+      shadow.geometry?.dispose();
+      shadow.material?.dispose();
+    }
     if (!root) return;
     root.traverse((child) => {
       if (child.isMesh) {
@@ -192,7 +232,7 @@ export class Board3DManager {
       if (!activePlayerIds.has(pId)) {
         if (record?.root) {
           this.scene.remove(record.root);
-          this._disposeToken(record.root);
+          this._disposeToken(record.root, record.shadow);
         }
         this.playerTokens.delete(pId);
         hasMovement = true;
@@ -217,18 +257,24 @@ export class Board3DManager {
       let record = this.playerTokens.get(p.id);
 
       if (!record) {
-        // Yeni piyon oluştur (tahta için %40 küçültülmüş 0.69 ölçek ve kaidesiz saf model)
+        // Yeni piyon oluştur (tahta için optimize edilmiş 0.72 ölçek ve zengin 3D açılı -0.28 pitchAngle)
         const root = createPlayerToken(p.token?.id || 'hard_hat', p.color || '#ef4444', null, {
-          targetScale: 0.69,
-          pitchAngle: -0.22,
+          targetScale: 0.72,
+          pitchAngle: -0.28,
           showPedestal: false
         });
         root.position.set(targetX, 0.02, targetZ);
         root.rotation.y = targetRotY;
         this.scene.add(root);
 
+        // Zemin temas gölgesi
+        const shadow = createContactShadowMesh();
+        shadow.position.set(targetX, 0.005, targetZ);
+        this.scene.add(shadow);
+
         record = {
           root,
+          shadow,
           currentTile: tileId,
           startPos: new THREE.Vector3(targetX, 0.02, targetZ),
           targetPos: new THREE.Vector3(targetX, 0.02, targetZ),
@@ -243,17 +289,23 @@ export class Board3DManager {
         // Model veya renk değişmişse güncelle ve eski materyalleri temizle
         if (record.tokenId !== p.token?.id || record.color !== p.color) {
           this.scene.remove(record.root);
-          this._disposeToken(record.root);
+          this._disposeToken(record.root, record.shadow);
 
           const newRoot = createPlayerToken(p.token?.id || 'hard_hat', p.color || '#ef4444', null, {
-            targetScale: 0.69,
-            pitchAngle: -0.22,
+            targetScale: 0.72,
+            pitchAngle: -0.28,
             showPedestal: false
           });
           newRoot.position.copy(record.root.position);
           newRoot.rotation.copy(record.root.rotation);
           this.scene.add(newRoot);
+
+          const newShadow = createContactShadowMesh();
+          newShadow.position.set(newRoot.position.x, 0.005, newRoot.position.z);
+          this.scene.add(newShadow);
+
           record.root = newRoot;
+          record.shadow = newShadow;
           record.tokenId = p.token?.id;
           record.color = p.color;
           hasMovement = true;
@@ -317,18 +369,55 @@ export class Board3DManager {
 
       if (record.hopProgress < 1.0) {
         hasActiveAnimation = true;
-        record.hopProgress = Math.min(1.0, record.hopProgress + dt * 6.5);
+        // 175ms'lik adım süresine tam uyumlu ilerleme hızı (1.0 / 0.165s ≈ 6.0)
+        record.hopProgress = Math.min(1.0, record.hopProgress + dt * 6.0);
         const t = record.hopProgress;
-        record.root.position.lerpVectors(record.startPos, record.targetPos, t);
-        const hopHeight = 0.45;
+
+        // X ve Z ekseninde pürüzsüz smoothstep interpolasyonu
+        const easeT = t * t * (3 - 2 * t);
+        record.root.position.x = THREE.MathUtils.lerp(record.startPos.x, record.targetPos.x, easeT);
+        record.root.position.z = THREE.MathUtils.lerp(record.startPos.z, record.targetPos.z, easeT);
+
+        // Y ekseninde zengin parabolik zıplama yayı (hop)
+        const hopHeight = 0.55;
         const arc = Math.sin(t * Math.PI) * hopHeight;
         record.root.position.y = 0.02 + arc;
 
-        if (record.targetRotY !== undefined) {
-          record.root.rotation.y = lerpAngle(record.root.rotation.y, record.targetRotY, dt * 10.0);
+        // 1. ZEMİN GÖLGESİ DİNAMİĞİ: Piyon havalandıkça zemin gölgesi küçülür ve solar, indikçe koyulaşır
+        if (record.shadow) {
+          record.shadow.position.x = record.root.position.x;
+          record.shadow.position.z = record.root.position.z;
+          const shadowScale = Math.max(0.45, 1.0 - (arc / hopHeight) * 0.45);
+          record.shadow.scale.set(shadowScale, shadowScale, 1);
+          record.shadow.material.opacity = Math.max(0.18, 0.68 - (arc / hopHeight) * 0.45);
         }
+
+        // 2. YÖN DÖNÜŞÜ (Smooth rotation towards movement track)
+        if (record.targetRotY !== undefined) {
+          record.root.rotation.y = lerpAngle(record.root.rotation.y, record.targetRotY, dt * 12.0);
+        }
+
+        // 3. SQUASH & STRETCH FİZİĞİ:
+        // Havada yükselirken dikey uzama (stretch), yere temas anında mikro yaylanma (squash)
+        let scaleY = 1.0;
+        let scaleXZ = 1.0;
+        if (t < 0.82) {
+          // Havalanma ve tepe noktası: hafifçe uzama
+          const stretch = (arc / hopHeight) * 0.15;
+          scaleY = 1.0 + stretch;
+          scaleXZ = 1.0 - stretch * 0.5;
+        } else {
+          // Yere iniş (Landing): yaylanma
+          const landT = (t - 0.82) / 0.18; // 0..1
+          const squash = Math.sin(landT * Math.PI) * 0.15;
+          scaleY = 1.0 - squash;
+          scaleXZ = 1.0 + squash * 0.6;
+        }
+        record.root.scale.set(scaleXZ, scaleY, scaleXZ);
       } else {
-        // Dinlenme konumuna yaklaş
+        // Dinlenme (Idle): pürüzsüzce orijinal ölçeğe ve zemine yerleş
+        record.root.scale.lerp(new THREE.Vector3(1, 1, 1), 0.22);
+
         const distSq = record.root.position.distanceToSquared(record.targetPos);
         if (distSq > 0.0001) {
           hasActiveAnimation = true;
@@ -337,11 +426,18 @@ export class Board3DManager {
           record.root.position.copy(record.targetPos);
         }
 
+        if (record.shadow) {
+          record.shadow.position.x = record.root.position.x;
+          record.shadow.position.z = record.root.position.z;
+          record.shadow.scale.lerp(new THREE.Vector3(1, 1, 1), 0.22);
+          record.shadow.material.opacity = THREE.MathUtils.lerp(record.shadow.material.opacity, 0.68, 0.22);
+        }
+
         if (record.targetRotY !== undefined) {
           const diff = Math.abs(Math.atan2(Math.sin(record.targetRotY - record.root.rotation.y), Math.cos(record.targetRotY - record.root.rotation.y)));
           if (diff > 0.005) {
             hasActiveAnimation = true;
-            record.root.rotation.y = lerpAngle(record.root.rotation.y, record.targetRotY, 0.15);
+            record.root.rotation.y = lerpAngle(record.root.rotation.y, record.targetRotY, 0.2);
           } else {
             record.root.rotation.y = record.targetRotY;
           }
@@ -376,6 +472,11 @@ export class Board3DManager {
     }
     if (this.playerTokens) {
       for (const record of this.playerTokens.values()) {
+        if (record?.shadow) {
+          this.scene?.remove(record.shadow);
+          record.shadow.geometry?.dispose();
+          record.shadow.material?.dispose();
+        }
         if (record?.root) {
           this._disposeToken(record.root);
         }

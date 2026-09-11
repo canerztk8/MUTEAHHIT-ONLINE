@@ -893,7 +893,7 @@ export function Board({
                     onPawnLanded(p.id, targetPos);
                   }
                 }
-              }, 95);
+              }, 175);
 
               activeIntervalsRef.current[p.id] = interval;
             };
@@ -916,7 +916,7 @@ export function Board({
               activeIntervalsRef.current[`poll_${p.id}`] = pollInterval;
             }
           } else {
-            // totalSteps > 12: ışınlanmak yerine saat yönünde akıcı ve hızlı tempolu (75ms) yürüyüş ile hedefe ulaş
+            // totalSteps > 12: ışınlanmak yerine saat yönünde akıcı tempolu (110ms) yürüyüş ile hedefe ulaş
             if (totalSteps > 0) {
               let step = 0;
               let current = prevPos;
@@ -945,7 +945,7 @@ export function Board({
                       onPawnLanded(p.id, targetPos);
                     }
                   }
-                }, 75);
+                }, 110);
 
                 activeIntervalsRef.current[p.id] = interval;
               }, 250);
@@ -1002,7 +1002,7 @@ export function Board({
                   }, 900);
                   activeIntervalsRef.current[`transfer_${p.id}`] = jailTransferTimeout;
                 }
-              }, 95);
+              }, 175);
 
               activeIntervalsRef.current[p.id] = interval;
             };
