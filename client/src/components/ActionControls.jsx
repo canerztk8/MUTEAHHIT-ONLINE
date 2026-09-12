@@ -43,7 +43,7 @@ export function ActionControls({
       if (gameState?.status !== 'playing') return;
       if (!isMyTurn || isPawnBusy) return;
       e.preventDefault();
-      if (phase === 'WAITING_ROLL' && !activePlayer?.inJail) {
+      if (phase === 'WAITING_ROLL') {
         onRollDice?.();
       } else if (phase === 'CARD_DRAWN') {
         onAcknowledgeCard?.();
@@ -63,10 +63,9 @@ export function ActionControls({
 
   // Etkileşimli bir aksiyon gerekiyor mu? (Piyon yürürken veya zar atılırken aksiyon kutuları açılmaz)
   const hasInteractiveAction = isMyTurn && !isPawnBusy && (
-    (phase === 'WAITING_ROLL' && !activePlayer?.inJail) ||
+    (phase === 'WAITING_ROLL') ||
     (canRollAgain && phase === 'TURN_ACTIONS') ||
     isDebt ||
-    (activePlayer?.inJail && phase === 'WAITING_ROLL') ||
     (phase === 'TILE_ACTION' && currentTile) ||
     (phase === 'TURN_ACTIONS')
   );
@@ -140,8 +139,8 @@ export function ActionControls({
             />
           )}
 
-          {/* Sıra Başında Zar Atma Butonu (Cardboard Ortası) */}
-          {phase === 'WAITING_ROLL' && !activePlayer?.inJail && !isPawnBusy && (
+          {/* Sıra Başında Zar Atma Butonu (Normal veya Kodeste Çift Zar Denemesi) */}
+          {phase === 'WAITING_ROLL' && !isPawnBusy && (
             <button
               type="button"
               onClick={(e) => {
@@ -152,7 +151,7 @@ export function ActionControls({
               className="w-full py-2.5 px-3 bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-400 hover:brightness-110 active:scale-95 text-slate-950 font-space font-extrabold text-xs sm:text-sm rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer animate-dice-glow border border-amber-300"
             >
               <Dices className="w-4 h-4 text-slate-950 animate-bounce-short" />
-              <span>ZAR AT</span>
+              <span>{activePlayer?.inJail ? '🎲 ÇİFT ZAR DENE (KODES)' : '🎲 ZAR AT'}</span>
             </button>
           )}
 

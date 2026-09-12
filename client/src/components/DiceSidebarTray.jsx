@@ -171,37 +171,47 @@ export function DiceSidebarTray({
     const manager = new Dice3DTrayManager();
     managerRef.current = manager;
 
-    const initialDice = gameState?.dice || [1, 1];
-    manager.setupScene(containerRef.current, () => {
-      handleManualRollRef.current?.();
-    }, initialDice);
+    let isCancelled = false;
 
-    setIsSceneReady(true);
+    (async () => {
+      const initialDice = gameState?.dice || [1, 1];
+      try {
+        await manager.setupScene(containerRef.current, () => {
+          handleManualRollRef.current?.();
+        }, initialDice);
+      } catch (e) {
+        console.warn('[DiceSidebarTray] setupScene hatası:', e);
+      }
 
-    // Eğer sahne yüklenirken bot veya uzak oyuncu zar atışı geldiyse derhal oynat
-    if (pendingRollRef.current) {
-      const pending = pendingRollRef.current;
-      pendingRollRef.current = null;
-      isRollingLocalRef.current = true;
-      setIsRollingLocal(true);
-      setSettledDice(null);
-      onRollStart?.();
+      if (isCancelled) return;
+      setIsSceneReady(true);
 
-      (async () => {
+      // Eğer sahne yüklenirken bot veya uzak oyuncu zar atışı geldiyse derhal oynat
+      if (pendingRollRef.current) {
+        const pending = pendingRollRef.current;
+        pendingRollRef.current = null;
+        isRollingLocalRef.current = true;
+        setIsRollingLocal(true);
+        setSettledDice(null);
+        onRollStart?.();
+
         try {
           await manager.rollDice(pending.dice, pending.toss);
         } catch (err) {
           console.warn('[DiceSidebarTray] Mount roll error:', err);
         } finally {
-          isRollingLocalRef.current = false;
-          setIsRollingLocal(false);
-          setSettledDice(pending.dice);
-          onRollSettled?.(pending.dice, pending.dice[0] + pending.dice[1], pending.dice[0] === pending.dice[1]);
+          if (!isCancelled) {
+            isRollingLocalRef.current = false;
+            setIsRollingLocal(false);
+            setSettledDice(pending.dice);
+            onRollSettled?.(pending.dice, pending.dice[0] + pending.dice[1], pending.dice[0] === pending.dice[1]);
+          }
         }
-      })();
-    }
+      }
+    })();
 
     return () => {
+      isCancelled = true;
       setIsSceneReady(false);
       manager.dispose();
       managerRef.current = null;

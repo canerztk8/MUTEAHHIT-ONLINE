@@ -477,7 +477,6 @@ export class Board3DManager {
       for (const record of this.playerTokens.values()) {
         if (record?.shadow) {
           this.scene?.remove(record.shadow);
-          record.shadow.geometry?.dispose();
           record.shadow.material?.dispose();
         }
         if (record?.root) {
@@ -492,11 +491,9 @@ export class Board3DManager {
           if (child.material) {
             if (Array.isArray(child.material)) {
               child.material.forEach((m) => {
-                if (m.map) m.map.dispose();
                 m?.dispose?.();
               });
             } else {
-              if (child.material.map) child.material.map.dispose();
               child.material?.dispose?.();
             }
           }

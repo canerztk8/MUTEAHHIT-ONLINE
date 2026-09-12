@@ -3,6 +3,7 @@ import { BOARD_TILES } from '../game/boardData.js';
 import { sounds } from '../sound/soundEffects.js';
 import { Building2, Building, Train, Zap, AlertTriangle, Coins, Clock, Home, Landmark, Gavel, Sparkles, ChevronDown } from 'lucide-react';
 import { Board3DOverlay } from './Board3DOverlay.jsx';
+import { MobileControllerModal } from './MobileControllerModal.jsx';
 
 // 11x11 Grid konumlandırması
 function getGridPosition(id) {
@@ -699,6 +700,41 @@ export function Board({
   const isHost = Boolean(myPlayer?.isHost);
   const isApocalypse = false;
 
+  // 📐 3D Eğim / Masa Görünümü (Isometric 3D Tilt View - Kısayol: C)
+  const [is3DView, setIs3DView] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('muteahhit_3d_tilt') === 'true' : false));
+  const [isSnowEnabled, setIsSnowEnabled] = useState(false);
+  const [showMobileModal, setShowMobileModal] = useState(false);
+  const [dramaticHit, setDramaticHit] = useState(null);
+  const [isDramaticShake, setIsDramaticShake] = useState(false);
+
+  const toggle3DView = useCallback(() => {
+    setIs3DView(prev => {
+      const next = !prev;
+      try { localStorage.setItem('muteahhit_3d_tilt', String(next)); } catch (_) {}
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if (e.key === 'c' || e.key === 'C') {
+        toggle3DView();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [toggle3DView]);
+
+  const triggerDramaticHit = useCallback((rent) => {
+    if (!rent || rent.amount < 150) return;
+    setDramaticHit(rent);
+    sounds.playDramaticHit();
+    setIsDramaticShake(true);
+    setTimeout(() => setIsDramaticShake(false), 700);
+    setTimeout(() => setDramaticHit(null), 2400);
+  }, []);
+
   // 🏢 Sahipsiz / Satın Alınabilir Tüm Tapuların Dağılımı (Renkli, Gar, Tesis)
   const [isDeedsMenuOpen, setIsDeedsMenuOpen] = useState(false);
   const [isColorDetailsOpen, setIsColorDetailsOpen] = useState(false);
@@ -1248,8 +1284,13 @@ export function Board({
                       setIsMovingPawn(false);
 
                       if (pendingRentRef.current) {
-                        setRentNotification(pendingRentRef.current);
-                        sounds.playCash();
+                        const rent = pendingRentRef.current;
+                        setRentNotification(rent);
+                        if (rent.amount >= 150) {
+                          triggerDramaticHit(rent);
+                        } else {
+                          sounds.playCash();
+                        }
                         pendingRentRef.current = null;
                       }
 
@@ -1270,8 +1311,13 @@ export function Board({
               setDisplayedPositions((prev) => ({ ...prev, [p.id]: targetPos }));
               setIsMovingPawn(false);
               if (pendingRentRef.current) {
-                setRentNotification(pendingRentRef.current);
-                sounds.playCash();
+                const rent = pendingRentRef.current;
+                setRentNotification(rent);
+                if (rent.amount >= 150) {
+                  triggerDramaticHit(rent);
+                } else {
+                  sounds.playCash();
+                }
                 pendingRentRef.current = null;
               }
               if (onPawnLanded) {
@@ -1397,14 +1443,28 @@ export function Board({
     <div
       className="relative w-full aspect-square select-none mx-auto flex items-center justify-center p-0.5 sm:p-1"
       style={{
+        width: 'min(calc(100vw - 24px), calc(100dvh - 180px))',
+        height: 'min(calc(100vw - 24px), calc(100dvh - 180px))',
         maxWidth: 'calc(100dvh - 16px)',
         maxHeight: 'calc(100dvh - 16px)'
       }}
     >
-      {/* 11x11 Grid Tahta */}
+      {/* 3D Board Tilt & Shake Wrapper — encompasses BOTH 2D grid and 3D overlay */}
       <div
-        onMouseLeave={handleTileMouseLeave}
-        className={`relative w-full h-full grid gap-0.5 sm:gap-1 rounded-2xl p-0.5 sm:p-1 transition-colors duration-500 overflow-hidden ${
+        className={`relative w-full h-full transition-all duration-700 ${
+          isDramaticShake ? 'animate-dramatic-shake' : ''
+        }`}
+        style={{
+          transform: is3DView ? 'perspective(1400px) rotateX(28deg) rotateZ(0deg) scale(0.96)' : 'none',
+          transformStyle: 'preserve-3d',
+          boxShadow: is3DView ? '0 35px 70px rgba(0,0,0,0.75), 0 15px 25px rgba(0,0,0,0.5)' : undefined,
+          borderRadius: '1rem'
+        }}
+      >
+        {/* 11x11 Grid Tahta */}
+        <div
+          onMouseLeave={handleTileMouseLeave}
+          className={`relative w-full h-full grid gap-0.5 sm:gap-1 rounded-2xl p-0.5 sm:p-1 transition-colors duration-500 overflow-hidden ${
           isApocalypse
             ? 'bg-[#450a0a] border-4 border-rose-600 shadow-[0_0_65px_rgba(225,29,72,0.7)] ring-4 ring-rose-500/60'
             : isDarkMode
@@ -1593,6 +1653,51 @@ export function Board({
                   ) : null}
                 </div>
               )}
+
+              {/* MASA GÖRÜNÜM & OYUN ARAÇLARI TOOLBARI (3D Masa, Ayaz, Kumanda) */}
+              <div className="relative z-30 flex items-center justify-center gap-1.5 sm:gap-2 mb-1">
+                <button
+                  type="button"
+                  onClick={toggle3DView}
+                  className={`px-2.5 py-1 rounded-xl text-[10px] sm:text-xs font-bold transition-all flex items-center gap-1 cursor-pointer shadow-sm border ${
+                    is3DView
+                      ? 'bg-amber-400 text-slate-950 border-amber-300 shadow-amber-400/30'
+                      : isDarkMode
+                      ? 'bg-slate-800/80 hover:bg-slate-750 text-slate-300 border-slate-700'
+                      : 'bg-white/80 hover:bg-white text-slate-700 border-slate-300'
+                  }`}
+                  title="3D Masa Perspektif Görünümünü Aç/Kapat (Kısayol: C)"
+                >
+                  <span>📐 3D Masa</span>
+                  <span className="text-[9px] opacity-70 font-mono hidden sm:inline">(C)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsSnowEnabled(prev => !prev)}
+                  className={`px-2.5 py-1 rounded-xl text-[10px] sm:text-xs font-bold transition-all flex items-center gap-1 cursor-pointer shadow-sm border ${
+                    isSnowEnabled
+                      ? 'bg-sky-400 text-slate-950 border-sky-300 shadow-sky-400/30'
+                      : isDarkMode
+                      ? 'bg-slate-800/80 hover:bg-slate-750 text-slate-300 border-slate-700'
+                      : 'bg-white/80 hover:bg-white text-slate-700 border-slate-300'
+                  }`}
+                  title="Ankara Ayazı & Kar Efektini Aç/Kapat"
+                >
+                  <span>❄️ Ayaz</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowMobileModal(true)}
+                  className={`px-2.5 py-1 rounded-xl text-[10px] sm:text-xs font-bold transition-all flex items-center gap-1 cursor-pointer shadow-sm border ${
+                    isDarkMode
+                      ? 'bg-slate-800/80 hover:bg-slate-750 text-amber-400 border-amber-400/40'
+                      : 'bg-white/80 hover:bg-white text-amber-700 border-amber-400/40'
+                  }`}
+                  title="Telefonu Zar Kumandası Olarak Kullan (QR Tara)"
+                >
+                  <span>📱 Kumanda</span>
+                </button>
+              </div>
 
               {/* MERKEZ TEKNİK BİLGİ VE KONTROL BARI */}
               <div className={`relative ${isDeedsMenuOpen ? 'z-40' : 'z-20'} w-full max-w-xs sm:max-w-sm mx-auto my-0.5 ${
@@ -2019,7 +2124,10 @@ export function Board({
         myPlayerId={effectiveMyPlayerId}
         onRollDice={onRollDice}
         canRoll={canRoll}
+        isSnowEnabled={isSnowEnabled}
+        isDarkMode={isDarkMode}
       />
+    </div>
 
       {/* DESTEDEN ÇEKİLEN ŞANS / BELEDİYE KARTI 3D MODALI (SADECE KARTI ÇEKEN OYUNCUYA 3D ANİMASYONLA AÇILIR) */}
       {isCardDrawer &&
@@ -2386,6 +2494,33 @@ export function Board({
             )}
           </div>
         </div>
+      )}
+
+      {/* 💥 Yüksek Kira / Dramatik Darbe Banner'ı (150₺+ Kira Ödemelerinde Çıkar) */}
+      {dramaticHit && (
+        <div className="fixed top-12 inset-x-0 z-[120] pointer-events-none flex justify-center px-4 animate-bounce">
+          <div className="bg-rose-950/95 border-2 border-rose-500 text-rose-100 px-5 py-3 rounded-2xl shadow-[0_0_40px_rgba(244,63,94,0.8)] backdrop-blur-md flex items-center gap-3">
+            <span className="text-3xl">💥</span>
+            <div>
+              <span className="text-[10px] font-black uppercase tracking-widest text-rose-400 block font-space">
+                AĞIR DARBE!
+              </span>
+              <span className="text-sm font-extrabold">
+                {dramaticHit.payerName}, <strong className="text-amber-300 font-mono">{dramaticHit.amount}₺</strong> kira ödedi!
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 📱 Mobil Kumanda QR / Link Modal */}
+      {showMobileModal && (
+        <MobileControllerModal
+          roomCode={gameState?.roomCode || ''}
+          playerId={effectiveMyPlayerId || ''}
+          playerName={myPlayer?.name || ''}
+          onClose={() => setShowMobileModal(false)}
+        />
       )}
     </div>
   );

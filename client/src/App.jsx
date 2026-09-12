@@ -10,6 +10,7 @@ import { ChatAndLog } from './components/ChatAndLog.jsx';
 import { TitleDeedCards } from './components/TitleDeedCards.jsx';
 import { DiceSidebarTray } from './components/DiceSidebarTray.jsx';
 import { ErrorBoundary } from './components/ErrorBoundary.jsx';
+import { MobileController } from './components/MobileController.jsx';
 
 // 🚀 Modallar — Dinamik code-splitting ile ana bundle yükü hafifletilir
 const PropertyCardModal = lazy(() => import('./components/PropertyCardModal.jsx').then(m => ({ default: m.PropertyCardModal })));
@@ -162,7 +163,7 @@ function AnitkabirBackground({ isDarkMode }) {
   );
 }
 
-export function App() {
+function MainApp() {
   const [isDarkMode, setIsDarkMode] = useState(() => {
     try {
       const urlParams = new URLSearchParams(window.location.search);
@@ -1907,4 +1908,23 @@ export function App() {
       )}
     </div>
   );
+}
+
+export function App() {
+  const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const controllerRoom = urlParams?.get('controller') || urlParams?.get('c');
+  const controllerPlayer = urlParams?.get('player') || urlParams?.get('p');
+  const controllerName = urlParams?.get('name') || urlParams?.get('n');
+
+  if (controllerRoom) {
+    return (
+      <MobileController
+        roomCode={controllerRoom}
+        playerId={controllerPlayer}
+        playerName={controllerName}
+      />
+    );
+  }
+
+  return <MainApp />;
 }

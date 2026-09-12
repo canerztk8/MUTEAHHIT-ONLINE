@@ -156,13 +156,17 @@ const rawSounds = {
       }
       if (customDiceAudio) {
         customDiceAudio.volume = Math.min(1.0, currentVolume * 0.6 * MASTER_VOLUME_SCALE);
-        customDiceAudio.currentTime = 0;
-        const p = customDiceAudio.play();
-        if (p !== undefined) {
-          p.catch(() => {
-            // HTML5 Audio engellenirse veya dosya okunamazsa usulca prosedürel ses sentezleyicisine geç
-            rawSounds.playProceduralDiceRoll();
-          });
+        if (customDiceAudio.paused || customDiceAudio.ended) {
+          customDiceAudio.currentTime = 0;
+          const p = customDiceAudio.play();
+          if (p !== undefined) {
+            p.catch(() => {
+              rawSounds.playProceduralDiceRoll();
+            });
+            return;
+          }
+        } else {
+          rawSounds.playProceduralDiceRoll();
           return;
         }
       }
@@ -170,6 +174,37 @@ const rawSounds = {
     } catch (e) {
       rawSounds.playProceduralDiceRoll();
     }
+  },
+
+  // ⚠️ Ağır Çekim Kira Şoku / Çöküş Bas Patlaması
+  playDramaticHit() {
+    try {
+      const ctx = getAudioContext();
+      if (!ctx || currentVolume === 0) return;
+      const now = ctx.currentTime;
+
+      // Derin şok bas tonu (Sub-bass drop)
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(140, now);
+      osc.frequency.exponentialRampToValueAtTime(35, now + 0.6);
+
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(450, now);
+      filter.frequency.exponentialRampToValueAtTime(80, now + 0.6);
+
+      gain.gain.setValueAtTime(0.45 * currentVolume, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(getDestination(ctx));
+
+      osc.start(now);
+      osc.stop(now + 0.72);
+    } catch (e) {}
   },
 
   // Tekil Fiziksel Zar Çarpışma / Sekme Sesi (Physical Collision Clack)
