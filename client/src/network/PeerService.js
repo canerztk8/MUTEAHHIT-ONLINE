@@ -1184,6 +1184,12 @@ export class HostPeerService {
    * Odadan ayrıl — tüm bağlantıları kapat ve PeerJS'i yok et.
    */
   destroy() {
+    this._onState = () => {};
+    this._onChat = () => {};
+    this._onError = () => {};
+    this._onReady = () => {};
+    this._onPing = () => {};
+    this._onMyId = () => {};
     this._stopWatchdog();
     if (this._pingInterval) {
       clearInterval(this._pingInterval);
@@ -1607,6 +1613,16 @@ export class ClientPeerService {
    */
   destroy() {
     this._destroyed = true;
+    this._onState = () => {};
+    this._onChat = () => {};
+    this._onKicked = () => {};
+    this._onHostDropped = () => {};
+    this._onHostMigrated = () => {};
+    this._onError = () => {};
+    this._onConnected = () => {};
+    this._onMyId = () => {};
+    this._onPing = () => {};
+    this._onSpectator = () => {};
     this._stopPing();
     if (this._fallbackTimeout) {
       clearTimeout(this._fallbackTimeout);

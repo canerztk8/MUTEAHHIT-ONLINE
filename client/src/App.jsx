@@ -1078,17 +1078,15 @@ export function App() {
   // Odaya Bağlanırken İptal Etme
   const handleCancelConnecting = useCallback(() => {
     try {
-      const urlParams = new URLSearchParams(window.location.search);
-      const roomParam = urlParams.get('room');
-      if (roomParam) {
-        sessionStorage.setItem('muteahhit_auto_join_cancelled', roomParam.trim().toUpperCase());
-      }
       localStorage.removeItem('muteahhit_room_code');
-      window.history.replaceState({}, '', window.location.pathname);
+      sessionStorage.removeItem('muteahhit_auto_join_cancelled');
     } catch (_) {}
 
     try {
-      networkRef.current?.destroy();
+      if (networkRef.current) {
+        networkRef.current.destroy();
+        networkRef.current = null;
+      }
     } catch (_) {}
 
     setNetwork(null);
@@ -1097,6 +1095,15 @@ export function App() {
     setPeerError(null);
     setGameState(null);
     setRoomNotFound(null);
+
+    // Davet linki (?room=...) ile açıldıysa doğrudan temiz URL'e yönlendirerek kesin iptal sağla
+    if (typeof window !== 'undefined' && window.location.search && window.location.search.includes('room=')) {
+      window.location.href = window.location.origin + window.location.pathname;
+    } else {
+      try {
+        window.history.replaceState({}, '', window.location.pathname);
+      } catch (_) {}
+    }
   }, []);
 
   const handleRestartGame = () => {
@@ -1263,9 +1270,9 @@ export function App() {
               <button
                 type="button"
                 onClick={handleCancelConnecting}
-                className="mt-3 px-4 py-2 rounded-xl bg-slate-800/80 hover:bg-rose-950/70 border border-slate-700 hover:border-rose-600/70 text-slate-300 hover:text-rose-300 text-xs font-bold transition-all shadow-sm active:scale-95 cursor-pointer flex items-center gap-1.5"
+                className="mt-3 px-5 py-2.5 rounded-xl bg-slate-800/90 hover:bg-rose-950/80 border border-slate-700 hover:border-rose-600 text-slate-200 hover:text-rose-300 text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer flex items-center gap-2"
               >
-                <span>✕</span>
+                <span className="text-rose-400 font-bold">✕</span>
                 <span>İptal Et</span>
               </button>
             </>
