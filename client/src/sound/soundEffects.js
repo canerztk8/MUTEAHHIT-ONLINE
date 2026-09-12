@@ -176,37 +176,6 @@ const rawSounds = {
     }
   },
 
-  // ⚠️ Ağır Çekim Kira Şoku / Çöküş Bas Patlaması
-  playDramaticHit() {
-    try {
-      const ctx = getAudioContext();
-      if (!ctx || currentVolume === 0) return;
-      const now = ctx.currentTime;
-
-      // Derin şok bas tonu (Sub-bass drop)
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(140, now);
-      osc.frequency.exponentialRampToValueAtTime(35, now + 0.6);
-
-      const filter = ctx.createBiquadFilter();
-      filter.type = 'lowpass';
-      filter.frequency.setValueAtTime(450, now);
-      filter.frequency.exponentialRampToValueAtTime(80, now + 0.6);
-
-      gain.gain.setValueAtTime(0.45 * currentVolume, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
-
-      osc.connect(filter);
-      filter.connect(gain);
-      gain.connect(getDestination(ctx));
-
-      osc.start(now);
-      osc.stop(now + 0.72);
-    } catch (e) {}
-  },
-
   // Tekil Fiziksel Zar Çarpışma / Sekme Sesi (Physical Collision Clack)
   // Cannon-es temas anında tetiklenir: Şiddete göre ses seviyesi ve zarlar arası çarpışmada yüksek tiz
   playDiceImpact(intensity = 0.8, pitchMod = 1.0) {

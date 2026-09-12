@@ -717,16 +717,6 @@ html.dark ::-webkit-scrollbar-thumb:hover {
   animation: countdownBar 5s linear forwards;
 }
 
-@keyframes dramaticShake {
-  0%, 100% { translate: 0 0; rotate: 0deg; }
-  10%, 30%, 50%, 70%, 90% { translate: -3px 1px; rotate: -1.5deg; }
-  20%, 40%, 60%, 80% { translate: 3px -1px; rotate: 1.5deg; }
-}
-
-.animate-dramatic-shake {
-  animation: dramaticShake 0.7s ease-in-out;
-}
-
 /* 🏆 Zafer ve Kupa Parıltısı */
 @keyframes trophyGlowPulse {
   0%, 100% {
