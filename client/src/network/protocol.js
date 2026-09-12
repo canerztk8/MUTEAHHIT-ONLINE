@@ -36,6 +36,7 @@ export const MSG = Object.freeze({
 export const ACTION = Object.freeze({
   // Oda Yönetimi
   JOIN_LOBBY: 'JOIN_LOBBY',
+  REQUEST_STATE: 'REQUEST_STATE',
   LEAVE_ROOM: 'LEAVE_ROOM',
   ADD_BOT: 'ADD_BOT',
   REMOVE_BOT: 'REMOVE_BOT',

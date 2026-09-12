@@ -536,6 +536,14 @@ export function App() {
       isPawnMovingRef.current = true;
       if (pawnMovingSafetyTimeoutRef.current) clearTimeout(pawnMovingSafetyTimeoutRef.current);
       pawnMovingSafetyTimeoutRef.current = setTimeout(flushVisualStateOnSafetyTimeout, 4200);
+    } else if ((state.phase === 'TURN_ACTIONS' || state.phase === 'TILE_ACTION') && !hasPawnMoved && !isNewDiceRoll) {
+      setIsPawnMoving(false);
+      isPawnMovingRef.current = false;
+      setIsDiceRolling(false);
+      if (pawnMovingSafetyTimeoutRef.current) {
+        clearTimeout(pawnMovingSafetyTimeoutRef.current);
+        pawnMovingSafetyTimeoutRef.current = null;
+      }
     }
 
     const isMovementTurnInProgress = hasPawnMoved || isNewDiceRoll || isPawnMovingRef.current;
@@ -1328,15 +1336,29 @@ export function App() {
 
   // Yerel oyuncu ve üzerinde bulunduğu kare (F5 sonrası kesintisiz eşleşme kalkanı)
   const savedPlayerName = typeof localStorage !== 'undefined' ? localStorage.getItem('muteahhit_name') : null;
+  const savedSessionToken = typeof localStorage !== 'undefined' ? localStorage.getItem('muteahhit_session_token') : null;
+
+  const matchedPlayer = effectiveGameState?.players?.find(p => !p.isBot && (
+    (myPlayerId && p.id === myPlayerId) ||
+    (savedSessionToken && p.sessionToken === savedSessionToken) ||
+    (savedPlayerName && p.name === savedPlayerName)
+  )) || null;
+
   const isSpectator = Boolean(
     isSpectatorMode ||
     network?.isSpectator ||
-    (effectiveGameState?.status === 'playing' && !effectiveGameState?.players?.some((p) => p.id === myPlayerId && !p.isBot))
+    (effectiveGameState?.status === 'playing' && !matchedPlayer)
   );
-  const myPlayer = isSpectator
-    ? null
-    : (effectiveGameState?.players?.find((p) => p.id === myPlayerId)
-      || (savedPlayerName ? effectiveGameState?.players?.find((p) => p.name === savedPlayerName && !p.isBot) : null));
+  const myPlayer = isSpectator ? null : matchedPlayer;
+  const effectiveMyPlayerId = myPlayer?.id || myPlayerId;
+
+  useEffect(() => {
+    if (myPlayer?.id && myPlayerId !== myPlayer.id) {
+      setMyPlayerId(myPlayer.id);
+      myPlayerIdRef.current = myPlayer.id;
+    }
+  }, [myPlayer?.id, myPlayerId]);
+
   const currentTile = myPlayer && BOARD_TILES ? BOARD_TILES[myPlayer.position] : null;
   const activePlayer = effectiveGameState?.players?.[effectiveGameState?.currentTurnIndex];
   const isMyTurn = Boolean(activePlayer && myPlayer && activePlayer.id === myPlayer.id);
@@ -1455,7 +1477,7 @@ export function App() {
               centerControlsSlot={
                 <ActionControls
                   gameState={gameState}
-                  myPlayerId={myPlayerId}
+                  myPlayerId={effectiveMyPlayerId}
                   isRolling={isDiceRolling}
                   isMovingPawn={isPawnMoving}
                   onRollDice={handleRollDice}

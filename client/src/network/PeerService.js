@@ -668,7 +668,9 @@ export class HostPeerService {
                 this._connections.set(senderId, conn);
               }
 
-              // İstemciye session token'ını kesin olarak bildir
+              // İstemciye session token'ını ve son oyun durumunu kesin olarak doğrudan bildir
+              const publicState = game.getPublicState();
+              const syncMsg = createSyncState(publicState);
               if (conn) {
                 this._sendTo(conn, {
                   type: MSG.EVENT,
@@ -676,6 +678,7 @@ export class HostPeerService {
                   payload: { sessionToken: existingPlayer.sessionToken },
                   targetId: senderId
                 });
+                this._sendTo(conn, syncMsg);
               } else if (this._relay?.isConnected) {
                 this._relay.send({
                   type: MSG.EVENT,
@@ -683,6 +686,7 @@ export class HostPeerService {
                   payload: { sessionToken: existingPlayer.sessionToken },
                   targetId: senderId
                 }, senderId);
+                this._relay.send(syncMsg, senderId);
               }
 
               this._broadcastState();
@@ -737,6 +741,18 @@ export class HostPeerService {
                 targetId: senderId
               }, senderId);
             }
+          }
+          break;
+        }
+
+        case ACTION.REQUEST_STATE: {
+          broadcastNeeded = false;
+          const publicState = game.getPublicState();
+          const syncMsg = createSyncState(publicState);
+          if (conn) {
+            this._sendTo(conn, syncMsg);
+          } else if (this._relay?.isConnected) {
+            this._relay.send(syncMsg, senderId);
           }
           break;
         }
@@ -1416,11 +1432,16 @@ export class ClientPeerService {
     this._myRelayId = null;
     this._assignedPeerId = null;
     this._relayReconnectTimeout = null;
+    this._hasReceivedState = false;
+    this._stateWatchdogTimer = null;
 
     this._init();
   }
 
-  get peerId() { return this._assignedPeerId || this._peer?.id || this._myRelayId || null; }
+  get peerId() {
+    if (this._isRelayActive && this._myRelayId) return this._myRelayId;
+    return this._assignedPeerId || this._peer?.id || this._myRelayId || null;
+  }
   get isHost() { return false; }
   get isRelayActive() { return Boolean(this._isRelayActive); }
 
@@ -1441,13 +1462,13 @@ export class ClientPeerService {
       };
     }
 
-    // 7 saniye içinde WebRTC açılamazsa (DPI / WARP / CGNAT blokajı) otomatik Relay'e geç
+    // 3.5 saniye içinde WebRTC açılamazsa (DPI / WARP / CGNAT blokajı veya sinyal kopması) otomatik Relay'e geç
     this._fallbackTimeout = setTimeout(() => {
       if (!this._isConnected && !this._destroyed) {
-        console.warn('[ClientPeerService] WebRTC 7 saniyede açılamadı, WebSocket Relay devreye giriyor...');
+        console.warn('[ClientPeerService] WebRTC 3.5 saniyede açılamadı, WebSocket Relay devreye giriyor...');
         this._fallbackToRelay();
       }
-    }, 7000);
+    }, 3500);
 
     this._peer.on('open', (id) => {
       this._assignedPeerId = id;
@@ -1503,6 +1524,7 @@ export class ClientPeerService {
         const activeId = this._assignedPeerId || this._peer.id;
         this._onConnected(activeId);
         this._startPing();
+        this._ensureStateWatchdog();
         // Host'a katılım bildirimi
         this._send(createAction(ACTION.JOIN_LOBBY, {
           playerName: this._playerName,
@@ -1585,6 +1607,7 @@ export class ClientPeerService {
         console.log('[ClientPeerService] WebSocket Relay ile odaya başarıyla bağlanıldı!');
         this._onConnected(this._myRelayId);
         this._startPing();
+        this._ensureStateWatchdog();
         // Host'a katılım / reconnect bildirimi
         this._relay.send(createAction(ACTION.JOIN_LOBBY, {
           playerName: this._playerName,
@@ -1618,13 +1641,23 @@ export class ClientPeerService {
   _handleMessage(msg) {
     if (!msg || !msg.type) return;
 
-    // Hedef filtreleme: Eğer bu mesaj belirli bir hedef oyuncuya özelse ve hedef ben değilsem yut!
-    const myId = this.peerId;
-    if (msg.targetId && myId && msg.targetId !== myId) return;
-    if (msg.payload?.targetId && myId && msg.payload.targetId !== myId) return;
+    // Hedef filtreleme: Eğer bu mesaj belirli bir hedef oyuncuya özelse
+    const target = msg.targetId || msg.payload?.targetId;
+    if (target) {
+      const isForMe = target === this._myRelayId ||
+                      target === this._assignedPeerId ||
+                      target === this._peer?.id ||
+                      (this._sessionToken && target === this._sessionToken);
+      if (!isForMe) return;
+    }
 
     switch (msg.type) {
       case MSG.SYNC_STATE:
+        this._hasReceivedState = true;
+        if (this._stateWatchdogTimer) {
+          clearTimeout(this._stateWatchdogTimer);
+          this._stateWatchdogTimer = null;
+        }
         this._onState(msg.gameState);
         break;
 
@@ -1671,6 +1704,23 @@ export class ClientPeerService {
       default:
         console.warn('[ClientPeerService] Bilinmeyen mesaj tipi:', msg.type);
     }
+  }
+
+  _ensureStateWatchdog() {
+    if (this._hasReceivedState || this._destroyed) return;
+    if (this._stateWatchdogTimer) clearTimeout(this._stateWatchdogTimer);
+    this._stateWatchdogTimer = setTimeout(() => {
+      if (!this._hasReceivedState && !this._destroyed && (this._conn?.open || this._relay?.isConnected)) {
+        console.log('[ClientPeerService] Oyun durumu henüz alınmadı, durum Host\'tan talep ediliyor...');
+        this.sendAction(ACTION.REQUEST_STATE, {});
+        // 2 saniye sonra hala alınmadıysa tekrar dene
+        this._stateWatchdogTimer = setTimeout(() => {
+          if (!this._hasReceivedState && !this._destroyed && (this._conn?.open || this._relay?.isConnected)) {
+            this.sendAction(ACTION.REQUEST_STATE, {});
+          }
+        }, 2000);
+      }
+    }, 1200);
   }
 
   _startPing() {
@@ -1758,6 +1808,10 @@ export class ClientPeerService {
     if (this._relayReconnectTimeout) {
       clearTimeout(this._relayReconnectTimeout);
       this._relayReconnectTimeout = null;
+    }
+    if (this._stateWatchdogTimer) {
+      clearTimeout(this._stateWatchdogTimer);
+      this._stateWatchdogTimer = null;
     }
 
     const leaveMsg = createAction(ACTION.LEAVE_ROOM, {}, this._assignedPeerId || this._peer?.id || this._myRelayId || '');

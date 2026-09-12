@@ -232,7 +232,7 @@ app.get('/api/room-check', (req, res) => {
   if (!code) {
     return res.status(400).json({ error: 'code parametresi gerekli' });
   }
-  const exists = connectedPeers.has(code);
+  const exists = connectedPeers.has(code) || (relayRooms.has(code) && relayRooms.get(code).size > 0);
   res.json({ exists, code });
 });
 

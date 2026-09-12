@@ -1822,7 +1822,7 @@ export function Board({
 
         {/* Canlı Tapu Satın Alma / İhale Kazanma Bildirimi */}
         {propertyAcquiredNotification && (
-          propertyAcquiredNotification.playerId === myPlayerId ? (
+          propertyAcquiredNotification.playerId === (myPlayer?.id || myPlayerId) ? (
             <div className="fixed top-6 sm:top-8 inset-x-0 z-50 pointer-events-auto flex justify-center px-4 animate-fadeIn">
               <div className="w-full max-w-sm sm:max-w-md bg-gradient-to-r from-emerald-950 via-slate-900 to-amber-950/90 border-2 border-amber-400 shadow-[0_0_40px_rgba(245,158,11,0.6)] rounded-2xl p-3 sm:p-4 flex items-center justify-between gap-3 backdrop-blur-md">
                 <div className="w-10 h-10 rounded-xl bg-amber-400/20 border border-amber-400/50 flex items-center justify-center text-xl flex-shrink-0">
@@ -1837,7 +1837,7 @@ export function Board({
                     {propertyAcquiredNotification.tileName}
                   </h4>
                   <p className="text-xs text-slate-300 mt-0.5">
-                    <span className="text-emerald-400 font-bold">{propertyAcquiredNotification.cost}₺ karşılığında portföyünüze eklendi!</span>
+                    <span className="text-emerald-400 font-bold">{(propertyAcquiredNotification.tileCost ?? propertyAcquiredNotification.cost ?? '')}₺ karşılığında portföyünüze eklendi!</span>
                   </p>
                 </div>
                 <button
@@ -1856,7 +1856,7 @@ export function Board({
                 <span className="text-xs">📜</span>
                 <span>
                   <strong className="text-slate-100 font-bold">{propertyAcquiredNotification.playerName}</strong>,{' '}
-                  <span className="text-amber-300 font-medium">{propertyAcquiredNotification.tileName}</span> tapusunu satın aldı ({propertyAcquiredNotification.cost}₺).
+                  <span className="text-amber-300 font-medium">{propertyAcquiredNotification.tileName}</span> tapusunu satın aldı ({(propertyAcquiredNotification.tileCost ?? propertyAcquiredNotification.cost ?? '')}₺).
                 </span>
                 <button
                   onClick={() => setPropertyAcquiredNotification(null)}
