@@ -795,6 +795,17 @@ export function Board({
   const isHost = Boolean(myPlayer?.isHost);
   const isApocalypse = false;
 
+  const unownedPropertiesCount = useMemo(() => {
+    if (!properties) return 0;
+    return Object.values(properties).filter(p => !p?.ownerId).length;
+  }, [properties]);
+
+  const totalPropertiesCount = useMemo(() => {
+    if (!properties) return 28;
+    const count = Object.keys(properties).length;
+    return count > 0 ? count : 28;
+  }, [properties]);
+
   const isDiceRollingRef = useRef(isDiceRolling);
   isDiceRollingRef.current = isDiceRolling;
   useEffect(() => {
@@ -1645,16 +1656,17 @@ export function Board({
                     </span>
                   </div>
 
-                  {/* 4. Hücre: Sıra Süresi & Hızlı Atla (İzole Sayaç) */}
-                  <div className="p-1 sm:p-1.5 flex flex-col items-center justify-center text-center">
-                    <TurnTimerCell
-                      gameState={gameState}
-                      activePlayer={activePlayer}
-                      myPlayerId={myPlayerId}
-                      onFastForwardBot={onFastForwardBot}
-                      onTimeoutTurn={onTimeoutTurn}
-                      isDarkMode={isDarkMode}
-                    />
+                  {/* 4. Hücre: Boş / Sahipsiz Arsa Sayısı */}
+                  <div
+                    className="p-1 sm:p-1.5 flex flex-col items-center justify-center text-center cursor-help group"
+                    title={`Satın alınabilir sahipsiz arsa sayısı (Kalan: ${unownedPropertiesCount} / Toplam: ${totalPropertiesCount})`}
+                  >
+                    <span className="text-[7px] sm:text-[8px] font-bold text-sky-400 uppercase font-space tracking-wider flex items-center gap-0.5">
+                      <Landmark className="w-2.5 h-2.5 text-sky-500" /> BOŞ ARSA
+                    </span>
+                    <span className={`font-extrabold font-jetbrains ${isDarkMode ? 'text-sky-400' : 'text-sky-700'} text-xs sm:text-sm leading-none mt-0.5`}>
+                      {unownedPropertiesCount}<span className="text-[8.5px] font-normal text-slate-400">/{totalPropertiesCount}</span>
+                    </span>
                   </div>
                 </div>
               </div>
@@ -1669,7 +1681,8 @@ export function Board({
                   isRolling: isDiceRolling || centerControlsSlot.props?.isRolling,
                   isMovingPawn: isMovingPawn || centerControlsSlot.props?.isMovingPawn || Boolean(activePlayer && (displayedPositions[activePlayer.id] ?? activePlayer.position) !== activePlayer.position),
                   drawnCardForNonDrawer: (!isCardDrawer && gameState.drawnCard && !(isDiceRolling || isMovingPawn || centerControlsSlot.props?.isMovingPawn || Boolean(activePlayer && (displayedPositions[activePlayer.id] ?? activePlayer.position) !== activePlayer.position)) && !dismissedCardKeysRef.current.has(String(gameState.drawnCard.instanceId || gameState.drawnCard.drawnAt || gameState.drawnCard.id)) && dismissedCardId !== (gameState.drawnCard.instanceId || gameState.drawnCard.id)) ? gameState.drawnCard : null,
-                  onDismissDrawnCard: handleAcknowledgeDrawnCard
+                  onDismissDrawnCard: handleAcknowledgeDrawnCard,
+                  onTimeoutTurn: onTimeoutTurn || centerControlsSlot.props?.onTimeoutTurn
                 })
               : centerControlsSlot}
           </div>
