@@ -400,6 +400,31 @@ export function App() {
     };
   }, [gameState, displayedBalances, displayedJailStatus, displayedPlayerPositions]);
 
+  // Yerel oyuncu ve üzerinde bulunduğu kare (F5 ve oda geçişlerinde kesintisiz eşleşme kalkanı)
+  const savedPlayerName = typeof localStorage !== 'undefined' ? localStorage.getItem('muteahhit_name') : null;
+  const savedSessionToken = typeof localStorage !== 'undefined' ? localStorage.getItem('muteahhit_session_token') : null;
+
+  const matchedPlayer = effectiveGameState?.players?.find(p => !p.isBot && (
+    (myPlayerId && p.id === myPlayerId) ||
+    (savedSessionToken && p.sessionToken === savedSessionToken) ||
+    (savedPlayerName && p.name === savedPlayerName)
+  )) || null;
+
+  const isSpectator = Boolean(
+    isSpectatorMode ||
+    network?.isSpectator ||
+    (effectiveGameState?.status === 'playing' && !matchedPlayer)
+  );
+  const myPlayer = isSpectator ? null : matchedPlayer;
+  const effectiveMyPlayerId = myPlayer?.id || myPlayerId;
+
+  useEffect(() => {
+    if (myPlayer?.id && myPlayerId !== myPlayer.id) {
+      setMyPlayerId(myPlayer.id);
+      myPlayerIdRef.current = myPlayer.id;
+    }
+  }, [myPlayer?.id, myPlayerId]);
+
   useEffect(() => {
     if (moneyToast) {
       const timer = setTimeout(() => {
@@ -536,13 +561,38 @@ export function App() {
       isPawnMovingRef.current = true;
       if (pawnMovingSafetyTimeoutRef.current) clearTimeout(pawnMovingSafetyTimeoutRef.current);
       pawnMovingSafetyTimeoutRef.current = setTimeout(flushVisualStateOnSafetyTimeout, 4200);
-    } else if ((state.phase === 'TURN_ACTIONS' || state.phase === 'TILE_ACTION') && !hasPawnMoved && !isNewDiceRoll) {
+    } else if ((state.phase === 'TURN_ACTIONS' || state.phase === 'TILE_ACTION' || state.phase === 'WAITING_ROLL') && !hasPawnMoved && !isNewDiceRoll) {
       setIsPawnMoving(false);
       isPawnMovingRef.current = false;
       setIsDiceRolling(false);
       if (pawnMovingSafetyTimeoutRef.current) {
         clearTimeout(pawnMovingSafetyTimeoutRef.current);
         pawnMovingSafetyTimeoutRef.current = null;
+      }
+      if (state.players && state.players.length > 0) {
+        setDisplayedBalances((prev) => {
+          const next = { ...prev };
+          state.players.forEach((p) => {
+            delete pendingBalancesRef.current[p.id];
+            next[p.id] = p.money;
+          });
+          return next;
+        });
+        setDisplayedJailStatus((prev) => {
+          const next = { ...prev };
+          state.players.forEach((p) => {
+            next[p.id] = p.inJail;
+          });
+          return next;
+        });
+        setDisplayedPlayerPositions((prev) => {
+          const next = { ...prev };
+          state.players.forEach((p) => {
+            delete pendingPlayerPositionsRef.current[p.id];
+            next[p.id] = p.position;
+          });
+          return next;
+        });
       }
     }
 
@@ -1334,31 +1384,6 @@ export function App() {
     );
   }
 
-  // Yerel oyuncu ve üzerinde bulunduğu kare (F5 sonrası kesintisiz eşleşme kalkanı)
-  const savedPlayerName = typeof localStorage !== 'undefined' ? localStorage.getItem('muteahhit_name') : null;
-  const savedSessionToken = typeof localStorage !== 'undefined' ? localStorage.getItem('muteahhit_session_token') : null;
-
-  const matchedPlayer = effectiveGameState?.players?.find(p => !p.isBot && (
-    (myPlayerId && p.id === myPlayerId) ||
-    (savedSessionToken && p.sessionToken === savedSessionToken) ||
-    (savedPlayerName && p.name === savedPlayerName)
-  )) || null;
-
-  const isSpectator = Boolean(
-    isSpectatorMode ||
-    network?.isSpectator ||
-    (effectiveGameState?.status === 'playing' && !matchedPlayer)
-  );
-  const myPlayer = isSpectator ? null : matchedPlayer;
-  const effectiveMyPlayerId = myPlayer?.id || myPlayerId;
-
-  useEffect(() => {
-    if (myPlayer?.id && myPlayerId !== myPlayer.id) {
-      setMyPlayerId(myPlayer.id);
-      myPlayerIdRef.current = myPlayer.id;
-    }
-  }, [myPlayer?.id, myPlayerId]);
-
   const currentTile = myPlayer && BOARD_TILES ? BOARD_TILES[myPlayer.position] : null;
   const activePlayer = effectiveGameState?.players?.[effectiveGameState?.currentTurnIndex];
   const isMyTurn = Boolean(activePlayer && myPlayer && activePlayer.id === myPlayer.id);
@@ -1428,7 +1453,7 @@ export function App() {
           <ErrorBoundary name="Oyuncu Durumları Paneli">
             <PlayerPanel
               gameState={effectiveGameState}
-              myPlayerId={myPlayer?.id || myPlayerId}
+              myPlayerId={effectiveMyPlayerId}
               onOpenTrade={(target) => handleOpenTradeForTile(target, null)}
               onTileClick={(tile) => setSelectedTileModal(tile)}
               onRemoveBot={handleRemoveBot}
@@ -1440,7 +1465,7 @@ export function App() {
           <ErrorBoundary name="Tapu Senetleri Galerisi">
             <TitleDeedCards
               gameState={gameState}
-              myPlayerId={myPlayer?.id || myPlayerId}
+              myPlayerId={effectiveMyPlayerId}
               onTileClick={(tile) => setSelectedTileModal(tile)}
             />
           </ErrorBoundary>
@@ -1454,7 +1479,7 @@ export function App() {
               onTileClick={(tile) => setSelectedTileModal(tile)}
               selectedTileModal={selectedTileModal}
               onCloseTileModal={() => setSelectedTileModal(null)}
-              myPlayerId={myPlayer?.id || myPlayerId}
+              myPlayerId={effectiveMyPlayerId}
               isDiceRolling={isDiceRolling}
               onRollDice={handleRollDice}
               onRollAgain={handleRollAgain}
@@ -1505,7 +1530,7 @@ export function App() {
             <ErrorBoundary name="Zar Tablası">
               <DiceSidebarTray
                 gameState={gameState}
-                myPlayerId={myPlayerId}
+                myPlayerId={effectiveMyPlayerId}
                 isSpectator={isSpectator}
                 onRollDice={handleRollDice}
                 onRollAgain={handleRollAgain}
@@ -1540,7 +1565,7 @@ export function App() {
                 gameStartTime={gameState?.gameStartTime}
                 totalPausedDuration={gameState?.totalPausedDuration}
                 roomCode={gameState?.roomCode || localStorage.getItem('muteahhit_room_code') || ''}
-                myPlayerId={myPlayerId}
+                myPlayerId={effectiveMyPlayerId}
                 myPlayerName={myPlayer?.name}
                 isDarkMode={isDarkMode}
               />
@@ -1557,7 +1582,7 @@ export function App() {
             <PropertyCardModal
               tile={selectedTileModal}
               gameState={gameState}
-              myPlayerId={myPlayerId}
+              myPlayerId={effectiveMyPlayerId}
               onClose={() => setSelectedTileModal(null)}
               onBuildHouse={handleBuildHouse}
               onSellHouse={handleSellHouse}
@@ -1586,7 +1611,7 @@ export function App() {
           <Suspense fallback={null}>
             <TradeModal
               gameState={gameState}
-              myPlayerId={myPlayerId}
+              myPlayerId={effectiveMyPlayerId}
               targetPlayer={tradeTargetPlayer}
               initialRequestedPropId={tradeInitialPropId}
               initialOfferedMoney={tradeInitialPrice}
@@ -1609,7 +1634,7 @@ export function App() {
           <Suspense fallback={null}>
             <EliminationModal
               elimination={activeElimination}
-              isMe={activeElimination.playerId === myPlayerId}
+              isMe={activeElimination.playerId === effectiveMyPlayerId}
               hasWinner={Boolean(gameState.winner)}
               onClose={() => setActiveElimination(null)}
               onSpectate={() => setActiveElimination(null)}
@@ -1621,7 +1646,7 @@ export function App() {
       )}
 
       {/* ZAFER VE ŞAMPİYONLUK KUTLAMA MODALİ */}
-      {gameState.winner && (!activeElimination || activeElimination.playerId !== myPlayerId) && (
+      {gameState.winner && (!activeElimination || activeElimination.playerId !== effectiveMyPlayerId) && (
         <ErrorBoundary name="Zafer Modalı" fallback={null}>
           <Suspense fallback={null}>
             <WinnerModal

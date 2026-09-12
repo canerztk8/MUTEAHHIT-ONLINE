@@ -690,12 +690,16 @@ export function Board({
   isDarkMode = false,
   isSpectator = false
 }) {
-  const { players, properties, currentTurnIndex, freeParkingPool, turnStartTime, turnTimeLimit = 75 } = gameState;
-  const effectiveMyPlayerId = (myPlayerId && players?.some(p => p.id === myPlayerId))
-    ? myPlayerId
-    : (players?.find(p => !p.isBot)?.id || players?.[0]?.id || myPlayerId);
+  const savedPlayerName = typeof localStorage !== 'undefined' ? localStorage.getItem('muteahhit_name') : null;
+  const savedSessionToken = typeof localStorage !== 'undefined' ? localStorage.getItem('muteahhit_session_token') : null;
+  const matchedPlayer = players?.find(p => !p.isBot && (
+    (myPlayerId && p.id === myPlayerId) ||
+    (savedSessionToken && p.sessionToken === savedSessionToken) ||
+    (savedPlayerName && p.name === savedPlayerName)
+  ));
+  const effectiveMyPlayerId = matchedPlayer?.id || myPlayerId || (isSpectator ? null : players?.[0]?.id);
   const activePlayer = players[currentTurnIndex];
-  const myPlayer = players?.find(p => p.id === effectiveMyPlayerId);
+  const myPlayer = isSpectator ? null : (matchedPlayer || players?.find(p => p.id === effectiveMyPlayerId));
   const isHost = Boolean(myPlayer?.isHost);
   const isApocalypse = false;
 
@@ -824,7 +828,7 @@ export function Board({
         let changed = false;
         const next = { ...prev };
         players.forEach((p) => {
-          if (next[p.id] === undefined) {
+          if (next[p.id] === undefined || (!activeIntervalsRef.current[p.id] && next[p.id] !== p.position)) {
             next[p.id] = p.position ?? 0;
             changed = true;
           }
@@ -836,7 +840,7 @@ export function Board({
         let changed = false;
         const next = { ...prev };
         players.forEach((p) => {
-          if (next[p.id] === undefined) {
+          if (next[p.id] === undefined || (!activeIntervalsRef.current[p.id] && next[p.id] !== p.position)) {
             next[p.id] = p.position ?? 0;
             changed = true;
           }
@@ -845,7 +849,7 @@ export function Board({
       });
 
       players.forEach((p) => {
-        if (prevPositionsRef.current[p.id] === undefined) {
+        if (prevPositionsRef.current[p.id] === undefined || !activeIntervalsRef.current[p.id]) {
           prevPositionsRef.current[p.id] = p.position ?? 0;
         }
       });
@@ -1018,7 +1022,7 @@ export function Board({
       const isPawnMovingOrWillMove =
         isDiceRolling ||
         isMovingPawn ||
-        (activeP && (displayedPositions[activeP.id] ?? activeP.position) !== activeP.position);
+        Boolean(activeP && activeIntervalsRef.current[activeP.id]);
 
       if (isPawnMovingOrWillMove) {
         pendingRentRef.current = gameState.lastRentPayment;
@@ -1033,7 +1037,7 @@ export function Board({
     const isPawnMoving =
       isDiceRolling ||
       isMovingPawn ||
-      Boolean(activePlayer && (displayedPositions[activePlayer.id] ?? activePlayer.position) !== activePlayer.position);
+      Boolean(activePlayer && activeIntervalsRef.current[activePlayer.id]);
     const cardKey = String(gameState.drawnCard?.instanceId || gameState.drawnCard?.drawnAt || gameState.drawnCard?.id);
     const isDismissed = dismissedCardKeysRef.current.has(cardKey) || dismissedCardId === cardKey;
     if (!isPawnMoving && gameState.drawnCard && !isDismissed) {
@@ -1769,9 +1773,10 @@ export function Board({
           <div className="relative z-20 w-full flex-1 flex flex-col items-center justify-center my-0.5 sm:my-1 min-h-0 overflow-y-auto custom-scrollbar">
             {React.isValidElement(centerControlsSlot)
               ? React.cloneElement(centerControlsSlot, {
+                  myPlayerId: effectiveMyPlayerId,
                   isRolling: isDiceRolling || centerControlsSlot.props?.isRolling,
-                  isMovingPawn: isMovingPawn || centerControlsSlot.props?.isMovingPawn || Boolean(activePlayer && (displayedPositions[activePlayer.id] ?? activePlayer.position) !== activePlayer.position),
-                  drawnCardForNonDrawer: (!isCardDrawer && gameState.drawnCard && !(isDiceRolling || isMovingPawn || centerControlsSlot.props?.isMovingPawn || Boolean(activePlayer && (displayedPositions[activePlayer.id] ?? activePlayer.position) !== activePlayer.position)) && !dismissedCardKeysRef.current.has(String(gameState.drawnCard.instanceId || gameState.drawnCard.drawnAt || gameState.drawnCard.id)) && dismissedCardId !== (gameState.drawnCard.instanceId || gameState.drawnCard.id)) ? gameState.drawnCard : null,
+                  isMovingPawn: isMovingPawn || centerControlsSlot.props?.isMovingPawn || Boolean(activePlayer && activeIntervalsRef.current[activePlayer.id]),
+                  drawnCardForNonDrawer: (!isCardDrawer && gameState.drawnCard && !(isDiceRolling || isMovingPawn || centerControlsSlot.props?.isMovingPawn || Boolean(activePlayer && activeIntervalsRef.current[activePlayer.id])) && !dismissedCardKeysRef.current.has(String(gameState.drawnCard.instanceId || gameState.drawnCard.drawnAt || gameState.drawnCard.id)) && dismissedCardId !== (gameState.drawnCard.instanceId || gameState.drawnCard.id)) ? gameState.drawnCard : null,
                   onDismissDrawnCard: handleAcknowledgeDrawnCard,
                   onTimeoutTurn: onTimeoutTurn || centerControlsSlot.props?.onTimeoutTurn
                 })
@@ -2024,7 +2029,7 @@ export function Board({
       {/* DESTEDEN ÇEKİLEN ŞANS / BELEDİYE KARTI 3D MODALI (SADECE KARTI ÇEKEN OYUNCUYA 3D ANİMASYONLA AÇILIR) */}
       {isCardDrawer &&
         !isDiceRolling &&
-        !(isMovingPawn || Boolean(activePlayer && (displayedPositions[activePlayer.id] ?? activePlayer.position) !== activePlayer.position)) &&
+        !(isMovingPawn || Boolean(activePlayer && activeIntervalsRef.current[activePlayer.id])) &&
         gameState.drawnCard &&
         !dismissedCardKeysRef.current.has(String(gameState.drawnCard.instanceId || gameState.drawnCard.drawnAt || gameState.drawnCard.id)) &&
         dismissedCardId !== (gameState.drawnCard.instanceId || gameState.drawnCard.id) && (

@@ -121,24 +121,40 @@ export function PropertyCardModal({
   onOpenTrade,
   onStartAuction
 }) {
-  if (!tile) return null;
-
   const cardRef = useRef(null);
   const [tilt, setTilt] = useState({ rotateX: 0, rotateY: 0, lightX: 50, lightY: 50, isHovering: false });
+
+  if (!tile) return null;
+
+  const savedPlayerName = typeof localStorage !== 'undefined' ? localStorage.getItem('muteahhit_name') : null;
+  const savedSessionToken = typeof localStorage !== 'undefined' ? localStorage.getItem('muteahhit_session_token') : null;
 
   const isProperty = tile.type === 'property';
   const isRailroad = tile.type === 'railroad';
   const isUtility = tile.type === 'utility';
   const isOwnable = isProperty || isRailroad || isUtility;
 
-  const propState = isOwnable ? gameState.properties[tile.id] : null;
-  const owner = propState?.ownerId ? gameState.players.find(p => p.id === propState.ownerId) : null;
-  const isOwner = owner?.id === myPlayerId;
+  const propState = isOwnable ? gameState?.properties?.[tile.id] : null;
+  const owner = propState?.ownerId ? gameState?.players?.find(p => p.id === propState.ownerId) : null;
+  const isOwner = Boolean(owner && (
+    owner.id === myPlayerId ||
+    (savedSessionToken && owner.sessionToken === savedSessionToken) ||
+    (savedPlayerName && owner.name === savedPlayerName)
+  ));
 
   // Renk grubuna sahip olma kontrolü
   const groupTileIds = tile.group ? COLOR_GROUPS[tile.group] : [];
-  const ownsWholeGroup = isProperty && groupTileIds.length > 0 && groupTileIds.every(id => gameState.properties[id]?.ownerId === myPlayerId);
-  const anyMortgagedInGroup = groupTileIds.some(id => gameState.properties[id]?.mortgaged);
+  const ownsWholeGroup = isProperty && groupTileIds.length > 0 && groupTileIds.every(id => {
+    const ownerId = gameState?.properties?.[id]?.ownerId;
+    if (!ownerId) return false;
+    const tileOwner = gameState?.players?.find(p => p.id === ownerId);
+    return (
+      ownerId === myPlayerId ||
+      (savedSessionToken && tileOwner?.sessionToken === savedSessionToken) ||
+      (savedPlayerName && tileOwner?.name === savedPlayerName)
+    );
+  });
+  const anyMortgagedInGroup = groupTileIds.some(id => gameState?.properties?.[id]?.mortgaged);
 
   // Ev ve Otel sayıları (Eşit İnşaat / Eşit Satış Kuralı Kontrolü)
   const currentHouses = propState?.houses || 0;
@@ -154,7 +170,12 @@ export function PropertyCardModal({
 
   const willBeHotel = currentHouses === 4;
   const bankHasStock = willBeHotel ? ((gameState.bankHotels ?? 12) > 0) : ((gameState.bankHouses ?? 32) > 0);
-  const playerHasMoney = (owner?.money || 0) >= (tile.houseCost || 0);
+  const localPlayer = gameState?.players?.find(p => (
+    p.id === myPlayerId ||
+    (savedSessionToken && p.sessionToken === savedSessionToken) ||
+    (savedPlayerName && p.name === savedPlayerName)
+  ));
+  const playerHasMoney = ((localPlayer?.money ?? owner?.money) || 0) >= (tile.houseCost || 0);
 
   let buildDisabledReason = '';
   if (propState?.mortgaged) buildDisabledReason = 'İpotekli mülke inşaat yapılamaz.';

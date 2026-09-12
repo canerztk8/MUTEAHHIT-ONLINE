@@ -180,7 +180,7 @@ class RelayConnection {
           const rtt = Math.max(1, Date.now() - (msg.t0 || Date.now()));
           this._onPong?.(rtt);
         } else if (msg.type === 'relay:msg') {
-          this._onMessage?.(msg.payload);
+          this._onMessage?.(msg.payload, msg.from);
         }
       } catch (err) {
         console.warn('[Relay] Mesaj parse hatası:', err);
@@ -425,11 +425,14 @@ export class HostPeerService {
       this._relay = new RelayConnection({
         roomCode: this._roomCode,
         playerId: id,
-        onMessage: (payload) => {
+        onMessage: (payload, fromRelayId) => {
           if (!payload) return;
+          if (fromRelayId && !payload.senderId) {
+            payload.senderId = fromRelayId;
+          }
           // Relay üzerinden gelen ACTION, PING, CHAT vb. tüm mesajları işle
           if (payload.type === MSG.ACTION || payload.type === MSG.PING || payload.type === MSG.CHAT) {
-            this._handleMessage(payload, null);
+            this._handleMessage(payload, null, fromRelayId);
           }
         },
         onConnected: () => {
@@ -582,7 +585,7 @@ export class HostPeerService {
     });
   }
 
-  _handleMessage(msg, conn) {
+  _handleMessage(msg, conn, fromRelayId = null) {
     if (!msg) return;
 
     // Ping isteğine anında Pong ile cevap ver
@@ -601,12 +604,49 @@ export class HostPeerService {
     const game = this._game;
     if (!game) return;
 
+    // Gönderici oyuncuyu kesin ve güvenli olarak tespit et
+    let effectiveSenderId = senderId || conn?.peer || fromRelayId;
+    let senderPlayer = game.players?.find(p => p.id === effectiveSenderId);
+    if (!senderPlayer) {
+      const token = payload?.sessionToken || msg?.sessionToken;
+      if (token) {
+        senderPlayer = game.players?.find(p => p.sessionToken === token);
+      }
+      if (!senderPlayer && conn?.peer) {
+        senderPlayer = game.players?.find(p => p.id === conn.peer);
+      }
+      if (!senderPlayer && fromRelayId) {
+        senderPlayer = game.players?.find(p => p.id === fromRelayId);
+      }
+      if (!senderPlayer && payload?.playerName) {
+        senderPlayer = game.players?.find(p => !p.isBot && p.name === payload.playerName);
+      }
+      if (senderPlayer) {
+        effectiveSenderId = senderPlayer.id;
+      }
+    }
+
+    // Oyuncu yeni bir bağlantı/transport ID'si ile gelmişse (reconnect / relay fallback),
+    // motor üzerindeki ID'yi, mülk sahipliklerini ve aktif bağlantıyı derhal senkronize et:
+    const incomingConnId = senderId || fromRelayId || conn?.peer;
+    if (senderPlayer && incomingConnId && senderPlayer.id !== incomingConnId && action !== ACTION.LEAVE_ROOM) {
+      const oldPlayerId = senderPlayer.id;
+      console.log(`[HostPeerService] Oyuncu transport/ID senkronizasyonu: ${senderPlayer.name} (${oldPlayerId} -> ${incomingConnId})`);
+      game.reconnectPlayer(incomingConnId, senderPlayer.sessionToken, senderPlayer.name);
+      if (conn) {
+        this._connections.delete(oldPlayerId);
+        this._connections.set(incomingConnId, conn);
+      }
+      effectiveSenderId = incomingConnId;
+      senderPlayer = game.players.find(p => p.id === incomingConnId);
+    }
+
     // Oyuncu herhangi bir kanaldan (WebRTC veya Relay) mesaj yolladıysa son etkinlik zamanını güncelle ve kopma sayacını iptal et
-    const activeSender = senderId || conn?.peer;
+    const activeSender = effectiveSenderId || senderId || conn?.peer || fromRelayId;
     if (activeSender) {
       const now = Date.now();
       this._playerLastActivity.set(activeSender, now);
-      const p = this._game.players?.find(x => x.id === activeSender);
+      const p = senderPlayer || this._game.players?.find(x => x.id === activeSender);
       if (p?.sessionToken) this._playerLastActivity.set(p.sessionToken, now);
       if (p?.name) this._playerLastActivity.set(p.name, now);
 
@@ -631,6 +671,7 @@ export class HostPeerService {
         // ─ Oda Yönetimi ─
         case ACTION.JOIN_LOBBY: {
           const { playerName, token, color, sessionToken } = payload;
+          const joinId = fromRelayId || senderId || conn?.peer;
 
           // 1. F5 / Yeniden Bağlanma Kontrolü:
           // Önce sessionToken, yoksa playerName ile odada önceden var olan oyuncuyu bul
@@ -644,7 +685,7 @@ export class HostPeerService {
 
           if (existingPlayer) {
             const oldPeerId = existingPlayer.id;
-            console.log(`[HostPeerService] ${existingPlayer.name} (${oldPeerId} -> ${senderId}) F5 / Reconnect ile bağlandı!`);
+            console.log(`[HostPeerService] ${existingPlayer.name} (${oldPeerId} -> ${joinId}) F5 / Reconnect ile bağlandı!`);
 
             // Kopma sayacını durdur
             if (this._disconnectTimers.has(oldPeerId)) {
@@ -652,7 +693,7 @@ export class HostPeerService {
               this._disconnectTimers.delete(oldPeerId);
             }
 
-            const recRes = game.reconnectPlayer(senderId, existingPlayer.sessionToken, playerName);
+            const recRes = game.reconnectPlayer(joinId, existingPlayer.sessionToken, playerName);
             if (recRes.success) {
               if (game.disconnectNotice?.playerId === oldPeerId || game.disconnectNotice?.playerName === existingPlayer.name) {
                 game.disconnectNotice = null;
@@ -665,7 +706,7 @@ export class HostPeerService {
                 this._connections.delete(oldPeerId);
               }
               if (conn) {
-                this._connections.set(senderId, conn);
+                this._connections.set(joinId, conn);
               }
 
               // İstemciye session token'ını ve son oyun durumunu kesin olarak doğrudan bildir
@@ -676,7 +717,7 @@ export class HostPeerService {
                   type: MSG.EVENT,
                   event: 'SESSION_TOKEN',
                   payload: { sessionToken: existingPlayer.sessionToken },
-                  targetId: senderId
+                  targetId: joinId
                 });
                 this._sendTo(conn, syncMsg);
               } else if (this._relay?.isConnected) {
@@ -684,9 +725,9 @@ export class HostPeerService {
                   type: MSG.EVENT,
                   event: 'SESSION_TOKEN',
                   payload: { sessionToken: existingPlayer.sessionToken },
-                  targetId: senderId
-                }, senderId);
-                this._relay.send(syncMsg, senderId);
+                  targetId: joinId
+                }, joinId);
+                this._relay.send(syncMsg, joinId);
               }
 
               this._broadcastState();
@@ -697,16 +738,16 @@ export class HostPeerService {
           // 2. Oyun devam ederken katılan yeni kişiler -> İZLEYİCİ (SPECTATOR)
           if (game.status !== 'lobby') {
             const specName = playerName || `İzleyici ${this._spectators.size + 1}`;
-            this._spectators.set(senderId, { id: senderId, name: specName });
+            this._spectators.set(joinId, { id: joinId, name: specName });
             game.spectatorCount = this._spectators.size;
-            console.log(`[HostPeerService] ${specName} (${senderId}) maçı izlemeye başladı. Toplam İzleyici: ${this._spectators.size}`);
+            console.log(`[HostPeerService] ${specName} (${joinId}) maçı izlemeye başladı. Toplam İzleyici: ${this._spectators.size}`);
             game.addLog(`👁️ ${specName} maçı izlemeye başladı.`, 'info');
 
             const spectatorEvent = {
               type: MSG.EVENT,
               event: 'SPECTATOR_JOINED',
               payload: { isSpectator: true, spectatorCount: this._spectators.size },
-              targetId: senderId
+              targetId: joinId
             };
             const currentPublicState = game.getPublicState();
             const syncStateMsg = createSyncState(currentPublicState);
@@ -716,7 +757,7 @@ export class HostPeerService {
               this._sendTo(conn, syncStateMsg);
             }
             if (this._relay?.isConnected) {
-              this._relay.send(spectatorEvent, senderId);
+              this._relay.send(spectatorEvent, joinId);
               this._relay.broadcast(syncStateMsg);
             }
             this._broadcastState();
@@ -724,22 +765,22 @@ export class HostPeerService {
           }
 
           // 3. Lobi aşamasında normal yeni oyuncu katılımı
-          const res = game.addPlayer(senderId, playerName, token, color, false, sessionToken);
+          const res = game.addPlayer(joinId, playerName, token, color, false, sessionToken);
           if (res.success && res.player) {
             if (conn) {
               this._sendTo(conn, {
                 type: MSG.EVENT,
                 event: 'SESSION_TOKEN',
                 payload: { sessionToken: res.player.sessionToken },
-                targetId: senderId
+                targetId: joinId
               });
             } else if (this._relay?.isConnected) {
               this._relay.send({
                 type: MSG.EVENT,
                 event: 'SESSION_TOKEN',
                 payload: { sessionToken: res.player.sessionToken },
-                targetId: senderId
-              }, senderId);
+                targetId: joinId
+              }, joinId);
             }
           }
           break;
@@ -752,14 +793,15 @@ export class HostPeerService {
           if (conn) {
             this._sendTo(conn, syncMsg);
           } else if (this._relay?.isConnected) {
-            this._relay.send(syncMsg, senderId);
+            this._relay.send(syncMsg, fromRelayId || senderId);
           }
           break;
         }
 
         case ACTION.LEAVE_ROOM: {
-          game.removePlayer(senderId);
-          this._connections.get(senderId)?.close();
+          game.removePlayer(effectiveSenderId);
+          this._connections.get(effectiveSenderId)?.close();
+          this._connections.delete(effectiveSenderId);
           break;
         }
 
@@ -820,15 +862,15 @@ export class HostPeerService {
         }
 
         case ACTION.START_GAME: {
-          game.startGame(senderId);
+          game.startGame(effectiveSenderId);
           botTriggerNeeded = true;
           break;
         }
 
         case ACTION.RESTART_GAME: {
-          const player = game.players.find(p => p.id === senderId);
+          const player = game.players.find(p => p.id === effectiveSenderId);
           if (game.status === 'ended' || player?.isHost) {
-            game.resetGameToLobby(senderId);
+            game.resetGameToLobby(effectiveSenderId);
           }
           break;
         }
@@ -836,10 +878,10 @@ export class HostPeerService {
         // ─ Oyun Mekaniği ─
         case ACTION.ROLL_DICE: {
           if (game.phase === 'TURN_ACTIONS' && game.canRollAgain) {
-            game.endTurn(senderId);
+            game.endTurn(effectiveSenderId);
           }
           const allowCustom = Boolean(game.isDevMode);
-          game.rollDice(senderId, allowCustom ? payload?.dice : undefined, allowCustom ? payload?.toss : undefined);
+          game.rollDice(effectiveSenderId, allowCustom ? payload?.dice : undefined, allowCustom ? payload?.toss : undefined);
           this._broadcast({
             type: MSG.EVENT,
             event: 'DICE_ROLL',
@@ -852,10 +894,10 @@ export class HostPeerService {
         case ACTION.ROLL_AGAIN: {
           const allowCustom2 = Boolean(game.isDevMode);
           if (game.phase === 'TURN_ACTIONS' && game.canRollAgain) {
-            game.endTurn(senderId);
-            game.rollDice(senderId, allowCustom2 ? payload?.dice : undefined, allowCustom2 ? payload?.toss : undefined);
+            game.endTurn(effectiveSenderId);
+            game.rollDice(effectiveSenderId, allowCustom2 ? payload?.dice : undefined, allowCustom2 ? payload?.toss : undefined);
           } else {
-            game.rollDice(senderId, allowCustom2 ? payload?.dice : undefined, allowCustom2 ? payload?.toss : undefined);
+            game.rollDice(effectiveSenderId, allowCustom2 ? payload?.dice : undefined, allowCustom2 ? payload?.toss : undefined);
           }
           this._broadcast({
             type: MSG.EVENT,
@@ -866,26 +908,41 @@ export class HostPeerService {
           break;
         }
 
-        case ACTION.BUY_PROPERTY:
-          game.buyCurrentProperty(senderId);
+        case ACTION.BUY_PROPERTY: {
+          const res = game.buyCurrentProperty(effectiveSenderId);
+          if (!res?.success) {
+            console.warn('[HostPeerService] buyCurrentProperty hatası:', res?.error, 'sender:', effectiveSenderId);
+            if (res?.error) {
+              game.addLog(`⚠️ Satın alma gerçekleştirilemedi: ${res.error}`, 'info');
+            }
+          }
           break;
+        }
 
-        case ACTION.DECLINE_BUY:
-          game.declineBuy(senderId);
+        case ACTION.DECLINE_BUY: {
+          const res = game.declineBuy(effectiveSenderId);
+          if (!res?.success) {
+            console.warn('[HostPeerService] declineBuy hatası:', res?.error, 'sender:', effectiveSenderId);
+          }
           break;
+        }
 
-        case ACTION.END_TURN:
-          game.endTurn(senderId);
+        case ACTION.END_TURN: {
+          const res = game.endTurn(effectiveSenderId);
+          if (!res?.success) {
+            console.warn('[HostPeerService] endTurn hatası:', res?.error, 'sender:', effectiveSenderId);
+          }
           botTriggerNeeded = true;
           break;
+        }
 
         case ACTION.ACKNOWLEDGE_CARD:
-          game.acknowledgeCard(senderId);
+          game.acknowledgeCard(effectiveSenderId);
           botTriggerNeeded = true;
           break;
 
         case ACTION.TOGGLE_PAUSE:
-          game.togglePause(senderId);
+          game.togglePause(effectiveSenderId);
           botTriggerNeeded = true;
           break;
 
@@ -897,8 +954,8 @@ export class HostPeerService {
         case ACTION.TIMEOUT_TURN: {
           if (game.status !== 'playing' || game.isPaused) { broadcastNeeded = false; break; }
           const active = game.getActivePlayer();
-          if (active?.id === senderId) {
-            game.forceTimeoutTurn(senderId);
+          if (active?.id === effectiveSenderId) {
+            game.forceTimeoutTurn(effectiveSenderId);
             botTriggerNeeded = true;
           }
           break;
@@ -919,44 +976,67 @@ export class HostPeerService {
         // ─ Mülk ─
         case ACTION.BUILD_HOUSE: {
           const tid = Number.parseInt(payload.tileId, 10);
-          if (Number.isInteger(tid) && tid >= 0 && tid <= 39) game.buildHouse(senderId, tid);
+          if (Number.isInteger(tid) && tid >= 0 && tid <= 39) {
+            const res = game.buildHouse(effectiveSenderId, tid);
+            if (!res?.success) {
+              console.warn('[HostPeerService] buildHouse hatası:', res?.error, 'sender:', effectiveSenderId);
+              if (res?.error) {
+                game.addLog(`⚠️ İnşaat gerçekleştirilemedi: ${res.error}`, 'info');
+              }
+            }
+          }
           break;
         }
 
         case ACTION.SELL_HOUSE: {
           const tid2 = Number.parseInt(payload.tileId, 10);
-          if (Number.isInteger(tid2) && tid2 >= 0 && tid2 <= 39) game.sellHouse(senderId, tid2);
+          if (Number.isInteger(tid2) && tid2 >= 0 && tid2 <= 39) {
+            const res = game.sellHouse(effectiveSenderId, tid2);
+            if (!res?.success) {
+              console.warn('[HostPeerService] sellHouse hatası:', res?.error, 'sender:', effectiveSenderId);
+            }
+          }
           break;
         }
 
         case ACTION.MORTGAGE: {
           const tid3 = Number.parseInt(payload.tileId, 10);
-          if (Number.isInteger(tid3) && tid3 >= 0 && tid3 <= 39) game.mortgageProperty(senderId, tid3);
+          if (Number.isInteger(tid3) && tid3 >= 0 && tid3 <= 39) {
+            const res = game.mortgageProperty(effectiveSenderId, tid3);
+            if (!res?.success) {
+              console.warn('[HostPeerService] mortgageProperty hatası:', res?.error, 'sender:', effectiveSenderId);
+            }
+          }
           break;
         }
 
         case ACTION.UNMORTGAGE: {
           const tid4 = Number.parseInt(payload.tileId, 10);
-          if (Number.isInteger(tid4) && tid4 >= 0 && tid4 <= 39) game.unmortgageProperty(senderId, tid4);
+          if (Number.isInteger(tid4) && tid4 >= 0 && tid4 <= 39) {
+            const res = game.unmortgageProperty(effectiveSenderId, tid4);
+            if (!res?.success) {
+              console.warn('[HostPeerService] unmortgageProperty hatası:', res?.error, 'sender:', effectiveSenderId);
+            }
+          }
           break;
         }
 
         case ACTION.AUTO_MORTGAGE:
-          game.autoMortgage(senderId);
+          game.autoMortgage(effectiveSenderId);
           break;
 
         // ─ Hapis ─
         case ACTION.PAY_JAIL_FINE:
-          game.payJailFine(senderId);
+          game.payJailFine(effectiveSenderId);
           break;
 
         case ACTION.USE_JAIL_CARD:
-          game.useJailCard(senderId);
+          game.useJailCard(effectiveSenderId);
           break;
 
         // ─ Takas ─
         case ACTION.PROPOSE_TRADE: {
-          const tradeRes = game.proposeTrade(senderId, payload);
+          const tradeRes = game.proposeTrade(effectiveSenderId, payload);
           if (tradeRes?.success && payload?.toPlayerId) {
             const targetBot = game.players.find(p => p.id === payload.toPlayerId && p.isBot);
             if (targetBot && !targetBot.isBankrupt) {
@@ -972,37 +1052,37 @@ export class HostPeerService {
         }
 
         case ACTION.RESPOND_TRADE:
-          game.respondTrade(senderId, payload.accept);
+          game.respondTrade(effectiveSenderId, payload.accept);
           break;
 
         case ACTION.CANCEL_TRADE:
-          game.cancelTrade(senderId);
+          game.cancelTrade(effectiveSenderId);
           break;
 
         // ─ Hediye & Kredi ─
         case ACTION.SEND_GIFT: {
           const amt = Number(payload.amount);
-          if (Number.isFinite(amt) && amt > 0) game.sendGift(senderId, payload.toPlayerId, amt);
+          if (Number.isFinite(amt) && amt > 0) game.sendGift(effectiveSenderId, payload.toPlayerId, amt);
           break;
         }
 
         case ACTION.REQUEST_LOAN: {
           const lamt = Number(payload.amount);
-          if (Number.isFinite(lamt) && lamt > 0) game.requestLoan(senderId, payload.toPlayerId, lamt);
+          if (Number.isFinite(lamt) && lamt > 0) game.requestLoan(effectiveSenderId, payload.toPlayerId, lamt);
           break;
         }
 
         case ACTION.RESPOND_LOAN:
-          game.respondLoan(senderId, payload.accept);
+          game.respondLoan(effectiveSenderId, payload.accept);
           break;
 
         case ACTION.PAY_LOAN:
-          if (payload.loanId) game.payLoan(senderId, payload.loanId);
+          if (payload.loanId) game.payLoan(effectiveSenderId, payload.loanId);
           break;
 
         case ACTION.REQUEST_BANK_LOAN: {
           const bamt = Number(payload.amount);
-          if (Number.isFinite(bamt) && bamt > 0) game.requestBankLoan(senderId, bamt);
+          if (Number.isFinite(bamt) && bamt > 0) game.requestBankLoan(effectiveSenderId, bamt);
           break;
         }
 
@@ -1011,7 +1091,7 @@ export class HostPeerService {
           const stid = Number.parseInt(payload.tileId, 10);
           const sbid = Number(payload.startingBid);
           if (Number.isInteger(stid) && stid >= 0 && stid <= 39 && Number.isFinite(sbid) && sbid >= 0) {
-            game.startPlayerPropertyAuction(senderId, stid, sbid);
+            game.startPlayerPropertyAuction(effectiveSenderId, stid, sbid);
           }
           break;
         }
@@ -1019,27 +1099,27 @@ export class HostPeerService {
         case ACTION.PLACE_BID: {
           const bidAmt = Number(payload.bidAmount ?? payload.amount);
           if (Number.isFinite(bidAmt) && bidAmt > 0) {
-            game.placeBid(senderId, bidAmt);
+            game.placeBid(effectiveSenderId, bidAmt);
             if (game.phase !== 'AUCTION') botTriggerNeeded = true;
           }
           break;
         }
 
         case ACTION.PASS_AUCTION:
-          game.passAuction(senderId);
+          game.passAuction(effectiveSenderId);
           if (game.phase !== 'AUCTION') botTriggerNeeded = true;
           break;
 
         // ─ Sohbet ─
         case ACTION.SEND_CHAT: {
           broadcastNeeded = false;
-          const lastChat = this._lastChatTime.get(senderId) || 0;
+          const lastChat = this._lastChatTime.get(effectiveSenderId) || 0;
           const now = Date.now();
           if (now - lastChat < 400) break;
-          this._lastChatTime.set(senderId, now);
+          this._lastChatTime.set(effectiveSenderId, now);
 
-          const sender = game.players.find(p => p.id === senderId);
-          const spectator = this._spectators?.get(senderId);
+          const sender = game.players.find(p => p.id === effectiveSenderId);
+          const spectator = this._spectators?.get(effectiveSenderId);
           const cleanText = String(payload.message || '').trim().substring(0, 300);
           if (!cleanText) break;
 
@@ -1059,13 +1139,13 @@ export class HostPeerService {
 
         // ─ İflas ─
         case ACTION.DECLARE_BANKRUPTCY:
-          game.declareBankruptcy(senderId);
+          game.declareBankruptcy(effectiveSenderId);
           botTriggerNeeded = true;
           break;
 
         // ─ Dev Tools ─
         case ACTION.DEV_COMMAND: {
-          const player = game.players.find(p => p.id === senderId);
+          const player = game.players.find(p => p.id === effectiveSenderId);
           if (!player?.isHost) { broadcastNeeded = false; break; }
           game.executeDevCommand(payload.command, payload.payload);
           botTriggerNeeded = true;
@@ -1471,6 +1551,7 @@ export class ClientPeerService {
     }, 3500);
 
     this._peer.on('open', (id) => {
+      if (this._isRelayActive || this._destroyed) return;
       this._assignedPeerId = id;
       this._onMyId(id);
       this._connectToHost();
@@ -1759,8 +1840,12 @@ export class ClientPeerService {
    * @param {object} payload - Eyleme özgü veri
    */
   sendAction(action, payload = {}) {
-    const senderId = this._assignedPeerId || this._peer?.id || this._myRelayId || '';
-    const actionMsg = createAction(action, payload, senderId);
+    const senderId = this.peerId || '';
+    const actionMsg = createAction(action, {
+      ...payload,
+      sessionToken: this._sessionToken || undefined,
+      playerName: this._playerName || undefined
+    }, senderId);
 
     if (this._conn?.open) {
       this._send(actionMsg);
@@ -1814,7 +1899,7 @@ export class ClientPeerService {
       this._stateWatchdogTimer = null;
     }
 
-    const leaveMsg = createAction(ACTION.LEAVE_ROOM, {}, this._assignedPeerId || this._peer?.id || this._myRelayId || '');
+    const leaveMsg = createAction(ACTION.LEAVE_ROOM, {}, this.peerId || '');
     try {
       if (this._conn?.open) {
         this._conn.send(leaveMsg);
