@@ -1516,7 +1516,7 @@ export function App() {
                 embedded={true}
                 gameStartTime={gameState?.gameStartTime}
                 totalPausedDuration={gameState?.totalPausedDuration}
-                roomCode={gameState?.roomCode}
+                roomCode={gameState?.roomCode || localStorage.getItem('muteahhit_room_code') || ''}
                 myPlayerId={myPlayerId}
                 myPlayerName={myPlayer?.name}
                 isDarkMode={isDarkMode}

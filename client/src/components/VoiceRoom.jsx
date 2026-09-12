@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Peer from 'peerjs';
 import { getPeerConfig } from '../network/PeerService.js';
-import { Mic, MicOff, PhoneOff, Volume2, VolumeX, ShieldCheck, Users, Radio } from 'lucide-react';
+import { Mic, MicOff, PhoneOff, Volume2, VolumeX, ShieldCheck, Users, Radio, Headphones, Settings2 } from 'lucide-react';
 
 /**
  * Oda kodu ve oturumdan deterministik güvenli oda tuzu üretir.
@@ -52,6 +52,16 @@ export function useVoiceChat({
     }
   });
 
+  // 🎧 Ses Çıkış Donanımı Seçimi (Stereo A2DP kulaklık seçilerek Hands-Free AG çıkışına yönlendirme engellenir)
+  const [outputDevices, setOutputDevices] = useState([]);
+  const [selectedOutputId, setSelectedOutputId] = useState(() => {
+    try {
+      return localStorage.getItem('muteahhit_output_id') || '';
+    } catch {
+      return '';
+    }
+  });
+
   // 🔊 Bağımsız Sesli Sohbet Ses Düzeyi (Oyun seslerinden bağımsızdır)
   const [voiceVolume, setVoiceVolume] = useState(() => {
     try {
@@ -76,10 +86,13 @@ export function useVoiceChat({
   const remoteAudiosRef = useRef(new Map()); // playerId -> HTMLAudioElement
   const remoteAnalysersRef = useRef(new Map()); // playerId -> AnalyserNode
   const lastSpeakingSentRef = useRef(0);
+  const speakingTimeoutRef = useRef(null);
   const isSpeakingRef = useRef(false);
   const voiceStatesRef = useRef(voiceStates);
   const playersRef = useRef(players);
   const onSendVoiceStateRef = useRef(onSendVoiceState);
+  const myPlayerIdRef = useRef(myPlayerId);
+  const roomCodeRef = useRef(roomCode);
 
   useEffect(() => {
     voiceStatesRef.current = voiceStates;
@@ -93,28 +106,53 @@ export function useVoiceChat({
     onSendVoiceStateRef.current = onSendVoiceState;
   }, [onSendVoiceState]);
 
-  // Ses aygıtlarını listele ve harici mikrofonu otomatik tercih et
+  useEffect(() => {
+    myPlayerIdRef.current = myPlayerId;
+  }, [myPlayerId]);
+
+  useEffect(() => {
+    roomCodeRef.current = roomCode;
+  }, [roomCode]);
+
+  // Ses aygıtlarını listele ve harici mikrofon + stereo hoparlörü otomatik tercih et
   const refreshAudioDevices = useCallback(async () => {
     try {
       if (!navigator.mediaDevices?.enumerateDevices) return;
       const devices = await navigator.mediaDevices.enumerateDevices();
+      
       const audioInputs = devices.filter(d => d.kind === 'audioinput');
+      const audioOutputs = devices.filter(d => d.kind === 'audiooutput');
 
       setAudioDevices(audioInputs);
+      setOutputDevices(audioOutputs);
 
-      // Eğer kayıtlı aygıt yoksa veya listede yoksa, akıllı otomatik seçim yap:
-      // Bluetooth Hands-Free harici olan (USB, External, Mikrofon) bir aygıt varsa onu seç!
+      // Mikrofon: Hands-Free olmayan harici USB / Jack mikrofonu otomatik seç
       setSelectedDeviceId(currentId => {
         if (currentId && audioInputs.some(d => d.deviceId === currentId)) {
           return currentId;
         }
         const externalMic = audioInputs.find(d => {
           const lbl = (d.label || '').toLowerCase();
-          return lbl && !lbl.includes('hands-free') && !lbl.includes('handsfree') && !lbl.includes('bth') && !lbl.includes('bluetooth') &&
-            (lbl.includes('usb') || lbl.includes('mic') || lbl.includes('realtek') || lbl.includes('high definition'));
+          return lbl && !lbl.includes('hands-free') && !lbl.includes('handsfree') && !lbl.includes('bth') && !lbl.includes('eller serbest') &&
+            (lbl.includes('usb') || lbl.includes('mic') || lbl.includes('mikrofon') || lbl.includes('realtek') || lbl.includes('high definition'));
         });
         const fallback = externalMic?.deviceId || audioInputs[0]?.deviceId || '';
         try { localStorage.setItem('muteahhit_mic_id', fallback); } catch (_) {}
+        return fallback;
+      });
+
+      // Çıkış (Kulaklık/Hoparlör): Hands-Free olmayan yüksek kaliteli Stereo cihazı seç
+      setSelectedOutputId(currentId => {
+        if (currentId && audioOutputs.some(d => d.deviceId === currentId)) {
+          return currentId;
+        }
+        const stereoOut = audioOutputs.find(d => {
+          const lbl = (d.label || '').toLowerCase();
+          return lbl && !lbl.includes('hands-free') && !lbl.includes('handsfree') && !lbl.includes('eller serbest') && !lbl.includes('ag audio') &&
+            (lbl.includes('stereo') || lbl.includes('kulaklık') || lbl.includes('headphones') || lbl.includes('speakers') || lbl.includes('hoparlör') || lbl.includes('realtek'));
+        });
+        const fallback = stereoOut?.deviceId || audioOutputs[0]?.deviceId || '';
+        try { localStorage.setItem('muteahhit_output_id', fallback); } catch (_) {}
         return fallback;
       });
     } catch (e) {
@@ -144,6 +182,30 @@ export function useVoiceChat({
     } catch (_) {}
   }, [voiceVolume]);
 
+  // Konuşma durumunu ağa garantili (trailing debounce) gönderme yardımcısı
+  const dispatchVoiceState = useCallback((speaking) => {
+    if (speakingTimeoutRef.current) {
+      clearTimeout(speakingTimeoutRef.current);
+      speakingTimeoutRef.current = null;
+    }
+
+    const send = () => {
+      lastSpeakingSentRef.current = Date.now();
+      onSendVoiceStateRef.current?.({
+        inVoice: true,
+        isMuted: isMutedRef.current,
+        isSpeaking: speaking
+      });
+    };
+
+    const now = Date.now();
+    if (now - lastSpeakingSentRef.current > 250) {
+      send();
+    } else {
+      speakingTimeoutRef.current = setTimeout(send, 250);
+    }
+  }, []);
+
   // Canlı Ses Düzeyi ve Konuşma Algılayıcı Döngüsü
   const startVolumeAnalysis = useCallback((stream) => {
     try {
@@ -167,10 +229,14 @@ export function useVoiceChat({
       audioContextRef.current = audioCtx;
       analyserRef.current = analyser;
 
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume().catch(() => {});
+      }
+
       const localDataArray = new Uint8Array(analyser.frequencyBinCount);
 
       const loop = () => {
-        // Yerel konuşma kontrolü
+        // Yerel mikrofon konuşma kontrolü
         if (analyserRef.current && !isMutedRef.current) {
           analyserRef.current.getByteFrequencyData(localDataArray);
           let sum = 0;
@@ -181,31 +247,17 @@ export function useVoiceChat({
           if (isSpeakingRef.current !== nowSpeaking) {
             isSpeakingRef.current = nowSpeaking;
             setIsSpeaking(nowSpeaking);
-
-            // Ağ üzerinden durumu debounced gönder (fazla paket yükünü engeller)
-            const now = Date.now();
-            if (now - lastSpeakingSentRef.current > 300) {
-              lastSpeakingSentRef.current = now;
-              onSendVoiceStateRef.current?.({
-                inVoice: true,
-                isMuted: isMutedRef.current,
-                isSpeaking: nowSpeaking
-              });
-            }
+            dispatchVoiceState(nowSpeaking);
           }
         } else {
           if (isSpeakingRef.current) {
             isSpeakingRef.current = false;
             setIsSpeaking(false);
-            onSendVoiceStateRef.current?.({
-              inVoice: true,
-              isMuted: isMutedRef.current,
-              isSpeaking: false
-            });
+            dispatchVoiceState(false);
           }
         }
 
-        // Uzak kullanıcıların frekans analizi
+        // Uzak kullanıcıların WebAudio frekans analizi
         setVoicePeers(prevPeers => {
           let hasDiff = false;
           const nextPeers = new Map(prevPeers);
@@ -236,24 +288,63 @@ export function useVoiceChat({
     } catch (e) {
       console.warn('[useVoiceChat] Ses analizörü başlatılamadı:', e);
     }
-  }, []);
+  }, [dispatchVoiceState]);
 
-  // Uzak ses akışını bağla
+  // Uzak ses akışını bağla ve DOM'a monte et (Kullanıcıların birbirini duyması için DOM şarttır)
   const attachRemoteAudio = useCallback((playerId, remoteStream, playerMeta = {}) => {
+    if (!remoteStream) return;
+
+    // Tüm ses kanallarının aktif olduğundan emin ol
+    remoteStream.getAudioTracks().forEach(track => {
+      track.enabled = true;
+    });
+
     let audioEl = remoteAudiosRef.current.get(playerId);
     if (!audioEl) {
       audioEl = document.createElement('audio');
       audioEl.autoplay = true;
       audioEl.playsInline = true;
+      audioEl.style.display = 'none';
+      audioEl.style.position = 'fixed';
+      audioEl.style.pointerEvents = 'none';
+      audioEl.setAttribute('data-voice-peer', playerId);
+      
+      // ⚠️ DİKKAT: Tarayıcıların (Chrome/Edge) sesi çalması için element MUTLAKA DOM'da olmalıdır!
+      document.body.appendChild(audioEl);
       remoteAudiosRef.current.set(playerId, audioEl);
     }
+
     audioEl.volume = voiceVolume;
+
+    // Bluetooth Hands-Free moduna düşmemesi için çıkış cihazını Stereo A2DP cihazına yönlendir
+    if (typeof audioEl.setSinkId === 'function' && selectedOutputId) {
+      audioEl.setSinkId(selectedOutputId).catch(err => {
+        console.warn('[useVoiceChat] setSinkId hatası:', err);
+      });
+    }
+
     audioEl.srcObject = remoteStream;
-    audioEl.play().catch(() => {});
+
+    // Güvenli başlatma (Kullanıcı etkileşimi kısıtlamasına karşı kurtarma listener'ı)
+    const playPromise = audioEl.play();
+    if (playPromise !== undefined) {
+      playPromise.catch(() => {
+        const unlockAudio = () => {
+          audioEl.play().catch(() => {});
+          window.removeEventListener('click', unlockAudio);
+          window.removeEventListener('keydown', unlockAudio);
+        };
+        window.addEventListener('click', unlockAudio, { once: true });
+        window.addEventListener('keydown', unlockAudio, { once: true });
+      });
+    }
 
     // Uzak akış için ses analizörü kur
     try {
       if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+        if (audioContextRef.current.state === 'suspended') {
+          audioContextRef.current.resume().catch(() => {});
+        }
         const remAnalyser = audioContextRef.current.createAnalyser();
         remAnalyser.fftSize = 256;
         remAnalyser.smoothingTimeConstant = 0.4;
@@ -278,7 +369,7 @@ export function useVoiceChat({
       });
       return next;
     });
-  }, [voiceVolume]);
+  }, [voiceVolume, selectedOutputId]);
 
   const removeRemoteAudio = useCallback((playerId) => {
     const audioEl = remoteAudiosRef.current.get(playerId);
@@ -286,6 +377,9 @@ export function useVoiceChat({
       try {
         audioEl.pause();
         audioEl.srcObject = null;
+        if (audioEl.parentNode) {
+          audioEl.parentNode.removeChild(audioEl);
+        }
       } catch (_) {}
       remoteAudiosRef.current.delete(playerId);
     }
@@ -302,24 +396,27 @@ export function useVoiceChat({
   // Güvenlik doğrulaması: Arayanın oda tuzu ve masadaki oyuncu kimliği doğrulanır
   const getPlayerIdFromVoicePeerId = useCallback((callerVoiceId) => {
     if (!callerVoiceId || typeof callerVoiceId !== 'string') return null;
-    const cleanRoom = String(roomCode || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-    const salt = getVoiceRoomSalt(roomCode);
-    const prefix = `v_${cleanRoom}_${salt}_`;
+    const activeRoom = String(roomCodeRef.current || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+    const salt = getVoiceRoomSalt(roomCodeRef.current);
+    const prefix = `v_${activeRoom}_${salt}_`;
     if (!callerVoiceId.startsWith(prefix)) return null;
     const cleanPlayer = callerVoiceId.slice(prefix.length);
     const matched = (playersRef.current || []).find(p => String(p.id).replace(/[^a-zA-Z0-9_-]/g, '') === cleanPlayer);
     return matched ? matched.id : null;
-  }, [roomCode]);
+  }, []);
 
   // Uzak kullanıcıyı arama
   const tryCallPeer = useCallback((targetPlayerId, localStream, playerMeta) => {
     if (!voicePeerRef.current || activeCallsRef.current.has(targetPlayerId)) return;
-    const targetVoiceId = getVoicePeerId(roomCode, targetPlayerId);
+    const activeRoom = (roomCodeRef.current || '').trim() || (() => {
+      try { return localStorage.getItem('muteahhit_room_code') || ''; } catch { return ''; }
+    })();
+    const targetVoiceId = getVoicePeerId(activeRoom, targetPlayerId);
 
     try {
       const call = voicePeerRef.current.call(targetVoiceId, localStream, {
         metadata: {
-          id: myPlayerId,
+          id: myPlayerIdRef.current,
           name: myPlayerName
         }
       });
@@ -329,14 +426,18 @@ export function useVoiceChat({
         attachRemoteAudio(targetPlayerId, remoteStream, playerMeta);
       });
       call.on('close', () => {
-        removeRemoteAudio(targetPlayerId);
+        if (activeCallsRef.current.get(targetPlayerId) === call) {
+          removeRemoteAudio(targetPlayerId);
+        }
       });
       call.on('error', () => {
-        removeRemoteAudio(targetPlayerId);
+        if (activeCallsRef.current.get(targetPlayerId) === call) {
+          removeRemoteAudio(targetPlayerId);
+        }
       });
       activeCallsRef.current.set(targetPlayerId, call);
     } catch (_) {}
-  }, [roomCode, myPlayerId, myPlayerName, attachRemoteAudio, removeRemoteAudio]);
+  }, [myPlayerName, attachRemoteAudio, removeRemoteAudio]);
 
   // Mikrofon aygıtını canlı değiştirme (Çağrı kesilmeden ses track'ini değiştirir)
   const switchMicrophone = useCallback(async (newDeviceId) => {
@@ -346,12 +447,15 @@ export function useVoiceChat({
     if (!localStreamRef.current || !isInVoice) return;
 
     try {
+      // 🎧 Bluetooth Kalite Düşüşü Çözümü:
+      // echoCancellation, noiseSuppression ve autoGainControl kapatılarak Windows WASAPI'nin
+      // iletişim (telephony ducking / Hands-Free) moduna geçmesi ve kulaklığı mono 8kHz'e düşürmesi engellenir.
       const newStream = await navigator.mediaDevices.getUserMedia({
         audio: {
           deviceId: newDeviceId ? { exact: newDeviceId } : undefined,
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false,
           sampleRate: 48000
         },
         video: false
@@ -361,7 +465,6 @@ export function useVoiceChat({
       if (newTrack) {
         newTrack.enabled = !isMutedRef.current;
 
-        // Eski akışın track'lerini kapat
         localStreamRef.current.getAudioTracks().forEach(t => {
           try { t.stop(); } catch (_) {}
         });
@@ -388,6 +491,22 @@ export function useVoiceChat({
     }
   }, [isInVoice, startVolumeAnalysis]);
 
+  // Çıkış aygıtını canlı değiştirme
+  const switchOutputDevice = useCallback(async (newDeviceId) => {
+    setSelectedOutputId(newDeviceId);
+    try { localStorage.setItem('muteahhit_output_id', newDeviceId); } catch (_) {}
+
+    remoteAudiosRef.current.forEach(async (audioEl) => {
+      if (typeof audioEl.setSinkId === 'function' && newDeviceId) {
+        try {
+          await audioEl.setSinkId(newDeviceId);
+        } catch (e) {
+          console.warn('[useVoiceChat] setSinkId uygulanamadı:', e);
+        }
+      }
+    });
+  }, []);
+
   // Sesli Sohbete Katıl
   const handleJoinVoice = async () => {
     if (isConnecting || isInVoice) return;
@@ -395,12 +514,15 @@ export function useVoiceChat({
     setErrorMessage('');
 
     try {
+      // 🎧 Bluetooth Kalite Düşüşü Çözümü:
+      // Harici mikrofon seçildiğinde echoCancellation, noiseSuppression, autoGainControl: false tutulur.
+      // Bu sayede Windows Bluetooth kulaklığı Hands-Free telefon profiline düşürmez, 48kHz kristal netlikte kalır.
       const constraints = {
         audio: {
           deviceId: selectedDeviceId ? { exact: selectedDeviceId } : undefined,
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false,
           sampleRate: 48000
         },
         video: false
@@ -411,13 +533,15 @@ export function useVoiceChat({
       isMutedRef.current = false;
       setIsMuted(false);
 
-      // İzin verildikten sonra mikrofon etiketlerini yenile
       refreshAudioDevices();
       startVolumeAnalysis(stream);
 
       // Güvenli ve izole PeerJS bağlantısı
       const config = getPeerConfig();
-      const myVoiceId = getVoicePeerId(roomCode, myPlayerId);
+      const activeRoom = (roomCodeRef.current || '').trim() || (() => {
+        try { return localStorage.getItem('muteahhit_room_code') || ''; } catch { return ''; }
+      })();
+      const myVoiceId = getVoicePeerId(activeRoom, myPlayerIdRef.current);
 
       const voicePeer = new Peer(myVoiceId, config);
       voicePeerRef.current = voicePeer;
@@ -433,35 +557,46 @@ export function useVoiceChat({
           isSpeaking: false
         });
 
-        // Masadaki diğer oyuncuları ara
+        // 🔗 Call Glare / Yarış Koşulu Önleme:
+        // İki taraf aynı anda aradığında bağlantıların çakışmaması için
+        // sadece kimlik numarası küçük olan taraf arama başlatır.
         const currentPlayers = playersRef.current || [];
         currentPlayers.forEach(p => {
-          if (p.id !== myPlayerId && !p.isBot) {
-            tryCallPeer(p.id, stream, p);
+          if (p.id !== myPlayerIdRef.current && !p.isBot) {
+            if (String(myPlayerIdRef.current) < String(p.id)) {
+              tryCallPeer(p.id, stream, p);
+            }
           }
         });
       });
 
       // Gelen aramaları karşıla ve yetki kontrolü yap
       voicePeer.on('call', (call) => {
-        const callerPlayerId = getPlayerIdFromVoicePeerId(call.peer);
+        const callerPlayerId = call.metadata?.id || getPlayerIdFromVoicePeerId(call.peer);
         if (!callerPlayerId) {
-          console.warn('[useVoiceChat Security] Yetkisiz arama reddedildi:', call.peer);
+          console.warn('[useVoiceChat Security] Tanınmayan arama kabul edilmedi:', call.peer, call.metadata);
           call.close();
           return;
         }
 
         call.answer(stream);
-        const callerPlayer = (playersRef.current || []).find(p => p.id === callerPlayerId) || {};
+        const callerPlayer = (playersRef.current || []).find(p => p.id === callerPlayerId) || {
+          id: callerPlayerId,
+          name: call.metadata?.name || 'Oyuncu'
+        };
 
         call.on('stream', (remoteStream) => {
           attachRemoteAudio(callerPlayerId, remoteStream, callerPlayer);
         });
         call.on('close', () => {
-          removeRemoteAudio(callerPlayerId);
+          if (activeCallsRef.current.get(callerPlayerId) === call) {
+            removeRemoteAudio(callerPlayerId);
+          }
         });
         call.on('error', () => {
-          removeRemoteAudio(callerPlayerId);
+          if (activeCallsRef.current.get(callerPlayerId) === call) {
+            removeRemoteAudio(callerPlayerId);
+          }
         });
         activeCallsRef.current.set(callerPlayerId, call);
       });
@@ -486,7 +621,7 @@ export function useVoiceChat({
     }
   };
 
-  // 🔄 Periyodik Bağlantı Bekçisi (Karşı taraf sese girdiğinde otomatik bağlanır)
+  // 🔄 Periyodik Bağlantı Bekçisi (Karşı taraf sonradan sese girdiğinde otomatik bağlar)
   useEffect(() => {
     if (!isInVoice || !localStreamRef.current) return;
 
@@ -498,11 +633,10 @@ export function useVoiceChat({
       const vStates = voiceStatesRef.current || {};
 
       currentPlayers.forEach(p => {
-        if (p.id !== myPlayerId && !p.isBot) {
+        if (p.id !== myPlayerIdRef.current && !p.isBot) {
           const isTargetInVoice = Boolean(vStates[p.id]?.inVoice);
           const hasActiveCall = activeCallsRef.current.has(p.id);
 
-          // Karşı taraf seste ve henüz aramızda aktif ses bağlantısı yoksa ara
           if (isTargetInVoice && !hasActiveCall) {
             tryCallPeer(p.id, currentStream, p);
           }
@@ -511,7 +645,7 @@ export function useVoiceChat({
     }, 2500);
 
     return () => clearInterval(interval);
-  }, [isInVoice, myPlayerId, tryCallPeer]);
+  }, [isInVoice, tryCallPeer]);
 
   // Mikrofonu Sustur / Aç
   const toggleMute = useCallback(() => {
@@ -543,6 +677,11 @@ export function useVoiceChat({
       isSpeaking: false
     });
 
+    if (speakingTimeoutRef.current) {
+      clearTimeout(speakingTimeoutRef.current);
+      speakingTimeoutRef.current = null;
+    }
+
     if (animFrameRef.current) {
       cancelAnimationFrame(animFrameRef.current);
       animFrameRef.current = null;
@@ -570,6 +709,9 @@ export function useVoiceChat({
       try {
         audioEl.pause();
         audioEl.srcObject = null;
+        if (audioEl.parentNode) {
+          audioEl.parentNode.removeChild(audioEl);
+        }
       } catch (_) {}
     });
     remoteAudiosRef.current.clear();
@@ -596,7 +738,7 @@ export function useVoiceChat({
     };
   }, [handleLeaveVoice]);
 
-  // Toplam seste olan insan sayısı hesabı (voiceStates veya P2P bağlantılarına göre)
+  // Toplam seste olan insan sayısı hesabı
   const humanPlayers = (players || []).filter(p => !p.isBot);
   const inVoiceCount = humanPlayers.filter(p => {
     if (p.id === myPlayerId) return isInVoice;
@@ -614,6 +756,9 @@ export function useVoiceChat({
     audioDevices,
     selectedDeviceId,
     switchMicrophone,
+    outputDevices,
+    selectedOutputId,
+    switchOutputDevice,
     voicePeers,
     participantsCount: inVoiceCount,
     handleJoinVoice,
@@ -624,6 +769,7 @@ export function useVoiceChat({
 
 /**
  * Ses Odası Görsel Arayüz Bileşeni (Ses Odası Sekmesi İçeriği)
+ * Nested scroll trap'ler kaldırılmış, tek ve pürüzsüz kaydırma konteynerine entegredir.
  */
 export function VoiceRoomView({
   voiceChat,
@@ -644,19 +790,23 @@ export function VoiceRoomView({
     audioDevices,
     selectedDeviceId,
     switchMicrophone,
+    outputDevices,
+    selectedOutputId,
+    switchOutputDevice,
     voicePeers,
     handleJoinVoice,
     toggleMute,
     handleLeaveVoice
   } = voiceChat;
 
+  const [showDeviceSettings, setShowDeviceSettings] = useState(false);
   const humanPlayers = players.filter(p => !p.isBot);
 
   return (
-    <div className="w-full h-full flex flex-col p-2.5 sm:p-3.5 select-none overflow-y-auto custom-scrollbar">
+    <div className="w-full flex flex-col gap-2.5 select-none pb-4">
       
-      {/* 1. ÜST BİLGİ & GÜVENLİK KARTI */}
-      <div className={`rounded-2xl p-2.5 mb-2.5 border flex flex-col gap-2 ${
+      {/* 1. ÜST BİLGİ & KONTROL KARTI */}
+      <div className={`rounded-2xl p-2.5 border flex flex-col gap-2 ${
         isDarkMode ? 'bg-slate-900/90 border-slate-800' : 'bg-slate-50 border-slate-200'
       }`}>
         <div className="flex items-center justify-between">
@@ -664,7 +814,7 @@ export function VoiceRoomView({
             <div className={`w-7 h-7 rounded-xl flex items-center justify-center text-sm ${
               isInVoice ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
             }`}>
-              {isInVoice ? <Radio className="w-3.5 h-3.5 animate-pulse" /> : <Users className="w-3.5 h-3.5" />}
+              {isInVoice ? <Radio className="w-3.5 h-3.5 animate-pulse text-emerald-400" /> : <Users className="w-3.5 h-3.5" />}
             </div>
             <div>
               <h4 className="text-xs font-black font-space text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
@@ -676,50 +826,47 @@ export function VoiceRoomView({
                 </span>
               </h4>
               <span className="text-[9.5px] text-slate-500 dark:text-slate-400">
-                {voiceChat.participantsCount > 0 ? `${voiceChat.participantsCount} katılımcı seste` : 'Odadaki oyuncularla canlı konuşun'}
+                {voiceChat.participantsCount > 0 ? `${voiceChat.participantsCount} kişi seste` : 'Canlı sesli sohbet'}
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-1 text-[9px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800/60 px-1.5 py-0.5 rounded-lg" title="WebRTC DTLS-SRTP Uçtan Uca Şifreleme ve Oda Tuzu Koruması">
-            <ShieldCheck className="w-3 h-3" />
-            <span>E2EE Şifreli</span>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setShowDeviceSettings(v => !v)}
+              className={`p-1.5 rounded-lg border text-[10px] flex items-center gap-1 transition cursor-pointer ${
+                showDeviceSettings
+                  ? 'bg-amber-500/20 border-amber-500/40 text-amber-500'
+                  : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-white'
+              }`}
+              title="Ses ve Donanım Ayarları"
+            >
+              <Settings2 className="w-3 h-3" />
+            </button>
+
+            <div className="flex items-center gap-1 text-[9px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800/60 px-1.5 py-1 rounded-lg" title="WebRTC DTLS-SRTP Uçtan Uca Şifreleme">
+              <ShieldCheck className="w-3 h-3" />
+              <span>E2EE</span>
+            </div>
           </div>
         </div>
 
-        {/* 🎙️ Mikrofon Seçimi & Ses Düzeyi Kontrolleri */}
-        <div className="pt-2 border-t border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row gap-2 text-[10.5px]">
-          {/* Mikrofon Seçimi Açılır Kutusu */}
-          <div className="flex-1 px-2 py-1 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 min-w-0">
-            <Mic className="w-3 h-3 text-amber-500 flex-shrink-0" />
-            <select
-              value={selectedDeviceId}
-              onChange={(e) => switchMicrophone(e.target.value)}
-              className="w-full bg-transparent text-slate-800 dark:text-slate-200 text-[10px] font-medium focus:outline-none truncate cursor-pointer"
-              title="Mikrofon Aygıtı Seçimi (Harici mikrofon seçilerek kulaklık kalitesi korunur)"
-            >
-              {audioDevices.length === 0 ? (
-                <option value="" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100">Varsayılan Mikrofon</option>
-              ) : (
-                audioDevices.map((d, i) => (
-                  <option key={d.deviceId || i} value={d.deviceId} className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100">
-                    {d.label || `Mikrofon ${i + 1}`}
-                  </option>
-                ))
-              )}
-            </select>
-          </div>
-
-          {/* Bağımsız Ses Kaydırıcısı (Slider) */}
-          <div className="px-2 py-1 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 flex-shrink-0">
+        {/* 🎙️ Hızlı Ses Düzeyi Kaydırıcısı */}
+        <div className="pt-2 border-t border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-2 text-[10.5px]">
+          <div className="flex items-center gap-1.5">
             <button
               type="button"
               onClick={() => setVoiceVolume(v => (v > 0 ? 0 : 1.0))}
-              className="text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 cursor-pointer flex-shrink-0"
+              className="text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 cursor-pointer"
               title="Sohbet Sesini Sustur/Aç"
             >
-              {voiceVolume === 0 ? <VolumeX className="w-3 h-3 text-rose-400" /> : <Volume2 className="w-3 h-3 text-amber-500" />}
+              {voiceVolume === 0 ? <VolumeX className="w-3.5 h-3.5 text-rose-400" /> : <Volume2 className="w-3.5 h-3.5 text-amber-500" />}
             </button>
+            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Sohbet Sesi:</span>
+          </div>
+
+          <div className="flex items-center gap-2">
             <input
               type="range"
               min="0"
@@ -727,18 +874,71 @@ export function VoiceRoomView({
               step="0.05"
               value={voiceVolume}
               onChange={(e) => setVoiceVolume(parseFloat(e.target.value))}
-              className="w-16 sm:w-20 h-1 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
-              title={`Ses Düzeyi: %${Math.round(voiceVolume * 100)}`}
+              className="w-24 sm:w-28 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
+              title={`Sohbet Sesi: %${Math.round(voiceVolume * 100)}`}
             />
             <span className="text-[9.5px] font-mono font-bold text-slate-700 dark:text-slate-300 w-7 text-right">
               %{Math.round(voiceVolume * 100)}
             </span>
           </div>
         </div>
+
+        {/* ⚙️ Detaylı Donanım Seçimi (Açılır Panel) */}
+        {showDeviceSettings && (
+          <div className="pt-2 border-t border-slate-200/80 dark:border-slate-800 flex flex-col gap-2 text-[10.5px] animate-fadeIn">
+            {/* Mikrofon Seçimi */}
+            <div className="flex flex-col gap-1">
+              <label className="text-[9.5px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                <Mic className="w-3 h-3 text-amber-500" />
+                <span>Mikrofon (Harici Mikrofon Seçin):</span>
+              </label>
+              <div className="px-2 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center min-w-0">
+                <select
+                  value={selectedDeviceId}
+                  onChange={(e) => switchMicrophone(e.target.value)}
+                  className="w-full bg-transparent text-slate-800 dark:text-slate-200 text-[10px] font-medium focus:outline-none truncate cursor-pointer"
+                >
+                  {audioDevices.length === 0 ? (
+                    <option value="" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100">Varsayılan Mikrofon</option>
+                  ) : (
+                    audioDevices.map((d, i) => (
+                      <option key={d.deviceId || i} value={d.deviceId} className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100">
+                        {d.label || `Mikrofon ${i + 1}`}
+                      </option>
+                    ))
+                  )}
+                </select>
+              </div>
+            </div>
+
+            {/* Kulaklık / Çıkış Seçimi */}
+            {outputDevices.length > 0 && (
+              <div className="flex flex-col gap-1">
+                <label className="text-[9.5px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                  <Headphones className="w-3 h-3 text-sky-400" />
+                  <span>Ses Çıkışı (Stereo Kulaklık / Hoparlör):</span>
+                </label>
+                <div className="px-2 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center min-w-0">
+                  <select
+                    value={selectedOutputId}
+                    onChange={(e) => switchOutputDevice(e.target.value)}
+                    className="w-full bg-transparent text-slate-800 dark:text-slate-200 text-[10px] font-medium focus:outline-none truncate cursor-pointer"
+                  >
+                    {outputDevices.map((d, i) => (
+                      <option key={d.deviceId || i} value={d.deviceId} className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100">
+                        {d.label || `Ses Çıkışı ${i + 1}`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* 2. BAĞLANTI & MİKROFON BUTONLARI */}
-      <div className="mb-3">
+      <div>
         {!isInVoice ? (
           <button
             type="button"
@@ -782,9 +982,9 @@ export function VoiceRoomView({
         )}
       </div>
 
-      {/* 3. KATILIMCI LİSTESİ VE CANLI DURUMLAR */}
-      <div className="flex-1 flex flex-col min-h-0">
-        <div className="flex items-center justify-between pb-1 mb-1.5 border-b border-slate-200 dark:border-slate-800">
+      {/* 3. KATILIMCI LİSTESİ VE CANLI DURUMLAR (Nested scroll olmadan doğal akış) */}
+      <div className="flex flex-col gap-1.5">
+        <div className="flex items-center justify-between pb-1 border-b border-slate-200 dark:border-slate-800">
           <span className="text-[10.5px] font-bold text-slate-600 dark:text-slate-400 uppercase font-space tracking-wider">
             Masa Oyuncuları ({humanPlayers.length})
           </span>
@@ -793,13 +993,13 @@ export function VoiceRoomView({
           </span>
         </div>
 
-        <div className="space-y-1.5 overflow-y-auto custom-scrollbar flex-1 pr-0.5">
+        <div className="space-y-1.5">
           {humanPlayers.map((player) => {
             const isMe = player.id === myPlayerId;
             const pVoiceState = voiceStates?.[player.id];
             const peerData = voicePeers.get(player.id);
 
-            // Seste mi? (Hem yerel, hem ağ durumu, hem de WebRTC stream bazlı kontrol)
+            // Seste mi? (Yerel durum, oyun ağ durumu veya WebRTC P2P stream varlığı)
             const isConnectedToVoice = isMe
               ? isInVoice
               : Boolean(pVoiceState?.inVoice || peerData);
@@ -809,7 +1009,7 @@ export function VoiceRoomView({
               ? isMuted
               : Boolean(pVoiceState ? pVoiceState.isMuted : (peerData?.isMuted ?? false));
 
-            // Konuşuyor mu?
+            // Konuşuyor mu? (Canlı frekans analizi veya ağ bildirim durumu)
             const playerIsSpeaking = isMe
               ? isSpeaking
               : Boolean(peerData?.isSpeaking || pVoiceState?.isSpeaking);

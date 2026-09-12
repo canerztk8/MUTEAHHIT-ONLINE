@@ -260,7 +260,7 @@ function ChatAndLogBase({
           )}
 
           {/* Orta Kaydırılabilir Liste Alanı */}
-          <div className="flex-1 overflow-y-auto p-2 text-xs space-y-1.5 custom-scrollbar bg-slate-50/40 dark:bg-slate-900/40 min-h-0">
+          <div className={`flex-1 overflow-y-auto p-2 custom-scrollbar min-h-0 ${activeTab === 'voice' ? '' : 'text-xs space-y-1.5 bg-slate-50/40 dark:bg-slate-900/40'}`}>
             {activeTab === 'voice' ? (
               <VoiceRoomView
                 voiceChat={voiceChat}
@@ -476,7 +476,7 @@ function ChatAndLogBase({
               </div>
 
               {/* Modal İçerik Alanı */}
-              <div className="flex-1 overflow-y-auto p-4 text-xs space-y-2 custom-scrollbar bg-[#F8FAFC] dark:bg-slate-900">
+              <div className={`flex-1 overflow-y-auto p-4 custom-scrollbar ${activeTab === 'voice' ? '' : 'text-xs space-y-2 bg-[#F8FAFC] dark:bg-slate-900'}`}>
                 {activeTab === 'voice' ? (
                   <VoiceRoomView
                     voiceChat={voiceChat}
@@ -772,7 +772,7 @@ function ChatAndLogBase({
             </div>
 
             {/* Modal İçerik Alanı */}
-            <div className="flex-1 overflow-y-auto p-4 text-xs space-y-2 custom-scrollbar bg-[#F8FAFC] dark:bg-slate-900">
+            <div className={`flex-1 overflow-y-auto p-4 custom-scrollbar ${activeTab === 'voice' ? '' : 'text-xs space-y-2 bg-[#F8FAFC] dark:bg-slate-900'}`}>
               {activeTab === 'voice' ? (
                 <VoiceRoomView
                   voiceChat={voiceChat}
