@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { MessageSquare, ScrollText, Send, Maximize2, Minimize2, X, Sparkles, ChevronRight } from 'lucide-react';
+import { VoiceChatBar } from './VoiceChatBar.jsx';
 
 /**
  * Olayın gerçekleştiği dakikayı ve saniyesini (MM:SS veya HH:MM:SS) hesaplar.
@@ -85,7 +86,11 @@ function ChatAndLogBase({
   players = [],
   embedded = false,
   gameStartTime = null,
-  totalPausedDuration = 0
+  totalPausedDuration = 0,
+  roomCode = '',
+  myPlayerId = '',
+  myPlayerName = '',
+  isDarkMode = false
 }) {
   // Varsayılan olarak minimize (kapalı/kompakt) başlar
   const [isExpanded, setIsExpanded] = useState(false);
@@ -177,6 +182,15 @@ function ChatAndLogBase({
               <Maximize2 className="w-3.5 h-3.5" />
             </button>
           </div>
+
+          {/* İsteğe Bağlı Sesli Sohbet Çubuğu */}
+          <VoiceChatBar
+            roomCode={roomCode}
+            myPlayerId={myPlayerId}
+            myPlayerName={myPlayerName}
+            players={players}
+            isDarkMode={isDarkMode}
+          />
 
           {/* Orta Kaydırılabilir Liste Alanı */}
           <div className="flex-1 overflow-y-auto p-2 text-xs space-y-1.5 custom-scrollbar bg-slate-50/40 dark:bg-slate-900/40 min-h-0">

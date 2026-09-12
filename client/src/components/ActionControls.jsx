@@ -66,7 +66,6 @@ export function ActionControls({
     (phase === 'WAITING_ROLL' && !activePlayer?.inJail) ||
     (canRollAgain && phase === 'TURN_ACTIONS') ||
     isDebt ||
-    (phase === 'CARD_DRAWN' && !drawnCard) ||
     (activePlayer?.inJail && phase === 'WAITING_ROLL') ||
     (phase === 'TILE_ACTION' && currentTile) ||
     (phase === 'TURN_ACTIONS')
@@ -110,16 +109,6 @@ export function ActionControls({
         {/* SADECE ETKİLEŞİM GEREKTİREN AKSİYONLARDA GÖRÜNEN KOMPAKT KART */}
         {hasInteractiveAction && (
           <div className="w-full max-w-[290px] flex flex-col gap-2 animate-fadeIn">
-          {/* ÇEKİLEN KART BEKLEME EYLEMİ (Yalnızca 3D modal kapalıysa yedek olarak görünür) */}
-          {phase === 'CARD_DRAWN' && !drawnCard && (
-            <button
-              onClick={onAcknowledgeCard}
-              className="w-full py-2.5 px-3 bg-gradient-to-r from-amber-500 to-yellow-400 hover:brightness-110 active:scale-95 text-slate-950 font-black text-xs rounded-xl shadow-md transition flex items-center justify-center gap-1.5 cursor-pointer font-space"
-            >
-              <span>📜 Kartı Okudum</span>
-              <kbd className="px-1.5 py-0.5 text-[9px] bg-black/15 text-slate-900 rounded font-mono font-bold">Space</kbd>
-            </button>
-          )}
 
           {/* BORÇ VE İPOTEK UYARISI */}
           {isDebt && (

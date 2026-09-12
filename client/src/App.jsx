@@ -1512,6 +1512,10 @@ export function App() {
                 embedded={true}
                 gameStartTime={gameState?.gameStartTime}
                 totalPausedDuration={gameState?.totalPausedDuration}
+                roomCode={gameState?.roomCode}
+                myPlayerId={myPlayerId}
+                myPlayerName={myPlayer?.name}
+                isDarkMode={isDarkMode}
               />
             </ErrorBoundary>
           </div>

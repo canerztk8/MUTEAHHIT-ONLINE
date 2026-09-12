@@ -62,7 +62,7 @@ const ICE_SERVERS = [
   },
 ];
 
-function getPeerConfig() {
+export function getPeerConfig() {
   const envHost = import.meta.env.VITE_PEER_HOST;
   const envPort = import.meta.env.VITE_PEER_PORT;
   const envPath = import.meta.env.VITE_PEER_PATH || '/peerjs';
