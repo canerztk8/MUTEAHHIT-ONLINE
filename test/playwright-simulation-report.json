@@ -1,0 +1,232 @@
+{
+  "timestamp": "2026-09-12T09:12:21.362Z",
+  "targetUrl": "http://localhost:3000",
+  "totalGames": 10,
+  "successCount": 10,
+  "roomCheckOk": 10,
+  "nonExistentRoomTest": {
+    "showedRoomNotFound": true
+  },
+  "games": [
+    {
+      "game": 1,
+      "success": true,
+      "steps": [
+        "OK Host sekmesi acildi",
+        "OK Isim girildi",
+        "OK Oda Olustur tiklandi",
+        "OK Oda: 7L36TU",
+        "OK room-check exists:true",
+        "OK Davet linki acildi",
+        "OK Baglanti baslatildi",
+        "UYARI Tur 1: zar at butonu yok (bot turu)",
+        "UYARI Tur 2: zar at butonu yok (bot turu)",
+        "UYARI Tur 3: zar at butonu yok (bot turu)",
+        "UYARI Tur 4: zar at butonu yok (bot turu)",
+        "UYARI Tur 5: zar at butonu yok (bot turu)",
+        "OK 0/5 tur tamamlandi"
+      ],
+      "error": null,
+      "roomCode": "7L36TU",
+      "roomCheckWorked": true
+    },
+    {
+      "game": 2,
+      "success": true,
+      "steps": [
+        "OK Host sekmesi acildi",
+        "OK Isim girildi",
+        "OK Oda Olustur tiklandi",
+        "OK Oda: 2RSK4F",
+        "OK room-check exists:true",
+        "OK Davet linki acildi",
+        "OK Baglanti baslatildi",
+        "UYARI Tur 1: zar at butonu yok (bot turu)",
+        "UYARI Tur 2: zar at butonu yok (bot turu)",
+        "UYARI Tur 3: zar at butonu yok (bot turu)",
+        "UYARI Tur 4: zar at butonu yok (bot turu)",
+        "UYARI Tur 5: zar at butonu yok (bot turu)",
+        "OK 0/5 tur tamamlandi"
+      ],
+      "error": null,
+      "roomCode": "2RSK4F",
+      "roomCheckWorked": true
+    },
+    {
+      "game": 3,
+      "success": true,
+      "steps": [
+        "OK Host sekmesi acildi",
+        "OK Isim girildi",
+        "OK Oda Olustur tiklandi",
+        "OK Oda: CRW7X3",
+        "OK room-check exists:true",
+        "OK Davet linki acildi",
+        "OK Baglanti baslatildi",
+        "UYARI Tur 1: zar at butonu yok (bot turu)",
+        "UYARI Tur 2: zar at butonu yok (bot turu)",
+        "UYARI Tur 3: zar at butonu yok (bot turu)",
+        "UYARI Tur 4: zar at butonu yok (bot turu)",
+        "UYARI Tur 5: zar at butonu yok (bot turu)",
+        "OK 0/5 tur tamamlandi"
+      ],
+      "error": null,
+      "roomCode": "CRW7X3",
+      "roomCheckWorked": true
+    },
+    {
+      "game": 4,
+      "success": true,
+      "steps": [
+        "OK Host sekmesi acildi",
+        "OK Isim girildi",
+        "OK Oda Olustur tiklandi",
+        "OK Oda: GMZG7Q",
+        "OK room-check exists:true",
+        "OK Davet linki acildi",
+        "OK Baglanti baslatildi",
+        "UYARI Tur 1: zar at butonu yok (bot turu)",
+        "UYARI Tur 2: zar at butonu yok (bot turu)",
+        "UYARI Tur 3: zar at butonu yok (bot turu)",
+        "UYARI Tur 4: zar at butonu yok (bot turu)",
+        "UYARI Tur 5: zar at butonu yok (bot turu)",
+        "OK 0/5 tur tamamlandi"
+      ],
+      "error": null,
+      "roomCode": "GMZG7Q",
+      "roomCheckWorked": true
+    },
+    {
+      "game": 5,
+      "success": true,
+      "steps": [
+        "OK Host sekmesi acildi",
+        "OK Isim girildi",
+        "OK Oda Olustur tiklandi",
+        "OK Oda: AKRWW5",
+        "OK room-check exists:true",
+        "OK Davet linki acildi",
+        "OK Baglanti baslatildi",
+        "UYARI Tur 1: zar at butonu yok (bot turu)",
+        "UYARI Tur 2: zar at butonu yok (bot turu)",
+        "UYARI Tur 3: zar at butonu yok (bot turu)",
+        "UYARI Tur 4: zar at butonu yok (bot turu)",
+        "UYARI Tur 5: zar at butonu yok (bot turu)",
+        "OK 0/5 tur tamamlandi"
+      ],
+      "error": null,
+      "roomCode": "AKRWW5",
+      "roomCheckWorked": true
+    },
+    {
+      "game": 6,
+      "success": true,
+      "steps": [
+        "OK Host sekmesi acildi",
+        "OK Isim girildi",
+        "OK Oda Olustur tiklandi",
+        "OK Oda: PMMTEY",
+        "OK room-check exists:true",
+        "OK Davet linki acildi",
+        "OK Baglanti baslatildi",
+        "UYARI Tur 1: zar at butonu yok (bot turu)",
+        "UYARI Tur 2: zar at butonu yok (bot turu)",
+        "UYARI Tur 3: zar at butonu yok (bot turu)",
+        "UYARI Tur 4: zar at butonu yok (bot turu)",
+        "UYARI Tur 5: zar at butonu yok (bot turu)",
+        "OK 0/5 tur tamamlandi"
+      ],
+      "error": null,
+      "roomCode": "PMMTEY",
+      "roomCheckWorked": true
+    },
+    {
+      "game": 7,
+      "success": true,
+      "steps": [
+        "OK Host sekmesi acildi",
+        "OK Isim girildi",
+        "OK Oda Olustur tiklandi",
+        "OK Oda: AAL3Z8",
+        "OK room-check exists:true",
+        "OK Davet linki acildi",
+        "OK Baglanti baslatildi",
+        "UYARI Tur 1: zar at butonu yok (bot turu)",
+        "UYARI Tur 2: zar at butonu yok (bot turu)",
+        "UYARI Tur 3: zar at butonu yok (bot turu)",
+        "UYARI Tur 4: zar at butonu yok (bot turu)",
+        "UYARI Tur 5: zar at butonu yok (bot turu)",
+        "OK 0/5 tur tamamlandi"
+      ],
+      "error": null,
+      "roomCode": "AAL3Z8",
+      "roomCheckWorked": true
+    },
+    {
+      "game": 8,
+      "success": true,
+      "steps": [
+        "OK Host sekmesi acildi",
+        "OK Isim girildi",
+        "OK Oda Olustur tiklandi",
+        "OK Oda: 6SAFXS",
+        "OK room-check exists:true",
+        "OK Davet linki acildi",
+        "OK Baglanti baslatildi",
+        "UYARI Tur 1: zar at butonu yok (bot turu)",
+        "UYARI Tur 2: zar at butonu yok (bot turu)",
+        "UYARI Tur 3: zar at butonu yok (bot turu)",
+        "UYARI Tur 4: zar at butonu yok (bot turu)",
+        "UYARI Tur 5: zar at butonu yok (bot turu)",
+        "OK 0/5 tur tamamlandi"
+      ],
+      "error": null,
+      "roomCode": "6SAFXS",
+      "roomCheckWorked": true
+    },
+    {
+      "game": 9,
+      "success": true,
+      "steps": [
+        "OK Host sekmesi acildi",
+        "OK Isim girildi",
+        "OK Oda Olustur tiklandi",
+        "OK Oda: JKTVAA",
+        "OK room-check exists:true",
+        "OK Davet linki acildi",
+        "OK Baglanti baslatildi",
+        "UYARI Tur 1: zar at butonu yok (bot turu)",
+        "UYARI Tur 2: zar at butonu yok (bot turu)",
+        "UYARI Tur 3: zar at butonu yok (bot turu)",
+        "UYARI Tur 4: zar at butonu yok (bot turu)",
+        "UYARI Tur 5: zar at butonu yok (bot turu)",
+        "OK 0/5 tur tamamlandi"
+      ],
+      "error": null,
+      "roomCode": "JKTVAA",
+      "roomCheckWorked": true
+    },
+    {
+      "game": 10,
+      "success": true,
+      "steps": [
+        "OK Host sekmesi acildi",
+        "OK Isim girildi",
+        "OK Oda Olustur tiklandi",
+        "OK Oda: X4J97T",
+        "OK room-check exists:true",
+        "OK Davet linki acildi",
+        "OK Baglanti baslatildi",
+        "UYARI Tur 1: zar at butonu yok (bot turu)",
+        "UYARI Tur 2: zar at butonu yok (bot turu)",
+        "UYARI Tur 3: zar at butonu yok (bot turu)",
+        "UYARI Tur 4: zar at butonu yok (bot turu)",
+        "UYARI Tur 5: zar at butonu yok (bot turu)",
+        "OK 0/5 tur tamamlandi"
+      ],
+      "error": null,
+      "roomCode": "X4J97T",
+      "roomCheckWorked": true
+    }
+  ]
+}

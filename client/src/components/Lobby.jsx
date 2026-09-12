@@ -13,6 +13,7 @@ export function Lobby({
   onStartGame,
   onCreateRoom,
   onJoinRoom,
+  onRoomNotFound,
   myPlayerId,
   onLeaveRoom,
   isDarkMode = false,
@@ -56,18 +57,31 @@ export function Lobby({
 
   const [invitedRoomCode, setInvitedRoomCode] = useState('');
 
-  // URL'deki ?room= parametresini al ve otomatik katılmayı dene
+  // URL'deki ?room= parametresini al ve oda varlığını kontrol et, ardından otomatik katılmayı dene
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const roomParam = urlParams.get('room');
-    if (roomParam) {
-      const code = roomParam.trim().toUpperCase();
-      setRoomInput(code);
-      setInvitedRoomCode(code);
+    if (!roomParam) return;
 
-      // Oyuncunun önceden kaydedilmiş bir ismi varsa doğrudan davet linkine katılsın!
-      const savedName = localStorage.getItem('muteahhit_name');
-      if (savedName && savedName.trim() && !gameState && !network) {
+    const code = roomParam.trim().toUpperCase();
+    setRoomInput(code);
+    setInvitedRoomCode(code);
+
+    // Önceden bağlantı varsa ya da oyun başladıysa kontrol yapma
+    if (gameState || network) return;
+
+    const savedName = localStorage.getItem('muteahhit_name');
+
+    // Backend URL'ini belirle (PeerService ile aynı mantık)
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const backendHost = isLocal
+      ? `${window.location.hostname}:${window.location.port || 3000}`
+      : (import.meta.env.VITE_PEER_HOST || 'muteahhit-online-backend.onrender.com');
+    const protocol = isLocal ? 'http' : 'https';
+    const checkUrl = `${protocol}://${backendHost}/api/room-check?code=${encodeURIComponent(code)}`;
+
+    const doAutoJoin = () => {
+      if (savedName && savedName.trim()) {
         let sessionToken = localStorage.getItem('muteahhit_session_token');
         if (!sessionToken) {
           sessionToken = 'st_' + Math.random().toString(36).substring(2, 11) + Date.now().toString(36);
@@ -81,8 +95,32 @@ export function Lobby({
           sessionToken
         });
       }
-    }
-  }, []);
+      // İsim yoksa lobi açık kalır, oda kodu dolu gelir; kullanıcı manuel katılır
+    };
+
+    // Oda varlık kontrolü — timeout: 5 saniye
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+
+    fetch(checkUrl, { signal: controller.signal, cache: 'no-store' })
+      .then(res => res.json())
+      .then(data => {
+        clearTimeout(timeout);
+        if (data.exists) {
+          // Oda mevcut → mevcut davranış: kayıtlı isim varsa otomatik bağlan
+          doAutoJoin();
+        } else {
+          // Oda mevcut değil → "Oda Bulunamadı" ekranını tetikle
+          onRoomNotFound?.({ code });
+        }
+      })
+      .catch(() => {
+        clearTimeout(timeout);
+        // Endpoint'e ulaşılamadı (yerel geliştirme, sunucu kapalı vb.)
+        // Güvenli fall-back: doğrudan bağlanmaya çalış (eski davranış)
+        doAutoJoin();
+      });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleCreateRoom = () => {
     if (!name.trim()) {
@@ -723,6 +761,7 @@ export function Lobby({
           {/* Butonlar */}
           <div className="pt-2 space-y-3">
             <button
+              data-testid="create-room-btn"
               onClick={handleCreateRoom}
               className="w-full py-3.5 rounded-xl font-bold text-sm bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 text-slate-950 hover:brightness-110 active:scale-98 shadow-lg shadow-amber-500/20 transition flex items-center justify-center gap-2 cursor-pointer font-space"
             >

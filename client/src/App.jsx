@@ -236,6 +236,8 @@ export function App() {
   const [myPlayerId, setMyPlayerId] = useState(null);
   const myPlayerIdRef = useRef(null);
   const [isSpectatorMode, setIsSpectatorMode] = useState(false);
+  // Davet linki ile açıldığında oda mevcut değilse gösterilecek ekran için
+  const [roomNotFound, setRoomNotFound] = useState(null); // null | { code: string }
 
   const formatPeerError = (err) => {
     if (!err) return null;
@@ -1124,6 +1126,53 @@ export function App() {
     setTimeout(() => setCopiedLink(false), 2000);
   };
 
+  // ─── Oda Bulunamadı Ekranı (davet linki geçersiz) ──────────────────────────
+  if (roomNotFound) {
+    return (
+      <div className="relative min-h-screen w-full flex flex-col items-center justify-center overflow-hidden">
+        <AnitkabirBackground isDarkMode={isDarkMode} />
+        <div className={`relative z-10 flex flex-col items-center gap-4 p-8 rounded-3xl border backdrop-blur-2xl shadow-2xl ${
+          isDarkMode ? 'bg-slate-900/85 border-slate-700/60 text-white shadow-black/60' : 'bg-white/85 border-white/80 text-slate-900 shadow-slate-900/10 ring-1 ring-slate-900/5'
+        }`}>
+          <span className="text-5xl">❌</span>
+          <h2 className="text-xl font-black text-rose-500">Oda Bulunamadı</h2>
+          <p className={`text-sm text-center max-w-xs ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
+            <span className="font-mono font-bold text-amber-500">"{roomNotFound.code}"</span> kodlu oda artık mevcut değil.
+            <br />
+            <span className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}>Host bağlantıyı kapatmış ya da oda sona ermiş olabilir.</span>
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 mt-1 w-full">
+            <button
+              onClick={() => {
+                // URL'den room parametresini temizle, lobbye dön ve oda oluştur ekranını göster
+                try { window.history.replaceState({}, '', window.location.pathname); } catch (_) {}
+                setRoomNotFound(null);
+              }}
+              className={`flex-1 px-5 py-2.5 rounded-xl font-bold text-sm transition cursor-pointer border ${
+                isDarkMode
+                  ? 'bg-slate-800 border-slate-600 text-slate-200 hover:bg-slate-700'
+                  : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              Ana Menüye Dön
+            </button>
+            <button
+              onClick={() => {
+                try { window.history.replaceState({}, '', window.location.pathname); } catch (_) {}
+                setRoomNotFound(null);
+                // Lobi açıldığında "Oda Oluştur" sekmesini ön plana çıkarmak için
+                // kısa bir flag ile Lobby'ye sinyal verilebilir; şimdilik sadece lobi açılır.
+              }}
+              className="flex-1 px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold rounded-xl transition cursor-pointer shadow-md text-sm"
+            >
+              🏗️ Yeni Oda Aç
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // ─── Host Bağlantısı Koptu Ekranı ──────────────────────────────────────────
   if (peerError === 'HOST_DROPPED') {
     return (
@@ -1212,6 +1261,7 @@ export function App() {
             myPlayerId={myPlayerId}
             onCreateRoom={createRoom}
             onJoinRoom={joinRoom}
+            onRoomNotFound={({ code }) => setRoomNotFound({ code })}
             onStartGame={handleStartGame}
             onLeaveRoom={handleLeaveGame}
             isDarkMode={isDarkMode}

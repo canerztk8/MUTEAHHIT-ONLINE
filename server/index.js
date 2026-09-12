@@ -47,12 +47,21 @@ const peerServer = ExpressPeerServer(httpServer, {
 
 app.use('/peerjs', peerServer);
 
+// ─── Bağlı Peer Takibi ───────────────────────────────────────────────────────
+// Bağlı peer'ların listesi; /api/room-check endpoint'i için kullanılır.
+// Host'un peer ID'si oda kodu olarak kullanıldığından bu liste oda varlığını temsil eder.
+const connectedPeers = new Set();
+
 peerServer.on('connection', (client) => {
-  console.log(`[PeerJS] Sinyal bağlantısı: ${client.getId()}`);
+  const id = client.getId();
+  connectedPeers.add(id);
+  console.log(`[PeerJS] Sinyal bağlantısı: ${id} (toplam: ${connectedPeers.size})`);
 });
 
 peerServer.on('disconnect', (client) => {
-  console.log(`[PeerJS] Sinyal ayrıldı: ${client.getId()}`);
+  const id = client.getId();
+  connectedPeers.delete(id);
+  console.log(`[PeerJS] Sinyal ayrıldı: ${id} (toplam: ${connectedPeers.size})`);
 });
 
 // ─── WebSocket Relay Sunucusu ─────────────────────────────────────────────────
@@ -205,7 +214,20 @@ app.get('/api/health', (req, res) => {
     version: '2.0.0',
     architecture: 'P2P WebRTC + WebSocket Relay Fallback',
     relayRooms: relayRooms.size,
+    connectedPeers: connectedPeers.size,
   });
+});
+
+// ─── Oda Varlık Kontrolü ─────────────────────────────────────────────────────
+// ?code=HVB454 → { exists: true } veya { exists: false }
+// İstemci bağlanmadan önce oda var mı diye sorar; yoksa anında hata gösterilebilir.
+app.get('/api/room-check', (req, res) => {
+  const code = String(req.query.code || '').toUpperCase().trim();
+  if (!code) {
+    return res.status(400).json({ error: 'code parametresi gerekli' });
+  }
+  const exists = connectedPeers.has(code);
+  res.json({ exists, code });
 });
 
 // ─── SPA Yönlendirmesi ───────────────────────────────────────────────────────
