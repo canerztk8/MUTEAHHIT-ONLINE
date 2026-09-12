@@ -690,6 +690,15 @@ export function Board({
   isDarkMode = false,
   isSpectator = false
 }) {
+  const {
+    players = [],
+    properties = {},
+    currentTurnIndex = 0,
+    freeParkingPool = 0,
+    turnStartTime,
+    turnTimeLimit = 75
+  } = gameState || {};
+
   const savedPlayerName = typeof localStorage !== 'undefined' ? localStorage.getItem('muteahhit_name') : null;
   const savedSessionToken = typeof localStorage !== 'undefined' ? localStorage.getItem('muteahhit_session_token') : null;
   const matchedPlayer = players?.find(p => !p.isBot && (
