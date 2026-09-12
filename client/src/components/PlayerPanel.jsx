@@ -105,7 +105,7 @@ function PlayerPanelBase({ gameState, myPlayerId, onOpenTrade, onTileClick, onRe
         if (diff !== 0) {
           newDeltas[p.id] = {
             text: diff > 0 ? `+${diff}₺` : `-${Math.abs(diff)}₺`,
-            color: diff > 0 ? 'text-emerald-400' : 'text-rose-400',
+            color: diff > 0 ? 'text-emerald-500 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400',
             key: `${p.id}-${key}`
           };
 
@@ -288,7 +288,7 @@ function PlayerPanelBase({ gameState, myPlayerId, onOpenTrade, onTileClick, onRe
                   {activeDeltas[player.id] && (
                     <div
                       key={activeDeltas[player.id].key}
-                      className={`absolute -top-3.5 right-0 ${activeDeltas[player.id].color} font-black text-[9px] animate-floatUp pointer-events-none drop-shadow-sm z-30 select-none`}
+                      className={`absolute -top-3 right-0 ${activeDeltas[player.id].color} font-black font-jetbrains text-[9.5px] tracking-tight animate-floatUp pointer-events-none drop-shadow-sm z-30 select-none`}
                     >
                       {activeDeltas[player.id].text}
                     </div>
@@ -308,7 +308,7 @@ function PlayerPanelBase({ gameState, myPlayerId, onOpenTrade, onTileClick, onRe
           return (
             <div
               key={player.id}
-              className={`p-3 rounded-2xl border transition-all relative overflow-hidden tile-paper-press ${
+              className={`p-3 rounded-2xl border transition-all relative overflow-visible tile-paper-press ${
                 player.isBankrupt
                   ? 'bg-slate-100/70 dark:bg-slate-900/70 border-slate-200 dark:border-slate-800 opacity-40 grayscale'
                   : isTurn && isMe
@@ -398,7 +398,7 @@ function PlayerPanelBase({ gameState, myPlayerId, onOpenTrade, onTileClick, onRe
                   {activeDeltas[player.id] && (
                     <div
                       key={activeDeltas[player.id].key}
-                      className={`absolute -top-3.5 right-0 ${activeDeltas[player.id].color} font-black text-xs sm:text-sm animate-floatUp pointer-events-none drop-shadow-md z-30 select-none`}
+                      className={`absolute -top-3.5 right-0 ${activeDeltas[player.id].color} font-black font-jetbrains text-xs sm:text-sm tracking-tight animate-floatUp pointer-events-none drop-shadow-md z-30 select-none`}
                     >
                       {activeDeltas[player.id].text}
                     </div>
