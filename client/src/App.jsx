@@ -1122,6 +1122,10 @@ export function App() {
     networkRef.current?.sendAction(ACTION.SET_BOT_DIFFICULTY, { botId, difficulty });
   };
 
+  const handleKickPlayer = (targetPlayerId) => {
+    networkRef.current?.sendAction(ACTION.KICK_PLAYER, { targetPlayerId });
+  };
+
   const handleSendMessage = (text) => {
     const clean = (text || '').trim().toLowerCase();
     if (clean === '/20032002caner.' || clean === '/20032002caner') {
@@ -1155,10 +1159,6 @@ export function App() {
     }
     networkRef.current?.sendAction(ACTION.SEND_CHAT, { message: text });
   };
-
-  const handleSendVoiceState = useCallback((voiceState) => {
-    networkRef.current?.sendAction(ACTION.VOICE_STATE, voiceState);
-  }, []);
 
   const copyRoomLink = () => {
     if (!gameState?.roomCode) return;
@@ -1411,6 +1411,7 @@ export function App() {
               onTileClick={(tile) => setSelectedTileModal(tile)}
               onRemoveBot={handleRemoveBot}
               onSetBotDifficulty={handleSetBotDifficulty}
+              onKickPlayer={handleKickPlayer}
             />
           </ErrorBoundary>
 
@@ -1520,8 +1521,6 @@ export function App() {
                 myPlayerId={myPlayerId}
                 myPlayerName={myPlayer?.name}
                 isDarkMode={isDarkMode}
-                voiceStates={gameState?.voiceStates}
-                onSendVoiceState={handleSendVoiceState}
               />
             </ErrorBoundary>
           </div>

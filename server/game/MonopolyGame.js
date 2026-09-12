@@ -454,8 +454,8 @@ export class MonopolyGame {
   }
 
   kickPlayer(hostId, targetPlayerId) {
-    if (this.status !== 'lobby') {
-      return { success: false, error: 'Oyuncular yalnızca lobideyken atılabilir.' };
+    if (this.status !== 'lobby' && this.status !== 'playing') {
+      return { success: false, error: 'Oyun durumu uygun değil.' };
     }
     const host = this.players.find(p => p.id === hostId);
     if (!host || !host.isHost) {
@@ -470,7 +470,8 @@ export class MonopolyGame {
     }
 
     this.removePlayer(targetPlayerId);
-    this.addLog(`👢 ${target.name}, oda kurucusu tarafından lobiden atıldı.`, 'info');
+    const location = this.status === 'playing' ? 'oyundan' : 'lobiden';
+    this.addLog(`👢 ${target.name}, oda kurucusu tarafından ${location} atıldı.`, 'info');
     return { success: true, kickedPlayer: target };
   }
 
@@ -2601,7 +2602,6 @@ export class MonopolyGame {
     return {
       roomCode: this.roomCode,
       status: this.status,
-      voiceStates: this.voiceStates || {},
       gameStartTime: this.gameStartTime || (this.status === 'playing' ? (this.turnStartTime || Date.now()) : null),
       totalPausedDuration: this.totalPausedDuration || 0,
       isPaused: Boolean(this.isPaused),

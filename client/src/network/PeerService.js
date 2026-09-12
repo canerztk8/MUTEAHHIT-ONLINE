@@ -668,13 +668,18 @@ export class HostPeerService {
 
         case ACTION.KICK_PLAYER: {
           const { targetPlayerId } = payload;
+          const isPlaying = game.status === 'playing';
           const res = game.kickPlayer(senderId, targetPlayerId);
           if (res.success) {
             const targetConn = this._connections.get(targetPlayerId);
             if (targetConn) {
-              this._sendTo(targetConn, createKicked('Oda kurucusu tarafından lobiden atıldınız.'));
+              const reasonMsg = isPlaying
+                ? 'Oda kurucusu tarafından oyundan atıldınız.'
+                : 'Oda kurucusu tarafından lobiden atıldınız.';
+              this._sendTo(targetConn, createKicked(reasonMsg));
               targetConn.close();
             }
+            broadcastNeeded = true;
           }
           break;
         }
@@ -955,24 +960,6 @@ export class HostPeerService {
           break;
         }
 
-        // ─ Ses Odası Durum Senkronizasyonu ─
-        case ACTION.VOICE_STATE: {
-          if (!game.voiceStates) game.voiceStates = {};
-          if (payload?.inVoice === false) {
-            delete game.voiceStates[senderId];
-          } else {
-            game.voiceStates[senderId] = {
-              playerId: senderId,
-              inVoice: Boolean(payload?.inVoice),
-              isMuted: Boolean(payload?.isMuted),
-              isSpeaking: Boolean(payload?.isSpeaking),
-              updatedAt: Date.now()
-            };
-          }
-          broadcastNeeded = true;
-          break;
-        }
-
         default:
           console.warn('[HostPeerService] Bilinmeyen action:', action);
           broadcastNeeded = false;
@@ -993,9 +980,6 @@ export class HostPeerService {
   _handleClientDisconnect(peerId) {
     this._connections.delete(peerId);
     this._connectionOrder = this._connectionOrder.filter(id => id !== peerId);
-    if (this._game?.voiceStates) {
-      delete this._game.voiceStates[peerId];
-    }
 
     // 1. İzleyici ayrıldıysa: ASLA kopma uyarısı veya geri sayım başlatma!
     if (this._spectators?.has(peerId)) {

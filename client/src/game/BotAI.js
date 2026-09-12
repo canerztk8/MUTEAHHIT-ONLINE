@@ -226,38 +226,87 @@ export class BotAI {
     const tile = BOARD_TILES[auction.tileId];
     const cost = tile?.cost || 100;
 
-    let maxFactor = 0.85;
-    if (diff === 'cok_kolay') maxFactor = 0.25;
-    else if (diff === 'kolay') maxFactor = 0.50;
-    else if (diff === 'orta') maxFactor = 0.85;
-    else if (diff === 'zor') maxFactor = 1.15;
-    else if (diff === 'imkansiz') {
-      let completesBotMonopoly = false;
-      let blocksOpponentMonopoly = false;
+    let completesBotMonopoly = false;
+    let blocksOpponentMonopoly = false;
+    let ownsPartialGroup = false;
 
-      if (tile && tile.group && COLOR_GROUPS[tile.group]) {
-        const group = COLOR_GROUPS[tile.group];
-        const botOwned = group.filter(id => game.properties[id]?.ownerId === bot.id).length;
-        if (botOwned === group.length - 1) completesBotMonopoly = true;
+    if (tile && tile.group && COLOR_GROUPS[tile.group]) {
+      const group = COLOR_GROUPS[tile.group];
+      const botOwned = group.filter(id => game.properties[id]?.ownerId === bot.id).length;
+      if (botOwned === group.length - 1) {
+        completesBotMonopoly = true;
+      } else if (botOwned > 0) {
+        ownsPartialGroup = true;
+      }
 
-        for (const opp of game.players) {
-          if (opp.id !== bot.id && !opp.isBankrupt) {
-            const oppOwned = group.filter(id => game.properties[id]?.ownerId === opp.id).length;
-            if (oppOwned === group.length - 1) {
-              blocksOpponentMonopoly = true;
-              break;
-            }
+      for (const opp of game.players) {
+        if (opp.id !== bot.id && !opp.isBankrupt) {
+          const oppOwned = group.filter(id => game.properties[id]?.ownerId === opp.id).length;
+          if (oppOwned === group.length - 1) {
+            blocksOpponentMonopoly = true;
+            break;
           }
         }
       }
-
-      if (completesBotMonopoly) maxFactor = 1.65;
-      else if (blocksOpponentMonopoly) maxFactor = 1.50;
-      else maxFactor = 1.25;
+    } else if (tile && (tile.type === 'station' || tile.type === 'utility')) {
+      const sameTypeOwned = Object.entries(game.properties || {}).filter(
+        ([id, prop]) => prop.ownerId === bot.id && BOARD_TILES[id]?.type === tile.type
+      ).length;
+      if (sameTypeOwned > 0) {
+        ownsPartialGroup = true;
+      }
     }
 
+    const hasAmpleCash = bot.money >= cost * 2 + 100;
+    const hasGoodCash = bot.money >= cost + 120;
+
+    let maxFactor = 1.05;
+    if (diff === 'cok_kolay') {
+      maxFactor = 0.35;
+    } else if (diff === 'kolay') {
+      maxFactor = completesBotMonopoly ? 1.00 : 0.70;
+    } else if (diff === 'orta') {
+      if (completesBotMonopoly) {
+        maxFactor = hasAmpleCash ? 1.60 : 1.45;
+      } else if (blocksOpponentMonopoly) {
+        maxFactor = hasAmpleCash ? 1.40 : 1.30;
+      } else if (ownsPartialGroup) {
+        maxFactor = hasAmpleCash ? 1.25 : 1.15;
+      } else if (hasAmpleCash) {
+        // Parası bolsa arsayı değerinin altına bırakmaz, değerinin üstüne kadar yarışır
+        maxFactor = 1.15;
+      } else if (hasGoodCash) {
+        maxFactor = 1.05;
+      } else {
+        maxFactor = 0.85;
+      }
+    } else if (diff === 'zor') {
+      if (completesBotMonopoly) {
+        maxFactor = 1.65;
+      } else if (blocksOpponentMonopoly) {
+        maxFactor = 1.45;
+      } else if (ownsPartialGroup) {
+        maxFactor = 1.30;
+      } else if (hasAmpleCash) {
+        maxFactor = 1.25;
+      } else {
+        maxFactor = 1.15;
+      }
+    } else if (diff === 'imkansiz') {
+      if (completesBotMonopoly) {
+        maxFactor = 1.80;
+      } else if (blocksOpponentMonopoly) {
+        maxFactor = 1.60;
+      } else if (ownsPartialGroup) {
+        maxFactor = 1.40;
+      } else {
+        maxFactor = 1.30;
+      }
+    }
+
+    const minBuffer = (diff === 'imkansiz' ? 15 : diff === 'zor' ? 25 : diff === 'orta' ? 40 : 60);
     const maxBid = Math.floor(cost * maxFactor);
-    const affordable = bot.money - (diff === 'imkansiz' ? 15 : diff === 'zor' ? 30 : 60);
+    const affordable = Math.max(0, bot.money - minBuffer);
     return Math.min(maxBid, affordable);
   }
 

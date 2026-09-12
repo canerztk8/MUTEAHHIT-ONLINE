@@ -93,18 +93,6 @@ export function ActionControls({
 
       {/* BUTON VE AKSİYON YUVASI (Sabit Rezerve Yükseklik Sayesinde Buton Gidip Gelirken Kapsül Asla Zıplamaz) */}
       <div className="w-full max-w-[290px] min-h-[50px] flex flex-col items-center justify-start">
-        {/* BOT SIRASINDA HIZLI ATLA BUTONU */}
-        {!isMyTurn && activePlayer?.isBot && onFastForwardBot && !isPawnBusy && (
-          <button
-            onClick={onFastForwardBot}
-            className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-space font-black text-xs shadow-md border border-amber-300 transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 animate-pulse"
-            title="Botun turunu anında bitir ve sıradakine geç"
-          >
-            <Zap className="w-3.5 h-3.5 fill-slate-950" />
-            <span>{activePlayer?.name} Turunu Atla</span>
-          </button>
-        )}
-
         {/* SADECE ETKİLEŞİM GEREKTİREN AKSİYONLARDA GÖRÜNEN KOMPAKT KART */}
         {hasInteractiveAction && (
           <div className="w-full max-w-[290px] flex flex-col gap-2 animate-fadeIn">

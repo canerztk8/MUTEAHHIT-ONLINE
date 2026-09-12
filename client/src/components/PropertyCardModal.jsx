@@ -138,6 +138,39 @@ export function PropertyCardModal({
   // Renk grubuna sahip olma kontrolü
   const groupTileIds = tile.group ? COLOR_GROUPS[tile.group] : [];
   const ownsWholeGroup = isProperty && groupTileIds.length > 0 && groupTileIds.every(id => gameState.properties[id]?.ownerId === myPlayerId);
+  const anyMortgagedInGroup = groupTileIds.some(id => gameState.properties[id]?.mortgaged);
+
+  // Ev ve Otel sayıları (Eşit İnşaat / Eşit Satış Kuralı Kontrolü)
+  const currentHouses = propState?.houses || 0;
+  const groupHouses = groupTileIds.map(id => gameState.properties[id]?.houses || 0);
+  const minHousesInGroup = groupHouses.length > 0 ? Math.min(...groupHouses) : 0;
+  const maxHousesInGroup = groupHouses.length > 0 ? Math.max(...groupHouses) : 0;
+
+  // Eşit İnşaat Kuralı: Bir tapuya ev ekleyebilmek için bu tapudaki ev sayısı gruptaki en düşük ev sayısına eşit olmalıdır
+  const isEvenBuildAllowed = currentHouses === minHousesInGroup;
+
+  // Eşit Satış/Yıkım Kuralı: Bir tapudan ev satabilmek için bu tapudaki ev sayısı gruptaki en yüksek ev sayısına eşit olmalıdır
+  const isEvenSellAllowed = currentHouses === maxHousesInGroup;
+
+  const willBeHotel = currentHouses === 4;
+  const bankHasStock = willBeHotel ? ((gameState.bankHotels ?? 12) > 0) : ((gameState.bankHouses ?? 32) > 0);
+  const playerHasMoney = (owner?.money || 0) >= (tile.houseCost || 0);
+
+  let buildDisabledReason = '';
+  if (propState?.mortgaged) buildDisabledReason = 'İpotekli mülke inşaat yapılamaz.';
+  else if (anyMortgagedInGroup) buildDisabledReason = 'Grupta ipotekli mülk varken inşaat yapılamaz.';
+  else if (currentHouses >= 5) buildDisabledReason = 'Maksimum seviyeye (Otel) ulaşıldı.';
+  else if (!isEvenBuildAllowed) buildDisabledReason = `Eşit İnşa Kuralı: Önce bu renkteki diğer mülkleri de ${currentHouses}. seviyeye getirmelisiniz.`;
+  else if (!bankHasStock) buildDisabledReason = `Bankada ${willBeHotel ? 'otel' : 'ev'} kalmadı.`;
+  else if (!playerHasMoney) buildDisabledReason = `Yetersiz bakiye! ${tile.houseCost}₺ gerekli.`;
+
+  const canBuild = ownsWholeGroup && !buildDisabledReason;
+
+  let sellDisabledReason = '';
+  if (currentHouses <= 0) sellDisabledReason = 'Bu mülkte satılacak ev/otel yok.';
+  else if (!isEvenSellAllowed) sellDisabledReason = `Eşit Satış Kuralı: Önce daha yüksek seviyedeki (${maxHousesInGroup}. seviye) mülklerin evlerini satmalısınız.`;
+
+  const canSell = currentHouses > 0 && !sellDisabledReason;
 
   // 3D Card Tilt & Specular Light Physics (Hafifletilmiş ve yumuşatılmış)
   const handleMouseMove = (e) => {
@@ -512,8 +545,9 @@ export function PropertyCardModal({
                 <div className="space-y-1">
                   <button
                     onClick={() => onBuildHouse(tile.id)}
-                    disabled={propState.houses >= 5 || propState.mortgaged}
-                    className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition active:scale-95 shadow-md cursor-pointer"
+                    disabled={!canBuild}
+                    className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 disabled:text-slate-500 disabled:border disabled:border-slate-700 disabled:cursor-not-allowed text-white rounded-xl font-bold flex items-center justify-center gap-2 transition active:scale-95 shadow-md cursor-pointer"
+                    title={buildDisabledReason || 'Ev / Otel İnşa Et'}
                   >
                     <Home className="w-4 h-4" />
                     <span>
@@ -522,18 +556,32 @@ export function PropertyCardModal({
                         : `Ev İnşa Et (${tile.houseCost}₺)`}
                     </span>
                   </button>
+                  {buildDisabledReason && (
+                    <p className="text-[10px] text-amber-400/90 text-center font-medium px-1">
+                      ⚠️ {buildDisabledReason}
+                    </p>
+                  )}
                 </div>
               )}
 
               {/* Ev Satma Seçeneği */}
               {isProperty && propState.houses > 0 && (
-                <button
-                  onClick={() => onSellHouse(tile.id)}
-                  className="w-full py-2.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition active:scale-95 shadow-md cursor-pointer"
-                >
-                  <DollarSign className="w-4 h-4" />
-                  <span>1 Ev/Otel Sat (+{Math.round(tile.houseCost * 0.5)}₺)</span>
-                </button>
+                <div className="space-y-1">
+                  <button
+                    onClick={() => onSellHouse(tile.id)}
+                    disabled={!canSell}
+                    className="w-full py-2.5 bg-amber-600 hover:bg-amber-500 disabled:bg-slate-800 disabled:text-slate-500 disabled:border disabled:border-slate-700 disabled:cursor-not-allowed text-white rounded-xl font-bold flex items-center justify-center gap-2 transition active:scale-95 shadow-md cursor-pointer"
+                    title={sellDisabledReason || '1 Ev/Otel Sat'}
+                  >
+                    <DollarSign className="w-4 h-4" />
+                    <span>1 Ev/Otel Sat (+{Math.round(tile.houseCost * 0.5)}₺)</span>
+                  </button>
+                  {sellDisabledReason && (
+                    <p className="text-[10px] text-amber-400/90 text-center font-medium px-1">
+                      ⚠️ {sellDisabledReason}
+                    </p>
+                  )}
+                </div>
               )}
 
               {propState.mortgaged ? (

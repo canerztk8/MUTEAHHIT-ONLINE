@@ -73,7 +73,7 @@ function MoneyHistoryModal({ player, history, onClose }) {
   );
 }
 
-function PlayerPanelBase({ gameState, myPlayerId, onOpenTrade, onTileClick, onRemoveBot, onSetBotDifficulty }) {
+function PlayerPanelBase({ gameState, myPlayerId, onOpenTrade, onTileClick, onRemoveBot, onSetBotDifficulty, onKickPlayer }) {
   const { players, currentTurnIndex, properties, logs = [] } = gameState;
   const activePlayer = players[currentTurnIndex];
   const myPlayer = players.find(p => p.id === myPlayerId);
@@ -280,6 +280,20 @@ function PlayerPanelBase({ gameState, myPlayerId, onOpenTrade, onTileClick, onRe
                         <Trash2 className="w-2.5 h-2.5 text-rose-600 dark:text-rose-400" />
                       </button>
                     )}
+                    {isHost && !player.isBot && onKickPlayer && (
+                      <button
+                        onClick={() => {
+                          if (window.confirm(`"${player.name}" isimli oyuncuyu oyundan atmak istediğinize emin misiniz?`)) {
+                            onKickPlayer(player.id);
+                          }
+                        }}
+                        className="text-[9px] font-bold text-rose-800 dark:text-rose-300 hover:text-rose-950 dark:hover:text-rose-100 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/50 border border-rose-300 dark:border-rose-800/60 px-1.5 py-0.5 rounded transition cursor-pointer shadow-xs flex items-center gap-0.5"
+                        title="Bu oyuncuyu oyundan at (Kick)"
+                      >
+                        <Trash2 className="w-2.5 h-2.5 text-rose-600 dark:text-rose-400" />
+                        <span className="hidden xl:inline">At</span>
+                      </button>
+                    )}
                   </div>
                 ) : null}
 
@@ -432,6 +446,20 @@ function PlayerPanelBase({ gameState, myPlayerId, onOpenTrade, onTileClick, onRe
                         >
                           <Trash2 className="w-3 h-3 text-rose-600 dark:text-rose-400" />
                           <span>At</span>
+                        </button>
+                      )}
+                      {isHost && !player.isBot && onKickPlayer && (
+                        <button
+                          onClick={() => {
+                            if (window.confirm(`"${player.name}" isimli oyuncuyu oyundan atmak istediğinize emin misiniz?`)) {
+                              onKickPlayer(player.id);
+                            }
+                          }}
+                          className="text-[10px] font-bold text-rose-800 dark:text-rose-300 hover:text-rose-950 dark:hover:text-rose-100 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/50 border border-rose-300 dark:border-rose-800/60 px-1.5 py-0.5 rounded-lg transition flex items-center gap-0.5 cursor-pointer shadow-xs"
+                          title="Bu oyuncuyu oyundan at (Kick)"
+                        >
+                          <Trash2 className="w-3 h-3 text-rose-600 dark:text-rose-400" />
+                          <span>Oyundan At</span>
                         </button>
                       )}
                     </div>
