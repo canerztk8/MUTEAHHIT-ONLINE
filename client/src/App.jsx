@@ -18,7 +18,7 @@ const WinnerModal = lazy(() => import('./components/WinnerModal.jsx').then(m => 
 const EliminationModal = lazy(() => import('./components/EliminationModal.jsx').then(m => ({ default: m.EliminationModal })));
 const DevToolsModal = lazy(() => import('./components/DevToolsModal.jsx').then(m => ({ default: m.DevToolsModal })));
 import { sounds } from './sound/soundEffects.js';
-import { Volume2, VolumeX, Copy, Check, Users, Sparkles, LogOut, Wrench, Sun, Moon, X } from 'lucide-react';
+import { Volume2, VolumeX, Copy, Check, Users, Sparkles, LogOut, Wrench, Sun, Moon, X, Wifi } from 'lucide-react';
 
 // 🃏 Son 3 Çekilen Kart Geçmişi Modalı (Deste kartına tıklanınca açılır)
 function CardHistoryModal({ deckType, logs, onClose }) {
@@ -232,6 +232,7 @@ export function App() {
   const [connected, setConnected] = useState(false);
   const [peerError, setPeerError] = useState(null);
   const [ping, setPing] = useState(null);
+  const [showPingTable, setShowPingTable] = useState(false);
   const [myPlayerId, setMyPlayerId] = useState(null);
   const myPlayerIdRef = useRef(null);
   const [isSpectatorMode, setIsSpectatorMode] = useState(false);
@@ -1434,15 +1435,18 @@ export function App() {
           )}
 
           {/* Profil & Büyük Bakiye Kartı (Fiziksel Müteahhit Kimlik Kartı) — Tıklanır */}
-          <button
+          <div
             onClick={() => setShowMyMoneyHistory(true)}
-            className="cardstock-panel hover:bg-white dark:hover:bg-slate-850 border-2 border-amber-500 rounded-2xl p-2.5 sm:p-3 shadow-[0_12px_32px_rgba(0,0,0,0.35)] flex items-center gap-3 transition text-slate-900 dark:text-slate-100 tile-paper-press cursor-pointer active:scale-95 text-left"
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => e.key === 'Enter' && setShowMyMoneyHistory(true)}
+            className="cardstock-panel hover:bg-white dark:hover:bg-slate-850 border-2 border-amber-500 rounded-2xl p-2.5 sm:p-3 shadow-[0_12px_32px_rgba(0,0,0,0.35)] flex items-center gap-3 transition text-slate-900 dark:text-slate-100 tile-paper-press cursor-pointer active:scale-95 text-left relative"
             title="Para giriş/çıkış geçmişini gör"
           >
             <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-tr from-amber-500 to-amber-300 flex items-center justify-center text-xl sm:text-2xl shadow-md border border-white/60 flex-shrink-0">
               {myPlayer.avatar || '👷'}
             </div>
-            <div className="flex flex-col min-w-0 pr-1">
+            <div className="flex flex-col min-w-0 pr-1 flex-1">
               <div className="flex items-center gap-1.5">
                 <span className="text-xs sm:text-sm font-black text-slate-900 dark:text-slate-100 truncate max-w-[100px] font-space">
                   {myPlayer.name}
@@ -1450,42 +1454,146 @@ export function App() {
                 <span className="text-[9px] bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-700 px-1.5 py-0.2 rounded font-black tracking-wider uppercase font-space">
                   SEN
                 </span>
-                {/* Host veya Dinamik Ping Göstergesi */}
-                {myPlayer?.isHost || network?.isHost ? (
-                  <div
-                    className="ml-auto flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9.5px] font-black font-space border shadow-xs bg-emerald-500/15 border-emerald-500/35 text-emerald-600 dark:text-emerald-400 select-none"
-                    title="Oda Kurucusu (Host) — Sıfır Gecikme"
-                  >
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)]" />
-                    <span>HOST</span>
-                  </div>
-                ) : (
-                  <div
-                    className={`ml-auto flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-black font-jetbrains border shadow-xs transition-colors ${
-                      ping === null
-                        ? 'text-slate-400 dark:text-slate-500 bg-slate-500/10 border-slate-500/20'
-                        : ping < 75
-                        ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
-                        : ping < 160
-                        ? 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/30'
-                        : 'text-rose-600 dark:text-rose-400 bg-rose-500/10 border-rose-500/30 animate-pulse'
-                    }`}
-                    title={`Ağ Gecikmesi (Ping): ${ping !== null ? `${ping} ms` : 'Ölçülüyor...'}`}
-                  >
-                    <span
-                      className={`w-1.5 h-1.5 rounded-full ${
+                {/* Host veya Dinamik Ping Göstergesi & Kompakt Ping Tablosu */}
+                <div
+                  className="relative ml-auto"
+                  onMouseEnter={() => setShowPingTable(true)}
+                  onMouseLeave={() => setShowPingTable(false)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowPingTable((prev) => !prev);
+                  }}
+                >
+                  {myPlayer?.isHost || network?.isHost ? (
+                    <div
+                      className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9.5px] font-black font-space border shadow-xs bg-emerald-500/15 border-emerald-500/35 text-emerald-600 dark:text-emerald-400 select-none cursor-help hover:bg-emerald-500/25 transition-colors"
+                      title="Oda Kurucusu (Host) — Ping tablosunu görmek için üzerine gelin"
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)]" />
+                      <span>HOST</span>
+                    </div>
+                  ) : (
+                    <div
+                      className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-black font-jetbrains border shadow-xs transition-colors cursor-help hover:brightness-110 ${
                         ping === null
-                          ? 'bg-slate-400'
+                          ? 'text-slate-400 dark:text-slate-500 bg-slate-500/10 border-slate-500/20'
                           : ping < 75
-                          ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)]'
+                          ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
                           : ping < 160
-                          ? 'bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.8)]'
-                          : 'bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.8)]'
+                          ? 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/30'
+                          : 'text-rose-600 dark:text-rose-400 bg-rose-500/10 border-rose-500/30 animate-pulse'
                       }`}
-                    />
-                    <span>{ping !== null ? `${ping} ms` : '...'}</span>
-                  </div>
-                )}
+                      title="Ping tablosunu görmek için üzerine gelin"
+                    >
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full ${
+                          ping === null
+                            ? 'bg-slate-400'
+                            : ping < 75
+                            ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)]'
+                            : ping < 160
+                            ? 'bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.8)]'
+                            : 'bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.8)]'
+                        }`}
+                      />
+                      <span>{ping !== null ? `${ping} ms` : '...'}</span>
+                    </div>
+                  )}
+
+                  {/* Kompakt Canlı Ping Tablosu Popover'ı */}
+                  {showPingTable && (
+                    <div
+                      className="absolute bottom-full right-0 mb-2.5 z-50 w-60 p-2.5 rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-2 border-emerald-500/40 dark:border-emerald-500/50 shadow-[0_16px_45px_rgba(0,0,0,0.5)] animate-fadeIn select-none pointer-events-auto"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800/80 pb-1.5 mb-1.5">
+                        <div className="flex items-center gap-1.5">
+                          <Wifi className="w-3.5 h-3.5 text-emerald-500" />
+                          <span className="text-[10px] font-space font-extrabold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                            Ağ Gecikmesi (Ping)
+                          </span>
+                        </div>
+                        <span className="text-[8px] font-jetbrains font-bold text-slate-500 dark:text-slate-400">
+                          {gameState?.players?.length || 1} Oyuncu
+                        </span>
+                      </div>
+
+                      {/* Oyuncu Satırları */}
+                      <div className="flex flex-col gap-1 max-h-48 overflow-y-auto custom-scrollbar">
+                        {gameState?.players?.map((p) => {
+                          const isMe = p.id === myPlayerId;
+                          const pPing = p.isBot
+                            ? 1
+                            : (isMe
+                                ? (p.isHost ? 1 : (ping || 1))
+                                : (p.isHost ? 1 : (p.ping ?? 12)));
+                          const dotColor = pPing < 60
+                            ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)]'
+                            : pPing < 150
+                            ? 'bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.8)]'
+                            : 'bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.8)] animate-pulse';
+                          const textColor = pPing < 60
+                            ? 'text-emerald-600 dark:text-emerald-400'
+                            : pPing < 150
+                            ? 'text-amber-600 dark:text-amber-400'
+                            : 'text-rose-600 dark:text-rose-400';
+
+                          return (
+                            <div
+                              key={p.id}
+                              className={`flex items-center justify-between px-2 py-1 rounded-xl text-[10px] transition-colors ${
+                                isMe
+                                  ? 'bg-amber-500/10 border border-amber-500/30'
+                                  : 'hover:bg-slate-100 dark:hover:bg-slate-800/60'
+                              }`}
+                            >
+                              <div className="flex items-center gap-1.5 min-w-0 pr-1">
+                                <div
+                                  className="w-2.5 h-2.5 rounded-full flex-shrink-0 border border-white/40"
+                                  style={{ backgroundColor: p.color || '#cbd5e1' }}
+                                />
+                                <span className="font-space font-bold truncate max-w-[90px] text-slate-900 dark:text-slate-100">
+                                  {p.name}
+                                </span>
+                                {isMe && (
+                                  <span className="text-[7.5px] font-black text-amber-600 dark:text-amber-400 uppercase">
+                                    (Sen)
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="flex items-center gap-1.5 flex-shrink-0">
+                                {p.isHost && (
+                                  <span className="text-[7.5px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-1 py-0.2 rounded uppercase">
+                                    HOST
+                                  </span>
+                                )}
+                                {p.isBot ? (
+                                  <span className="text-[7.5px] font-bold text-slate-400 bg-slate-500/10 px-1 py-0.2 rounded font-jetbrains">
+                                    BOT
+                                  </span>
+                                ) : (
+                                  <div className={`flex items-center gap-1 font-jetbrains font-bold ${textColor}`}>
+                                    <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`} />
+                                    <span>{p.isHost ? '0 ms' : `${pPing} ms`}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Alt Bilgi: Bağlantı Türü */}
+                      <div className="mt-1.5 pt-1.5 border-t border-slate-200/80 dark:border-slate-800/80 flex items-center justify-between text-[8px] text-slate-500 dark:text-slate-400 font-jetbrains">
+                        <span>Bağlantı Türü:</span>
+                        <span className="font-bold text-slate-700 dark:text-slate-300">
+                          {network?.isHost ? 'Yerel Sunucu (Host)' : network?.isRelayActive ? 'Röle Sunucusu' : 'WebRTC P2P'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="flex items-center gap-2 mt-0.5">
                 <span className="text-base sm:text-xl font-black font-jetbrains text-emerald-700 dark:text-emerald-400 drop-shadow-xs">
@@ -1499,7 +1607,7 @@ export function App() {
               </div>
               <span className="text-[8px] text-amber-600 dark:text-amber-400 font-bold mt-0.5 opacity-80">📊 Geçmişi gör →</span>
             </div>
-          </button>
+          </div>
         </div>
       )}
 
