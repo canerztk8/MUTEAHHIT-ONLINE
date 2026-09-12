@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { BOARD_TILES } from '../game/boardData.js';
 import { sounds } from '../sound/soundEffects.js';
-import { Building2, Building, Train, Zap, AlertTriangle, Coins, Clock, Home, Landmark, Gavel, Sparkles } from 'lucide-react';
+import { Building2, Building, Train, Zap, AlertTriangle, Coins, Clock, Home, Landmark, Gavel, Sparkles, ChevronDown } from 'lucide-react';
 import { Board3DOverlay } from './Board3DOverlay.jsx';
 
 // 11x11 Grid konumlandırması
@@ -699,16 +699,75 @@ export function Board({
   const isHost = Boolean(myPlayer?.isHost);
   const isApocalypse = false;
 
-  const unownedPropertiesCount = useMemo(() => {
-    if (!properties) return 0;
-    return Object.values(properties).filter(p => !p?.ownerId).length;
+  // 🏢 Sahipsiz / Satın Alınabilir Tüm Tapuların Dağılımı (Renkli, Gar, Tesis)
+  const [isDeedsMenuOpen, setIsDeedsMenuOpen] = useState(false);
+  const [isColorDetailsOpen, setIsColorDetailsOpen] = useState(false);
+  const deedsMenuRef = useRef(null);
+
+  const deedsBreakdown = useMemo(() => {
+    const colorTiles = BOARD_TILES.filter(t => t.type === 'property');
+    const unownedColorTiles = colorTiles.filter(t => !properties?.[t.id]?.ownerId);
+
+    const railroadTiles = BOARD_TILES.filter(t => t.type === 'railroad');
+    const unownedRailroadTiles = railroadTiles.filter(t => !properties?.[t.id]?.ownerId);
+
+    const utilityTiles = BOARD_TILES.filter(t => t.type === 'utility');
+    const unownedUtilityTiles = utilityTiles.filter(t => !properties?.[t.id]?.ownerId);
+
+    const totalUnowned = unownedColorTiles.length + unownedRailroadTiles.length + unownedUtilityTiles.length;
+    const totalDeeds = colorTiles.length + railroadTiles.length + utilityTiles.length; // 28
+
+    const colorGroups = [
+      { key: 'brown', name: 'Kahverengi', color: '#92400e', total: 2 },
+      { key: 'light_blue', name: 'Açık Mavi', color: '#0284c7', total: 3 },
+      { key: 'pink', name: 'Pembe', color: '#db2777', total: 3 },
+      { key: 'orange', name: 'Turuncu', color: '#ea580c', total: 3 },
+      { key: 'red', name: 'Kırmızı', color: '#dc2626', total: 3 },
+      { key: 'yellow', name: 'Sarı', color: '#ca8a04', total: 3 },
+      { key: 'green', name: 'Yeşil', color: '#16a34a', total: 3 },
+      { key: 'dark_blue', name: 'Koyu Mavi', color: '#1e3a8a', total: 2 },
+    ].map(g => {
+      const groupTiles = colorTiles.filter(t => t.group === g.key);
+      const unownedCount = groupTiles.filter(t => !properties?.[t.id]?.ownerId).length;
+      return {
+        ...g,
+        total: groupTiles.length || g.total,
+        unownedCount
+      };
+    });
+
+    return {
+      totalUnowned,
+      totalDeeds,
+      unownedColorCount: unownedColorTiles.length,
+      totalColorCount: colorTiles.length,
+      unownedRailroadCount: unownedRailroadTiles.length,
+      totalRailroadCount: railroadTiles.length,
+      unownedUtilityCount: unownedUtilityTiles.length,
+      totalUtilityCount: utilityTiles.length,
+      colorGroups
+    };
   }, [properties]);
 
-  const totalPropertiesCount = useMemo(() => {
-    if (!properties) return 28;
-    const count = Object.keys(properties).length;
-    return count > 0 ? count : 28;
-  }, [properties]);
+  useEffect(() => {
+    if (!isDeedsMenuOpen) return;
+    const handleClickOutside = (e) => {
+      if (deedsMenuRef.current && !deedsMenuRef.current.contains(e.target)) {
+        setIsDeedsMenuOpen(false);
+      }
+    };
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setIsDeedsMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isDeedsMenuOpen]);
 
   const isDiceRollingRef = useRef(isDiceRolling);
   isDiceRollingRef.current = isDiceRolling;
@@ -1515,13 +1574,13 @@ export function Board({
               )}
 
               {/* MERKEZ TEKNİK BİLGİ VE KONTROL BARI */}
-              <div className={`relative z-20 w-full max-w-xs sm:max-w-sm mx-auto my-0.5 ${
+              <div className={`relative ${isDeedsMenuOpen ? 'z-40' : 'z-20'} w-full max-w-xs sm:max-w-sm mx-auto my-0.5 ${
                 isDarkMode ? 'bg-[#0f172a]/95 border-slate-700' : 'bg-white/95 border-slate-300'
               } border ${
                 isApocalypse ? 'border-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.3)]' : ''
-              } rounded-xl shadow-sm overflow-hidden select-none backdrop-blur-sm`}>
+              } rounded-xl shadow-sm select-none backdrop-blur-sm`}>
                 {/* 4 Hücreli Kompakt Grid */}
-                <div className={`grid grid-cols-4 divide-x ${
+                <div className={`grid grid-cols-4 divide-x rounded-xl overflow-hidden ${
                   isDarkMode ? 'divide-slate-800 bg-[#0f172a]/95 text-slate-200' : 'divide-slate-200 bg-slate-50/95 text-slate-800'
                 }`}>
                   {/* 1. Hücre: Tur Sayısı */}
@@ -1560,17 +1619,124 @@ export function Board({
                     </span>
                   </div>
 
-                  {/* 4. Hücre: Boş / Sahipsiz Arsa Sayısı */}
+                  {/* 4. Hücre: Satın Alınabilir Sahipsiz Tapu Sayısı (Renkli + Gar + Tesis) */}
                   <div
-                    className="p-1 sm:p-1.5 flex flex-col items-center justify-center text-center cursor-help group"
-                    title={`Satın alınabilir sahipsiz arsa sayısı (Kalan: ${unownedPropertiesCount} / Toplam: ${totalPropertiesCount})`}
+                    ref={deedsMenuRef}
+                    className={`relative p-1 sm:p-1.5 flex flex-col items-center justify-center text-center cursor-pointer transition-colors group ${
+                      isDeedsMenuOpen ? 'bg-sky-100/70 dark:bg-sky-950/70' : 'hover:bg-sky-50/70 dark:hover:bg-sky-950/50'
+                    }`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsDeedsMenuOpen(prev => !prev);
+                    }}
+                    title={`Sahipsiz tapu sayısı: ${deedsBreakdown.totalUnowned}/${deedsBreakdown.totalDeeds} (Dağılımı görmek için tıkla)`}
                   >
-                    <span className="text-[7px] sm:text-[8px] font-bold text-sky-400 uppercase font-space tracking-wider flex items-center gap-0.5">
-                      <Landmark className="w-2.5 h-2.5 text-sky-500" /> BOŞ ARSA
+                    <span className="text-[7px] sm:text-[8px] font-bold text-sky-500 dark:text-sky-400 uppercase font-space tracking-wider flex items-center gap-0.5 group-hover:scale-105 transition-transform">
+                      <Landmark className="w-2.5 h-2.5 text-sky-500" /> TAPU
+                      <ChevronDown className={`w-2.5 h-2.5 transition-transform duration-200 ${isDeedsMenuOpen ? 'rotate-180 text-sky-600 dark:text-sky-300' : 'text-slate-400'}`} />
                     </span>
                     <span className={`font-extrabold font-jetbrains ${isDarkMode ? 'text-sky-400' : 'text-sky-700'} text-xs sm:text-sm leading-none mt-0.5`}>
-                      {unownedPropertiesCount}<span className="text-[8.5px] font-normal text-slate-400">/{totalPropertiesCount}</span>
+                      {deedsBreakdown.totalUnowned}<span className="text-[8.5px] font-normal text-slate-400">/{deedsBreakdown.totalDeeds}</span>
                     </span>
+
+                    {/* Tıklandığında Hemen Altında Açılan Kompakt Menü */}
+                    {isDeedsMenuOpen && (
+                      <div
+                        className={`absolute top-full right-0 mt-1.5 z-50 w-52 sm:w-56 p-2 rounded-2xl shadow-2xl border backdrop-blur-md animate-fadeIn cursor-default text-left ${
+                          isDarkMode
+                            ? 'bg-slate-900/98 border-slate-700 text-slate-100 shadow-black/70'
+                            : 'bg-white/98 border-slate-300 text-slate-900 shadow-slate-400/40'
+                        }`}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {/* Menü Başlığı */}
+                        <div className="flex items-center justify-between pb-1.5 mb-1.5 border-b border-slate-200 dark:border-slate-800 text-[10px] font-space font-bold text-slate-500 dark:text-slate-400">
+                          <span className="flex items-center gap-1">
+                            <Landmark className="w-3 h-3 text-sky-500" /> Sahipsiz Tapular
+                          </span>
+                          <span className="font-jetbrains font-black text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/60 px-1.5 py-0.5 rounded-md border border-sky-200 dark:border-sky-800 text-[10px]">
+                            {deedsBreakdown.totalUnowned}/{deedsBreakdown.totalDeeds}
+                          </span>
+                        </div>
+
+                        {/* Kompakt Liste */}
+                        <div className="space-y-1">
+                          {/* 1. Renkli Tapu / Boş Arsa (Tıklanınca Renk Grupları Açılır) */}
+                          <div>
+                            <button
+                              type="button"
+                              onClick={() => setIsColorDetailsOpen(prev => !prev)}
+                              className={`w-full flex items-center justify-between px-2 py-1.5 rounded-xl transition cursor-pointer text-[11px] font-medium ${
+                                isColorDetailsOpen
+                                  ? 'bg-sky-500/15 text-sky-700 dark:text-sky-300 font-bold border border-sky-400/40'
+                                  : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 border border-transparent'
+                              }`}
+                              title="Hangi renklerden kaç arsa boş olduğunu görmek için tıkla"
+                            >
+                              <div className="flex items-center gap-1.5">
+                                <span className="w-2 h-2 rounded-full bg-gradient-to-tr from-amber-500 via-rose-500 to-sky-500 flex-shrink-0" />
+                                <span>Renkli Tapu</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <span className="font-jetbrains font-black text-[11px] text-sky-600 dark:text-sky-400">
+                                  {deedsBreakdown.unownedColorCount}/{deedsBreakdown.totalColorCount}
+                                </span>
+                                <ChevronDown className={`w-3 h-3 transition-transform duration-200 text-slate-400 ${isColorDetailsOpen ? 'rotate-180 text-sky-500' : ''}`} />
+                              </div>
+                            </button>
+
+                            {/* Boş Arsaya Basınca Açılan Renk Grupları Detayı */}
+                            {isColorDetailsOpen && (
+                              <div className="mt-1 pt-1 border-t border-slate-200/80 dark:border-slate-800 grid grid-cols-2 gap-1 px-0.5 animate-fadeIn">
+                                {deedsBreakdown.colorGroups.map((g) => (
+                                  <div
+                                    key={g.key}
+                                    className="flex items-center justify-between px-1.5 py-0.5 rounded-lg bg-slate-100/70 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-750 text-[10px]"
+                                  >
+                                    <div className="flex items-center gap-1 min-w-0">
+                                      <span
+                                        className="w-2 h-2 rounded-full flex-shrink-0 shadow-2xs"
+                                        style={{ backgroundColor: g.color }}
+                                      />
+                                      <span className="truncate font-semibold text-slate-700 dark:text-slate-300">
+                                        {g.name}
+                                      </span>
+                                    </div>
+                                    <span className={`font-jetbrains font-black text-[9.5px] ml-1 flex-shrink-0 ${
+                                      g.unownedCount === 0 ? 'text-slate-400 opacity-60' : 'text-slate-900 dark:text-slate-100'
+                                    }`}>
+                                      {g.unownedCount}/{g.total}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* 2. Garlar */}
+                          <div className="flex items-center justify-between px-2 py-1.5 rounded-xl bg-slate-50/70 dark:bg-slate-850/60 border border-slate-200/70 dark:border-slate-800 text-[11px]">
+                            <div className="flex items-center gap-1.5 font-medium text-slate-800 dark:text-slate-200">
+                              <Train className="w-3 h-3 text-slate-500 dark:text-slate-400 flex-shrink-0" />
+                              <span>Gar</span>
+                            </div>
+                            <span className="font-jetbrains font-black text-[11px] text-slate-700 dark:text-slate-300">
+                              {deedsBreakdown.unownedRailroadCount}/{deedsBreakdown.totalRailroadCount}
+                            </span>
+                          </div>
+
+                          {/* 3. Tesisler (Elektrik & Su) */}
+                          <div className="flex items-center justify-between px-2 py-1.5 rounded-xl bg-slate-50/70 dark:bg-slate-850/60 border border-slate-200/70 dark:border-slate-800 text-[11px]">
+                            <div className="flex items-center gap-1.5 font-medium text-slate-800 dark:text-slate-200">
+                              <Zap className="w-3 h-3 text-amber-500 flex-shrink-0" />
+                              <span>Tesis</span>
+                            </div>
+                            <span className="font-jetbrains font-black text-[11px] text-slate-700 dark:text-slate-300">
+                              {deedsBreakdown.unownedUtilityCount}/{deedsBreakdown.totalUtilityCount}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
