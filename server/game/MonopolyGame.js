@@ -52,6 +52,8 @@ export class MonopolyGame {
     this.standings = null;
     this.botTurnInProgress = false;
     this.isPaused = false;
+    this.gameStartTime = null;
+    this.totalPausedDuration = 0;
     this.logs = [];
 
     // Oyun Bankası Başlangıç Sermayesi (10.000₺ - Mola alanına dağıtılmaz, banka rezervidir)
@@ -103,10 +105,31 @@ export class MonopolyGame {
     this.standings = null;
   }
 
+  formatGameElapsed(now = Date.now()) {
+    if (this.status === 'lobby') {
+      return '00:00';
+    }
+    const startTime = this.gameStartTime || this.turnStartTime || now;
+    const currentPaused = (this.isPaused && this.pausedAt) ? Math.max(0, now - this.pausedAt) : 0;
+    const totalPaused = (this.totalPausedDuration || 0) + currentPaused;
+    const elapsedMs = Math.max(0, now - startTime - totalPaused);
+    const totalSeconds = Math.floor(elapsedMs / 1000);
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    if (mins >= 60) {
+      const hrs = Math.floor(mins / 60);
+      const remMins = mins % 60;
+      return `${hrs}:${remMins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }
+
   addLog(text, type = 'info', meta = null) {
+    const now = Date.now();
     const logEntry = {
       id: Math.random().toString(36).substring(2, 9),
-      time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      time: this.formatGameElapsed(now),
+      timestamp: now,
       text,
       type,
       ...(meta || {})
@@ -466,6 +489,9 @@ export class MonopolyGame {
       const elapsed = Math.max(0, this.pausedAt - (this.turnStartTime || this.pausedAt));
       this.pausedRemainingTurnMs = Math.max(0, (this.turnTimeLimit * 1000) - elapsed);
     } else {
+      if (this.pausedAt) {
+        this.totalPausedDuration = (this.totalPausedDuration || 0) + Math.max(0, Date.now() - this.pausedAt);
+      }
       const remainingMs = this.pausedRemainingTurnMs ?? (this.turnTimeLimit * 1000);
       this.turnStartTime = Date.now() - ((this.turnTimeLimit * 1000) - remainingMs);
       this.pausedAt = null;
@@ -488,6 +514,8 @@ export class MonopolyGame {
 
     this.status = 'playing';
     this.isPaused = false;
+    this.gameStartTime = Date.now();
+    this.totalPausedDuration = 0;
     // Oyun başladığında zar atma sırası rastgele olsun, ilk hep lobiyi kuran başlamasın
     this.players = shuffle(this.players);
     this.players.forEach((p) => {
@@ -2456,6 +2484,9 @@ export class MonopolyGame {
 
   resetGameToLobby(requesterId = null) {
     this.status = 'lobby';
+    this.gameStartTime = null;
+    this.totalPausedDuration = 0;
+    this.pausedAt = null;
     this.winner = null;
     this.currentTurnIndex = 0;
     this.dice = [1, 1];
@@ -2560,6 +2591,8 @@ export class MonopolyGame {
     return {
       roomCode: this.roomCode,
       status: this.status,
+      gameStartTime: this.gameStartTime || (this.status === 'playing' ? (this.turnStartTime || Date.now()) : null),
+      totalPausedDuration: this.totalPausedDuration || 0,
       isPaused: Boolean(this.isPaused),
       pausedAt: this.pausedAt || null,
       pausedRemainingTurnMs: this.pausedRemainingTurnMs || null,

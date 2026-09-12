@@ -21,6 +21,7 @@ export function ActionControls({
   onAutoMortgage,
   onFastForwardBot,
   onAcknowledgeCard,
+  onTimeoutTurn,
   isRolling = false,
   isMovingPawn = false,
   drawnCardForNonDrawer = null,
@@ -79,10 +80,13 @@ export function ActionControls({
         onDismiss={onDismissDrawnCard}
       />
 
-      {/* MİNİMALİST SIRA & ZAR KAPSÜLÜ (Sıra Kimde, Durum ve Zar Toplamı Tek Satırda) */}
+      {/* MİNİMALİST SIRA & SAYAÇ KAPSÜLÜ (Sıra Kimde, Durum ve Geri Sayan Sayaç Tek Satırda) */}
       <TurnStatusCapsule
         activePlayer={activePlayer}
         isMyTurn={isMyTurn}
+        gameState={gameState}
+        myPlayerId={myPlayerId}
+        onTimeoutTurn={onTimeoutTurn}
         dice={dice}
         isRolling={isRolling}
       />

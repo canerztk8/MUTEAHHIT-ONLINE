@@ -1271,6 +1271,7 @@ export function App() {
                   onAutoMortgage={handleAutoMortgage}
                   onFastForwardBot={handleFastForwardBot}
                   onAcknowledgeCard={handleAcknowledgeCard}
+                  onTimeoutTurn={handleTimeoutTurn}
                 />
               }
             />
@@ -1316,6 +1317,8 @@ export function App() {
                 players={gameState?.players}
                 onSendMessage={handleSendMessage}
                 embedded={true}
+                gameStartTime={gameState?.gameStartTime}
+                totalPausedDuration={gameState?.totalPausedDuration}
               />
             </ErrorBoundary>
           </div>

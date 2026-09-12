@@ -1,7 +1,66 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { MessageSquare, ScrollText, Send, Maximize2, Minimize2, X, Sparkles, ChevronRight } from 'lucide-react';
 
-function ChatAndLogBase({ logs = [], messages = [], onSendMessage, players = [], embedded = false }) {
+/**
+ * Olayın gerçekleştiği dakikayı ve saniyesini (MM:SS veya HH:MM:SS) hesaplar.
+ */
+function getEventGameTime(log, gameStartTime, totalPausedDuration = 0) {
+  if (!log) return '00:00';
+  
+  if (log.time && /^\d{1,2}:\d{2}$/.test(log.time)) {
+    return log.time;
+  }
+  
+  if (log.timestamp && gameStartTime) {
+    const elapsedMs = Math.max(0, log.timestamp - gameStartTime - (totalPausedDuration || 0));
+    const totalSecs = Math.floor(elapsedMs / 1000);
+    const mins = Math.floor(totalSecs / 60);
+    const secs = totalSecs % 60;
+    if (mins >= 60) {
+      const hrs = Math.floor(mins / 60);
+      const remMins = mins % 60;
+      return `${hrs}:${remMins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }
+
+  // Eğer eski tarz 24 saatlik saat formatındaysa (HH:MM:SS) saat yerine 00:00 göster
+  if (log.time && /^\d{2}:\d{2}:\d{2}$/.test(log.time)) {
+    return '00:00';
+  }
+
+  return log.time || '00:00';
+}
+
+function getEventTooltip(timeStr) {
+  if (!timeStr || typeof timeStr !== 'string') return 'Oyun Süresi: 00:00';
+  const parts = timeStr.split(':');
+  if (parts.length === 2) {
+    const m = parseInt(parts[0], 10);
+    const s = parseInt(parts[1], 10);
+    if (!isNaN(m) && !isNaN(s)) {
+      return `Oyunun ${m}. dakika ${s}. saniyesi`;
+    }
+  } else if (parts.length === 3) {
+    const h = parseInt(parts[0], 10);
+    const m = parseInt(parts[1], 10);
+    const s = parseInt(parts[2], 10);
+    if (!isNaN(h) && !isNaN(m) && !isNaN(s)) {
+      return `Oyunun ${h}. saat ${m}. dakika ${s}. saniyesi`;
+    }
+  }
+  return `Oyun Süresi: ${timeStr}`;
+}
+
+function ChatAndLogBase({
+  logs = [],
+  messages = [],
+  onSendMessage,
+  players = [],
+  embedded = false,
+  gameStartTime = null,
+  totalPausedDuration = 0
+}) {
   // Varsayılan olarak minimize (kapalı/kompakt) başlar
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState('log'); // 'log' | 'chat'
@@ -133,26 +192,32 @@ function ChatAndLogBase({ logs = [], messages = [], onSendMessage, players = [],
                   </div>
                 )}
 
-                {filteredLogs.map((log, idx) => (
-                  <div
-                    key={log.id}
-                    className={`py-1 px-2 mb-1 rounded-r-md border-l-2 text-[10.5px] leading-snug flex items-start justify-between gap-1.5 shadow-xs ${
-                      borderColors[log.type] || borderColors.info
-                    }`}
-                  >
-                    <div className="flex items-start gap-1 flex-1 font-medium min-w-0">
-                      {idx === 0 && selectedPlayerFilter === 'ALL' && (
-                        <span className="text-[7.5px] font-black uppercase tracking-wider bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700 px-0.5 rounded flex-shrink-0 font-jetbrains mt-0.5">
-                          Yeni
-                        </span>
-                      )}
-                      <span className="break-words flex-1 text-slate-900 dark:text-slate-100">{log.text}</span>
+                {filteredLogs.map((log, idx) => {
+                  const eventTime = getEventGameTime(log, gameStartTime, totalPausedDuration);
+                  return (
+                    <div
+                      key={log.id}
+                      className={`py-1 px-2 mb-1 rounded-r-md border-l-2 text-[10.5px] leading-snug flex items-start justify-between gap-1.5 shadow-xs ${
+                        borderColors[log.type] || borderColors.info
+                      }`}
+                    >
+                      <div className="flex items-start gap-1 flex-1 font-medium min-w-0">
+                        {idx === 0 && selectedPlayerFilter === 'ALL' && (
+                          <span className="text-[7.5px] font-black uppercase tracking-wider bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700 px-0.5 rounded flex-shrink-0 font-jetbrains mt-0.5">
+                            Yeni
+                          </span>
+                        )}
+                        <span className="break-words flex-1 text-slate-900 dark:text-slate-100">{log.text}</span>
+                      </div>
+                      <span
+                        className="text-[8.5px] text-slate-500 dark:text-slate-400 font-mono flex-shrink-0 font-jetbrains mt-0.5"
+                        title={getEventTooltip(eventTime)}
+                      >
+                        {eventTime}
+                      </span>
                     </div>
-                    <span className="text-[8.5px] text-slate-500 dark:text-slate-400 font-mono flex-shrink-0 font-jetbrains mt-0.5">
-                      {log.time}
-                    </span>
-                  </div>
-                ))}
+                  );
+                })}
 
                 {filteredLogs.length === 0 && (
                   <div className="text-center text-slate-500 dark:text-slate-400 py-6 text-xs italic">
@@ -310,26 +375,32 @@ function ChatAndLogBase({ logs = [], messages = [], onSendMessage, players = [],
                       </div>
                     )}
 
-                    {filteredLogs.map((log, idx) => (
-                      <div
-                        key={log.id}
-                        className={`py-1.5 px-2.5 mb-1.5 rounded-r-lg border-l-2 text-xs leading-relaxed flex items-start justify-between gap-2 shadow-xs ${
-                          borderColors[log.type] || borderColors.info
-                        }`}
-                      >
-                        <div className="flex items-start gap-1.5 flex-1 font-medium min-w-0">
-                          {idx === 0 && selectedPlayerFilter === 'ALL' && (
-                            <span className="text-[8px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300 px-1 rounded flex-shrink-0 font-jetbrains mt-0.5">
-                              Yeni
-                            </span>
-                          )}
-                          <span className="break-words whitespace-pre-wrap flex-1 text-slate-900 dark:text-slate-100">{log.text}</span>
+                    {filteredLogs.map((log, idx) => {
+                      const eventTime = getEventGameTime(log, gameStartTime, totalPausedDuration);
+                      return (
+                        <div
+                          key={log.id}
+                          className={`py-1.5 px-2.5 mb-1.5 rounded-r-lg border-l-2 text-xs leading-relaxed flex items-start justify-between gap-2 shadow-xs ${
+                            borderColors[log.type] || borderColors.info
+                          }`}
+                        >
+                          <div className="flex items-start gap-1.5 flex-1 font-medium min-w-0">
+                            {idx === 0 && selectedPlayerFilter === 'ALL' && (
+                              <span className="text-[8px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300 px-1 rounded flex-shrink-0 font-jetbrains mt-0.5">
+                                Yeni
+                              </span>
+                            )}
+                            <span className="break-words whitespace-pre-wrap flex-1 text-slate-900 dark:text-slate-100">{log.text}</span>
+                          </div>
+                          <span
+                            className="text-[10px] text-slate-500 dark:text-slate-400 mr-1 font-mono flex-shrink-0 font-jetbrains mt-0.5"
+                            title={getEventTooltip(eventTime)}
+                          >
+                            {eventTime}
+                          </span>
                         </div>
-                        <span className="text-[10px] text-slate-500 dark:text-slate-400 mr-1 font-mono flex-shrink-0 font-jetbrains mt-0.5">
-                          {log.time}
-                        </span>
-                      </div>
-                    ))}
+                      );
+                    })}
 
                     {filteredLogs.length === 0 && (
                       <div className="text-center text-slate-500 dark:text-slate-400 py-10 text-xs italic">
@@ -437,26 +508,32 @@ function ChatAndLogBase({ logs = [], messages = [], onSendMessage, players = [],
         {/* Son 3 Olayın Gösterimi (En yeni olay en üstte!) */}
         <div className="space-y-1 mt-0.5">
           {recentLogs.length > 0 ? (
-            recentLogs.map((log, idx) => (
-              <div
-                key={log.id}
-                className={`py-0.5 px-2 rounded-r-md border-l-2 text-[10.5px] leading-snug flex items-center justify-between gap-1.5 truncate ${
-                  borderColors[log.type] || borderColors.info
-                }`}
-              >
-                <div className="flex items-center gap-1.5 truncate flex-1 font-medium">
-                  {idx === 0 && (
-                    <span className="text-[8px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300 px-1 rounded flex-shrink-0 font-jetbrains">
-                      Yeni
-                    </span>
-                  )}
-                  <span className="truncate">{log.text}</span>
+            recentLogs.map((log, idx) => {
+              const eventTime = getEventGameTime(log, gameStartTime, totalPausedDuration);
+              return (
+                <div
+                  key={log.id}
+                  className={`py-0.5 px-2 rounded-r-md border-l-2 text-[10.5px] leading-snug flex items-center justify-between gap-1.5 truncate ${
+                    borderColors[log.type] || borderColors.info
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5 truncate flex-1 font-medium">
+                    {idx === 0 && (
+                      <span className="text-[8px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300 px-1 rounded flex-shrink-0 font-jetbrains">
+                        Yeni
+                      </span>
+                    )}
+                    <span className="truncate">{log.text}</span>
+                  </div>
+                  <span
+                    className="text-[9px] text-slate-500 font-mono flex-shrink-0 font-jetbrains"
+                    title={getEventTooltip(eventTime)}
+                  >
+                    {eventTime}
+                  </span>
                 </div>
-                <span className="text-[9px] text-slate-500 font-mono flex-shrink-0">
-                  {log.time}
-                </span>
-              </div>
-            ))
+              );
+            })
           ) : (
             <div className="text-[11px] text-slate-500 italic text-center py-1 font-medium">
               Oyun henüz başladı, ilk olaylar bekleniyor...
@@ -553,26 +630,32 @@ function ChatAndLogBase({ logs = [], messages = [], onSendMessage, players = [],
                     </div>
                   )}
 
-                  {filteredLogs.map((log, idx) => (
-                    <div
-                      key={log.id}
-                      className={`py-1.5 px-2.5 mb-1.5 rounded-r-lg border-l-2 text-xs leading-relaxed flex items-start justify-between gap-2 shadow-xs ${
-                        borderColors[log.type] || borderColors.info
-                      }`}
-                    >
-                      <div className="flex items-start gap-1.5 flex-1 font-medium min-w-0">
-                        {idx === 0 && selectedPlayerFilter === 'ALL' && (
-                          <span className="text-[8px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300 px-1 rounded flex-shrink-0 font-jetbrains mt-0.5">
-                            Yeni
-                          </span>
-                        )}
-                        <span className="break-words whitespace-pre-wrap flex-1 text-slate-900 dark:text-slate-100">{log.text}</span>
+                  {filteredLogs.map((log, idx) => {
+                    const eventTime = getEventGameTime(log, gameStartTime, totalPausedDuration);
+                    return (
+                      <div
+                        key={log.id}
+                        className={`py-1.5 px-2.5 mb-1.5 rounded-r-lg border-l-2 text-xs leading-relaxed flex items-start justify-between gap-2 shadow-xs ${
+                          borderColors[log.type] || borderColors.info
+                        }`}
+                      >
+                        <div className="flex items-start gap-1.5 flex-1 font-medium min-w-0">
+                          {idx === 0 && selectedPlayerFilter === 'ALL' && (
+                            <span className="text-[8px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300 px-1 rounded flex-shrink-0 font-jetbrains mt-0.5">
+                              Yeni
+                            </span>
+                          )}
+                          <span className="break-words whitespace-pre-wrap flex-1 text-slate-900 dark:text-slate-100">{log.text}</span>
+                        </div>
+                        <span
+                          className="text-[10px] text-slate-500 dark:text-slate-400 mr-1 font-mono flex-shrink-0 font-jetbrains mt-0.5"
+                          title={getEventTooltip(eventTime)}
+                        >
+                          {eventTime}
+                        </span>
                       </div>
-                      <span className="text-[10px] text-slate-500 dark:text-slate-400 mr-1 font-mono flex-shrink-0 font-jetbrains mt-0.5">
-                        {log.time}
-                      </span>
-                    </div>
-                  ))}
+                    );
+                  })}
 
                   {filteredLogs.length === 0 && (
                     <div className="text-center text-slate-500 dark:text-slate-400 py-10 text-xs italic">
