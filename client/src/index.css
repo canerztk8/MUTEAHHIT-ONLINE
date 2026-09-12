@@ -298,6 +298,13 @@ html.dark ::-webkit-scrollbar-thumb:hover {
   -webkit-backface-visibility: hidden;
 }
 
+.card-face {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+}
+
 /* Şans / İhale & Fırsat Destesi (Sol Üst): Desteden çıkışta kapalı (-180deg), merkeze vardığında tam düz (0deg) */
 @keyframes chanceCardFlightAndFlip {
   0% {

@@ -2076,12 +2076,17 @@ export function Board({
             </div>
 
             {/* 2. ÖN YÜZ (Havada 180° dönüp açılan, kart içeriği ve aksiyon butonu - TAM DÜZ) */}
-            <div className={`card-face backface-hidden relative w-full rounded-3xl p-5 sm:p-6 shadow-[0_20px_50px_rgba(0,0,0,0.8)] border-2 overflow-hidden ${
-              isDarkMode ? 'bg-[#0f172a] border-slate-700 text-slate-100' : 'bg-white border-slate-300 text-[#0f172a]'
-            }`}>
+            <div
+              className={`card-face backface-hidden relative w-full rounded-3xl p-5 sm:p-6 shadow-[0_20px_50px_rgba(0,0,0,0.8)] border-2 ${
+                isDarkMode ? 'bg-[#0f172a] border-slate-700 text-slate-100' : 'bg-white border-slate-300 text-[#0f172a]'
+              }`}
+              style={{ transform: 'rotateY(0deg)' }}
+            >
               
-              {/* Açılış Işık Hüzmesi (Shimmer Sweep) */}
-              <div className="pointer-events-none absolute inset-0 z-20 w-1/2 h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-25 animate-card-shimmer" />
+              {/* Açılış Işık Hüzmesi (Shimmer Sweep) - overflow-hidden sadece ışık hüzmesine izole edilir, 3D yüzeyini bozmaz */}
+              <div className="pointer-events-none absolute inset-0 z-20 overflow-hidden rounded-3xl">
+                <div className="w-1/2 h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-25 animate-card-shimmer" />
+              </div>
 
               {/* Üst Deste Başlığı */}
               <div className={`flex items-center justify-between border-b ${isDarkMode ? 'border-slate-800' : 'border-slate-200'} pb-2.5 mb-3`}>
