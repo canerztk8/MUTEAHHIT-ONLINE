@@ -125,9 +125,11 @@ relayWss.on('connection', (ws) => {
         const room = relayRooms.get(roomCode);
         if (!room) return;
 
-        const outgoing = JSON.stringify({ type: 'relay:msg', payload: msg.payload, from: playerId });
+        const targetId = msg.targetId || msg.payload?.targetId;
+        const outgoing = JSON.stringify({ type: 'relay:msg', payload: msg.payload, from: playerId, targetId });
         room.forEach((pid, client) => {
           if (client !== ws && client.readyState === 1 /* OPEN */) {
+            if (targetId && pid !== targetId) return; // Belirli hedefe özel mesaj
             client.send(outgoing);
           }
         });
@@ -138,10 +140,14 @@ relayWss.on('connection', (ws) => {
         const room = relayRooms.get(roomCode);
         if (!room) return;
 
-        const outgoing = JSON.stringify({ type: 'relay:msg', payload: msg.payload, from: playerId });
+        const targetId = msg.targetId || msg.payload?.targetId;
+        const outgoing = JSON.stringify({ type: 'relay:msg', payload: msg.payload, from: playerId, targetId });
         room.forEach((pid, client) => {
           // Gönderen istemciye (Host) gereksiz echo geri gönderme!
-          if (client !== ws && client.readyState === 1) client.send(outgoing);
+          if (client !== ws && client.readyState === 1) {
+            if (targetId && pid !== targetId) return;
+            client.send(outgoing);
+          }
         });
       }
     } catch (e) {
