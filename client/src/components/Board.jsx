@@ -830,14 +830,14 @@ export function Board({
   );
   const targetOpponent = activelyMovingOpponent || (activePlayer && activePlayer.id !== effectiveMyPlayerId ? activePlayer : null);
 
-  // Oyuncu listesi değiştiğinde veya botlar eklendiğinde displayedPositions ve prevPositionsRef senkronizasyonunu sağla
+  // Oyuncu listesi değiştiğinde veya yeni oyuncu/bot eklendiğinde displayedPositions ve prevPositionsRef başlangıç değerlerini ata
   useEffect(() => {
     if (players) {
       setDisplayedPositions((prev) => {
         let changed = false;
         const next = { ...prev };
         players.forEach((p) => {
-          if (next[p.id] === undefined || (!activeIntervalsRef.current[p.id] && next[p.id] !== p.position)) {
+          if (next[p.id] === undefined) {
             next[p.id] = p.position ?? 0;
             changed = true;
           }
@@ -849,7 +849,7 @@ export function Board({
         let changed = false;
         const next = { ...prev };
         players.forEach((p) => {
-          if (next[p.id] === undefined || (!activeIntervalsRef.current[p.id] && next[p.id] !== p.position)) {
+          if (next[p.id] === undefined) {
             next[p.id] = p.position ?? 0;
             changed = true;
           }
@@ -858,7 +858,7 @@ export function Board({
       });
 
       players.forEach((p) => {
-        if (prevPositionsRef.current[p.id] === undefined || !activeIntervalsRef.current[p.id]) {
+        if (prevPositionsRef.current[p.id] === undefined) {
           prevPositionsRef.current[p.id] = p.position ?? 0;
         }
       });
@@ -1408,11 +1408,7 @@ export function Board({
 
   return (
     <div
-      className="relative w-full aspect-square select-none mx-auto flex items-center justify-center p-0.5 sm:p-1"
-      style={{
-        maxWidth: 'calc(100dvh - 16px)',
-        maxHeight: 'calc(100dvh - 16px)'
-      }}
+      className="relative w-full aspect-square select-none mx-auto flex items-center justify-center p-0.5 sm:p-1 max-w-[min(98vw,calc(100dvh-105px))] max-h-[min(98vw,calc(100dvh-105px))] lg:max-w-[calc(100dvh-24px)] lg:max-h-[calc(100dvh-24px)]"
     >
       {/* 11x11 Grid Tahta */}
       <div

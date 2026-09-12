@@ -9,6 +9,7 @@ import { PlayerPanel } from './components/PlayerPanel.jsx';
 import { ChatAndLog } from './components/ChatAndLog.jsx';
 import { TitleDeedCards } from './components/TitleDeedCards.jsx';
 import { DiceSidebarTray } from './components/DiceSidebarTray.jsx';
+import { MobileTopPlayerBar } from './components/MobileTopPlayerBar.jsx';
 import { ErrorBoundary } from './components/ErrorBoundary.jsx';
 
 // 🚀 Modallar — Dinamik code-splitting ile ana bundle yükü hafifletilir
@@ -18,7 +19,7 @@ const WinnerModal = lazy(() => import('./components/WinnerModal.jsx').then(m => 
 const EliminationModal = lazy(() => import('./components/EliminationModal.jsx').then(m => ({ default: m.EliminationModal })));
 const DevToolsModal = lazy(() => import('./components/DevToolsModal.jsx').then(m => ({ default: m.DevToolsModal })));
 import { sounds } from './sound/soundEffects.js';
-import { Volume2, VolumeX, Copy, Check, Users, Sparkles, LogOut, Wrench, Sun, Moon, X, Wifi } from 'lucide-react';
+import { Volume2, VolumeX, Copy, Check, Users, Sparkles, LogOut, Wrench, Sun, Moon, X, Wifi, Landmark, MessageSquare } from 'lucide-react';
 
 // 🃏 Son 3 Çekilen Kart Geçmişi Modalı (Deste kartına tıklanınca açılır)
 function CardHistoryModal({ deckType, logs, onClose }) {
@@ -384,6 +385,9 @@ export function App() {
   const [displayedLogs, setDisplayedLogs] = useState([]);
   const pendingLogsRef = useRef(null);
   const pendingLogsTimeoutRef = useRef(null);
+
+  // Mobil Çekmece / Modal Menüsü (null | 'deeds' | 'chat')
+  const [mobileDrawer, setMobileDrawer] = useState(null);
 
   // Görünen bakiyelerle ve görsel durumlarla zenginleştirilmiş oyun durumu (Piyon adımlarken bakiye, kodes ve konumu eski değerde tutar)
   const effectiveGameState = React.useMemo(() => {
@@ -1445,11 +1449,23 @@ export function App() {
         </button>
       </div>
 
-      {/* Ana Oyun Alanı - Sol Panel (Kuşe Kağıt Kartela) + Orta Tahta (Blueprint Pafta) + Sağ Panel (3D Zar Tablası) */}
-      <main className="h-full w-full max-w-[1920px] mx-auto p-1.5 sm:p-2.5 flex flex-col lg:flex-row items-center justify-between gap-2 sm:gap-3 overflow-hidden min-h-0 relative">
-        
-        {/* SOL PANEL: Oyuncu Listesi, Tapu Kartları */}
-        <div className="w-full lg:w-[320px] xl:w-[350px] 2xl:w-[370px] h-full max-h-full flex flex-col gap-2 min-h-0 overflow-y-auto pr-0 lg:pr-1 pb-32 sm:pb-36 custom-scrollbar flex-shrink-0 order-1 lg:order-1">
+      {/* Ana Oyun Alanı - Mobilde Cardboard ve Yatay Oyuncu Çubuğu, Masaüstünde 3 Sütunlu Pafta */}
+      <main className="h-full w-full max-w-[1920px] mx-auto p-1 sm:p-2.5 flex flex-col lg:flex-row items-center justify-between gap-1.5 sm:gap-3 overflow-hidden min-h-0 relative">
+
+        {/* MOBİL YATAY OYUNCU VE HIZLI ERİŞİM ŞERİDİ (Sadece < lg mobil/tablet ekranlarda görünür, sıfır yer kaplar) */}
+        <MobileTopPlayerBar
+          gameState={effectiveGameState}
+          myPlayerId={effectiveMyPlayerId}
+          onOpenTrade={(target) => handleOpenTradeForTile(target, null)}
+          onOpenDeeds={() => setMobileDrawer('deeds')}
+          onOpenChat={() => setMobileDrawer('chat')}
+          onKickPlayer={handleKickPlayer}
+          onRemoveBot={handleRemoveBot}
+          unreadChatCount={chatMessages?.length || 0}
+        />
+
+        {/* SOL PANEL: SADECE MASAÜSTÜ (Desktop - lg:flex, Mobilde Cardboard'ı İtmez) */}
+        <div className="hidden lg:flex w-[320px] xl:w-[350px] 2xl:w-[370px] h-full max-h-full flex-col gap-2 min-h-0 overflow-y-auto pr-0 lg:pr-1 pb-32 sm:pb-36 custom-scrollbar flex-shrink-0 order-2 lg:order-1">
           <ErrorBoundary name="Oyuncu Durumları Paneli">
             <PlayerPanel
               gameState={effectiveGameState}
@@ -1471,8 +1487,8 @@ export function App() {
           </ErrorBoundary>
         </div>
 
-        {/* ORTA: Müteahhit Tahtası (Maksimum Büyütülmüş & Merkezlenmiş) */}
-        <div className="flex-1 w-full h-full max-h-full flex items-center justify-center min-h-0 min-w-0 overflow-hidden relative order-2 lg:order-2">
+        {/* ORTA: Müteahhit Tahtası (Maksimum Büyütülmüş & Merkezlenmiş - Mobilde order-1 ile en başta görünür) */}
+        <div className="flex-1 w-full h-full max-h-full flex items-center justify-center min-h-0 min-w-0 overflow-hidden relative order-1 lg:order-2">
           <ErrorBoundary name="Oyun Tahtası">
             <Board
               gameState={gameState}
@@ -1523,8 +1539,8 @@ export function App() {
           </ErrorBoundary>
         </div>
 
-        {/* SAĞ PANEL: Sağ Panel Kenar Zar Tablası (%70) & Olaylar ve Canlı Sohbet (%30) */}
-        <aside className="w-full lg:w-[290px] xl:w-[320px] 2xl:w-[340px] h-full max-h-full flex flex-col gap-2 min-h-0 flex-shrink-0 order-3 lg:order-3">
+        {/* SAĞ PANEL: SADECE MASAÜSTÜ (Desktop - lg:flex, Mobilde Zar Tablası Gizlendi) */}
+        <aside className="hidden lg:flex w-[290px] xl:w-[320px] 2xl:w-[340px] h-full max-h-full flex-col gap-2 min-h-0 flex-shrink-0 order-3 lg:order-3">
           {/* ÜST: 3D Zar Tablası (Sağ tarafın %70'i) */}
           <div className="flex-[7] h-[70%] min-h-[280px] flex-shrink-0 flex flex-col min-h-0">
             <ErrorBoundary name="Zar Tablası">
@@ -1574,6 +1590,85 @@ export function App() {
         </aside>
 
       </main>
+
+      {/* MOBİL ÇEKMECE / MODAL: TAPU SENETLERİ (Mobilde Tapularım Butonuna Basınca Açılır) */}
+      {mobileDrawer === 'deeds' && (
+        <div
+          className="fixed inset-0 z-[120] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs p-2 animate-fadeIn"
+          onClick={() => setMobileDrawer(null)}
+        >
+          <div
+            className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-3xl p-4 shadow-2xl flex flex-col gap-3 max-h-[85vh] overflow-y-auto custom-scrollbar"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
+              <h3 className="font-space font-black text-sm text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <Landmark className="w-4 h-4 text-sky-500" />
+                <span>Tapu Senetleri Portföyü</span>
+              </h3>
+              <button
+                onClick={() => setMobileDrawer(null)}
+                className="p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <ErrorBoundary name="Mobil Tapu Senetleri Galerisi">
+              <TitleDeedCards
+                gameState={gameState}
+                myPlayerId={effectiveMyPlayerId}
+                onTileClick={(tile) => {
+                  setMobileDrawer(null);
+                  setSelectedTileModal(tile);
+                }}
+              />
+            </ErrorBoundary>
+          </div>
+        </div>
+      )}
+
+      {/* MOBİL ÇEKMECE / MODAL: SOHBET & OLAY GÜNLÜĞÜ (Mobilde Sohbet Butonuna Basınca Açılır) */}
+      {mobileDrawer === 'chat' && (
+        <div
+          className="fixed inset-0 z-[120] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs p-2 animate-fadeIn"
+          onClick={() => setMobileDrawer(null)}
+        >
+          <div
+            className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-3xl p-3 shadow-2xl flex flex-col gap-2 h-[75vh] overflow-hidden"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2 px-1">
+              <h3 className="font-space font-black text-sm text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-amber-500" />
+                <span>Canlı Sohbet & Olay Günlüğü</span>
+              </h3>
+              <button
+                onClick={() => setMobileDrawer(null)}
+                className="p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex-1 min-h-0 overflow-hidden">
+              <ErrorBoundary name="Mobil Sohbet ve Olaylar">
+                <ChatAndLog
+                  logs={displayedLogs.length > 0 ? displayedLogs : (gameState?.logs || [])}
+                  messages={chatMessages}
+                  players={gameState?.players}
+                  onSendMessage={handleSendMessage}
+                  embedded={true}
+                  gameStartTime={gameState?.gameStartTime}
+                  totalPausedDuration={gameState?.totalPausedDuration}
+                  roomCode={gameState?.roomCode || localStorage.getItem('muteahhit_room_code') || ''}
+                  myPlayerId={effectiveMyPlayerId}
+                  myPlayerName={myPlayer?.name}
+                  isDarkMode={isDarkMode}
+                />
+              </ErrorBoundary>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modallar */}
       {selectedTileModal && (

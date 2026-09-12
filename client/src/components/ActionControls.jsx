@@ -6,6 +6,7 @@ import { DebtEmergencyControl } from './controls/DebtEmergencyControl.jsx';
 import { JailActionControl } from './controls/JailActionControl.jsx';
 import { PropertyBuyActionControl } from './controls/PropertyBuyActionControl.jsx';
 import { TurnEndControl } from './controls/TurnEndControl.jsx';
+import { CenterDiceRoll } from './controls/CenterDiceRoll.jsx';
 
 export function ActionControls({
   gameState,
@@ -91,6 +92,19 @@ export function ActionControls({
         />
       </div>
 
+      {/* MERKEZ ZAR ALANI: Dokunsal Çalkalama, Yuvarlama Animasyonu ve Zar Rozeti */}
+      <CenterDiceRoll
+        isMyTurn={isMyTurn}
+        phase={phase}
+        canRollAgain={canRollAgain}
+        isPawnBusy={isPawnBusy}
+        isRolling={isRolling}
+        dice={dice}
+        activePlayer={activePlayer}
+        onRollDice={onRollDice}
+        onRollAgain={onRollAgain}
+      />
+
       {/* BUTON VE AKSİYON YUVASI (Sabit Rezerve Yükseklik Sayesinde Buton Gidip Gelirken Kapsül Asla Zıplamaz) */}
       <div className="w-full max-w-[290px] min-h-[50px] flex flex-col items-center justify-start">
         {/* SADECE ETKİLEŞİM GEREKTİREN AKSİYONLARDA GÖRÜNEN KOMPAKT KART */}
@@ -125,22 +139,6 @@ export function ActionControls({
               onBuyProperty={onBuyProperty}
               onDeclineBuy={onDeclineBuy}
             />
-          )}
-
-          {/* Sıra Başında Zar Atma Butonu (Normal veya Kodeste Çift Zar Denemesi) */}
-          {phase === 'WAITING_ROLL' && !isPawnBusy && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e?.preventDefault?.();
-                e?.stopPropagation?.();
-                onRollDice?.();
-              }}
-              className="w-full py-2.5 px-3 bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-400 hover:brightness-110 active:scale-95 text-slate-950 font-space font-extrabold text-xs sm:text-sm rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer animate-dice-glow border border-amber-300"
-            >
-              <Dices className="w-4 h-4 text-slate-950 animate-bounce-short" />
-              <span>{activePlayer?.inJail ? '🎲 ÇİFT ZAR DENE (KODES)' : '🎲 ZAR AT'}</span>
-            </button>
           )}
 
           {/* Tur Eylemleri & Turu Bitirme Butonu */}
