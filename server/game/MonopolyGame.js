@@ -740,7 +740,9 @@ export class MonopolyGame {
   }
 
   handleTileLanding(player, tile, diceSum) {
-    this.addLog(`${player.name} "${tile.name}" karesine geldi.`, 'info');
+    if (tile.type !== 'chance' && tile.type !== 'chest') {
+      this.addLog(`${player.name} "${tile.name}" karesine geldi.`, 'info');
+    }
 
     if (tile.type === 'go' || tile.type === 'jail') {
       this.phase = 'TURN_ACTIONS';
@@ -791,7 +793,8 @@ export class MonopolyGame {
         pendingAck: true
       };
       this.phase = 'CARD_DRAWN';
-      this.addLog(`${player.name} bir ${tile.name} kartı çekiyor...`, 'info');
+      this.addLog(`${player.name} "${tile.name}" karesine geldi ve kart çekti.`, 'info');
+      this.addLog(`📜 ${player.name} "${card.title}" kartını açtı: ${card.desc}`, 'card', { deckType: card.deckType, drawerName: player.name, cardTitle: card.title, cardDesc: card.desc });
 
       return { success: true, tile, card: this.drawnCard };
     }
@@ -869,7 +872,6 @@ export class MonopolyGame {
     const diceSum = card.diceSum || (this.dice ? this.dice[0] + this.dice[1] : 7);
     this.drawnCard = null;
 
-    this.addLog(`📜 ${active.name} "${card.title}" kartını açtı: ${card.desc}`, 'card', { deckType: card.deckType, drawerName: active.name, cardTitle: card.title, cardDesc: card.desc });
     this.applyCard(active, card, diceSum);
     return { success: true, card };
   }
@@ -891,7 +893,8 @@ export class MonopolyGame {
       pendingAck: true
     };
     this.phase = 'CARD_DRAWN';
-    this.addLog(`${target.name} bir İhale & Fırsat kartı çekti: "${card.title}"`, 'card', { deckType: 'chance', drawerName: target.name, cardTitle: card.title, cardDesc: card.desc });
+    this.addLog(`${target.name} "İhale & Fırsat" karesine geldi ve kart çekti.`, 'info');
+    this.addLog(`📜 ${target.name} "${card.title}" kartını açtı: ${card.desc}`, 'card', { deckType: 'chance', drawerName: target.name, cardTitle: card.title, cardDesc: card.desc });
     return { success: true, card: this.drawnCard };
   }
 
@@ -912,7 +915,8 @@ export class MonopolyGame {
       pendingAck: true
     };
     this.phase = 'CARD_DRAWN';
-    this.addLog(`${target.name} bir Belediye & İmar kartı çekti: "${card.title}"`, 'card', { deckType: 'chest', drawerName: target.name, cardTitle: card.title, cardDesc: card.desc });
+    this.addLog(`${target.name} "Belediye & İmar" karesine geldi ve kart çekti.`, 'info');
+    this.addLog(`📜 ${target.name} "${card.title}" kartını açtı: ${card.desc}`, 'card', { deckType: 'chest', drawerName: target.name, cardTitle: card.title, cardDesc: card.desc });
     return { success: true, card: this.drawnCard };
   }
 
