@@ -2601,6 +2601,7 @@ export class MonopolyGame {
     return {
       roomCode: this.roomCode,
       status: this.status,
+      voiceStates: this.voiceStates || {},
       gameStartTime: this.gameStartTime || (this.status === 'playing' ? (this.turnStartTime || Date.now()) : null),
       totalPausedDuration: this.totalPausedDuration || 0,
       isPaused: Boolean(this.isPaused),

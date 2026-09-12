@@ -90,7 +90,9 @@ function ChatAndLogBase({
   roomCode = '',
   myPlayerId = '',
   myPlayerName = '',
-  isDarkMode = false
+  isDarkMode = false,
+  voiceStates = {},
+  onSendVoiceState = null
 }) {
   // Varsayılan olarak minimize (kapalı/kompakt) başlar
   const [isExpanded, setIsExpanded] = useState(false);
@@ -105,7 +107,9 @@ function ChatAndLogBase({
     roomCode,
     myPlayerId,
     myPlayerName,
-    players
+    players,
+    voiceStates,
+    onSendVoiceState
   });
 
   // Son 3 olay ve tersine çevrilmiş günlükler (useMemo ile bellek & GC optimizasyonu)
@@ -192,9 +196,9 @@ function ChatAndLogBase({
                 <span>Ses Odası</span>
                 {voiceChat.isInVoice ? (
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
-                ) : voiceChat.voicePeers.size > 0 ? (
+                ) : voiceChat.participantsCount > 0 ? (
                   <span className="text-[9px] px-1 py-0.2 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-mono font-bold">
-                    {voiceChat.voicePeers.size}
+                    {voiceChat.participantsCount}
                   </span>
                 ) : null}
               </button>
@@ -215,7 +219,7 @@ function ChatAndLogBase({
             <div className="flex items-center justify-between px-2.5 py-1 bg-emerald-500/10 dark:bg-emerald-950/40 border-b border-emerald-500/30 text-[10.5px] text-emerald-800 dark:text-emerald-300 flex-shrink-0 animate-fadeIn">
               <div className="flex items-center gap-1.5 min-w-0">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse flex-shrink-0" />
-                <span className="font-bold truncate">Sestesiniz ({voiceChat.voicePeers.size + 1} kişi)</span>
+                <span className="font-bold truncate">Sestesiniz ({voiceChat.participantsCount} kişi)</span>
                 {voiceChat.isSpeaking && (
                   <span className="text-[8px] bg-emerald-500 text-slate-950 font-black px-1 rounded uppercase tracking-wider font-jetbrains">
                     Konuşuyor
@@ -264,6 +268,7 @@ function ChatAndLogBase({
                 myPlayerId={myPlayerId}
                 players={players}
                 isDarkMode={isDarkMode}
+                voiceStates={voiceStates}
               />
             ) : activeTab === 'log' ? (
               <div>
@@ -453,9 +458,9 @@ function ChatAndLogBase({
                     <span>Ses Odası</span>
                     {voiceChat.isInVoice ? (
                       <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-                    ) : voiceChat.voicePeers.size > 0 ? (
+                    ) : voiceChat.participantsCount > 0 ? (
                       <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-mono font-bold">
-                        {voiceChat.voicePeers.size}
+                        {voiceChat.participantsCount}
                       </span>
                     ) : null}
                   </button>
@@ -479,6 +484,7 @@ function ChatAndLogBase({
                     myPlayerId={myPlayerId}
                     players={players}
                     isDarkMode={isDarkMode}
+                    voiceStates={voiceStates}
                   />
                 ) : activeTab === 'log' ? (
                   <div>
@@ -654,7 +660,7 @@ function ChatAndLogBase({
             {voiceChat.isInVoice && (
               <span className="text-[10px] bg-emerald-50 text-emerald-800 border border-emerald-300 dark:bg-emerald-950/50 dark:text-emerald-300 px-1.5 py-0.2 rounded-full font-bold flex items-center gap-1 font-jetbrains">
                 <Radio className="w-2.5 h-2.5 text-emerald-500 animate-pulse" />
-                <span>Seste ({voiceChat.voicePeers.size + 1})</span>
+                <span>Seste ({voiceChat.participantsCount})</span>
               </span>
             )}
           </div>
@@ -748,9 +754,9 @@ function ChatAndLogBase({
                   <span>Ses Odası</span>
                   {voiceChat.isInVoice ? (
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-                  ) : voiceChat.voicePeers.size > 0 ? (
+                  ) : voiceChat.participantsCount > 0 ? (
                     <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-mono font-bold">
-                      {voiceChat.voicePeers.size}
+                      {voiceChat.participantsCount}
                     </span>
                   ) : null}
                 </button>
@@ -774,6 +780,7 @@ function ChatAndLogBase({
                   myPlayerId={myPlayerId}
                   players={players}
                   isDarkMode={isDarkMode}
+                  voiceStates={voiceStates}
                 />
               ) : activeTab === 'log' ? (
                 <div>

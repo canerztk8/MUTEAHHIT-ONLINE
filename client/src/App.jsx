@@ -1156,6 +1156,10 @@ export function App() {
     networkRef.current?.sendAction(ACTION.SEND_CHAT, { message: text });
   };
 
+  const handleSendVoiceState = useCallback((voiceState) => {
+    networkRef.current?.sendAction(ACTION.VOICE_STATE, voiceState);
+  }, []);
+
   const copyRoomLink = () => {
     if (!gameState?.roomCode) return;
     const url = `${window.location.origin}${window.location.pathname}?room=${gameState.roomCode}`;
@@ -1516,6 +1520,8 @@ export function App() {
                 myPlayerId={myPlayerId}
                 myPlayerName={myPlayer?.name}
                 isDarkMode={isDarkMode}
+                voiceStates={gameState?.voiceStates}
+                onSendVoiceState={handleSendVoiceState}
               />
             </ErrorBoundary>
           </div>

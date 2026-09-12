@@ -94,6 +94,9 @@ export const ACTION = Object.freeze({
 
   // Dev Tools
   DEV_COMMAND: 'DEV_COMMAND',
+
+  // Ses Odası Senkronizasyonu
+  VOICE_STATE: 'VOICE_STATE',
 });
 
 // ─── Factory Fonksiyonları ────────────────────────────────────────────────────
