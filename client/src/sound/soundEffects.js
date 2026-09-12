@@ -850,9 +850,17 @@ const rawSounds = {
     } catch (e) {}
   },
 
+  _lastVictoryTime: 0,
+
   // 🎺 Zafer Fanfarı (Görkemli Şampiyonluk ve Galibiyet Pirinci - Brass Fanfare)
   playVictory() {
     try {
+      const nowMs = Date.now();
+      if (nowMs - this._lastVictoryTime < 3500) {
+        return; // Çift ses koruması: Son 3.5 saniye içinde zafer sesi çalındıysa tekrarlama!
+      }
+      this._lastVictoryTime = nowMs;
+
       const ctx = getAudioContext();
       if (!ctx || currentVolume === 0) return;
       const now = ctx.currentTime;

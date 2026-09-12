@@ -9,10 +9,6 @@ export function WinnerModal({ winner, gameState, onRestart, onLeaveRoom }) {
 
   useEffect(() => {
     if (winner) {
-      try {
-        sounds.playWinner();
-      } catch (e) {}
-
       const end = Date.now() + 4 * 1000;
       const colors = ['#f59e0b', '#fbbf24', '#eab308', '#ef4444', '#3b82f6', '#10b981', '#a855f7'];
 

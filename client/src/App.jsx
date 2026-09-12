@@ -294,6 +294,8 @@ export function App() {
 
   // Önceki durumu saklayarak ses tetikleme
   const prevStateRef = useRef(null);
+  // Zafer sesinin hangi winner ID için çalındığını takip eder — çift ses önlemi
+  const victoryPlayedForRef = useRef(null);
 
   // Bekleyen Para Değişimi Referansı (Piyon hedef kareye varmadan para sesini/bildirimini çalma!)
   const pendingMoneyRef = useRef(null);
@@ -315,6 +317,7 @@ export function App() {
     if (gameState?.status === 'lobby') {
       setActiveElimination(null);
       lastSeenEliminationIdRef.current = null;
+      victoryPlayedForRef.current = null;
     }
   }, [gameState?.status]);
 
@@ -624,9 +627,13 @@ export function App() {
         }
       }
 
-      // Kazanan / Şampiyonluk sesi
-      if (sounds.getVolume() > 0 && state.winner && (!prev.winner || prev.winner.id !== state.winner.id)) {
-        sounds.playVictory();
+      // Kazanan / Şampiyonluk sesi — çift ses önlemi: aynı winner ID için sadece 1 kez çal
+      if (sounds.getVolume() > 0 && state.winner) {
+        const winnerId = state.winner.id;
+        if (victoryPlayedForRef.current !== winnerId) {
+          victoryPlayedForRef.current = winnerId;
+          sounds.playVictory();
+        }
       }
 
       // Yeni ev / otel inşaatı sesi
@@ -1068,6 +1075,30 @@ export function App() {
     }
   };
 
+  // Odaya Bağlanırken İptal Etme
+  const handleCancelConnecting = useCallback(() => {
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const roomParam = urlParams.get('room');
+      if (roomParam) {
+        sessionStorage.setItem('muteahhit_auto_join_cancelled', roomParam.trim().toUpperCase());
+      }
+      localStorage.removeItem('muteahhit_room_code');
+      window.history.replaceState({}, '', window.location.pathname);
+    } catch (_) {}
+
+    try {
+      networkRef.current?.destroy();
+    } catch (_) {}
+
+    setNetwork(null);
+    setConnected(false);
+    setIsSpectatorMode(false);
+    setPeerError(null);
+    setGameState(null);
+    setRoomNotFound(null);
+  }, []);
+
   const handleRestartGame = () => {
     networkRef.current?.sendAction(ACTION.RESTART_GAME);
   };
@@ -1212,7 +1243,7 @@ export function App() {
               <span className="text-3xl">⚠️</span>
               <span className="text-sm font-semibold text-rose-500 max-w-xs text-center">{peerError}</span>
               <button
-                onClick={() => { setPeerError(null); setNetwork(null); setConnected(false); setIsSpectatorMode(false); }}
+                onClick={handleCancelConnecting}
                 className="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold rounded-xl transition text-sm cursor-pointer shadow-md"
               >
                 Geri Dön
@@ -1230,15 +1261,12 @@ export function App() {
                 </span>
               </div>
               <button
-                onClick={() => {
-                  networkRef.current?.destroy();
-                  setNetwork(null);
-                  setConnected(false);
-                  setIsSpectatorMode(false);
-                }}
-                className="mt-2 text-xs text-slate-400 hover:text-rose-400 transition underline cursor-pointer"
+                type="button"
+                onClick={handleCancelConnecting}
+                className="mt-3 px-4 py-2 rounded-xl bg-slate-800/80 hover:bg-rose-950/70 border border-slate-700 hover:border-rose-600/70 text-slate-300 hover:text-rose-300 text-xs font-bold transition-all shadow-sm active:scale-95 cursor-pointer flex items-center gap-1.5"
               >
-                İptal Et
+                <span>✕</span>
+                <span>İptal Et</span>
               </button>
             </>
           )}

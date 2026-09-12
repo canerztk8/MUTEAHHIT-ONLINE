@@ -70,6 +70,11 @@ export function Lobby({
     // Önceden bağlantı varsa ya da oyun başladıysa kontrol yapma
     if (gameState || network) return;
 
+    // Kullanıcı bu oturumda bağlanmayı iptal ettiyse otomatik tekrar bağlanma
+    if (sessionStorage.getItem('muteahhit_auto_join_cancelled') === code) {
+      return;
+    }
+
     const savedName = localStorage.getItem('muteahhit_name');
 
     // Backend URL'ini belirle (PeerService ile aynı mantık)
@@ -128,6 +133,7 @@ export function Lobby({
       return;
     }
     setErrorMsg('');
+    try { sessionStorage.removeItem('muteahhit_auto_join_cancelled'); } catch (_) {}
     localStorage.setItem('muteahhit_name', name.trim());
     let sessionToken = localStorage.getItem('muteahhit_session_token');
     if (!sessionToken) {
@@ -154,6 +160,7 @@ export function Lobby({
       return;
     }
     setErrorMsg('');
+    try { sessionStorage.removeItem('muteahhit_auto_join_cancelled'); } catch (_) {}
     setIsJoining(true);
     localStorage.setItem('muteahhit_name', name.trim());
     let sessionToken = localStorage.getItem('muteahhit_session_token');
