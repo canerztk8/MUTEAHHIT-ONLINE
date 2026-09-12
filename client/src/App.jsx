@@ -369,22 +369,31 @@ export function App() {
   const pendingBalancesRef = useRef({});
   const prevPlayerPositionsRef = useRef({});
 
+  // Oyuncu kodes durumunun ve konumunun piyon kareye varmadan erken ifşa olmasını önleyen tamponlama
+  const [displayedJailStatus, setDisplayedJailStatus] = useState({});
+  const pendingJailStatusRef = useRef({});
+  const [displayedPlayerPositions, setDisplayedPlayerPositions] = useState({});
+  const pendingPlayerPositionsRef = useRef({});
+
   // Olay günlüğünün piyon kareye varmadan erken ifşa olmasını önleyen tamponlama
   const [displayedLogs, setDisplayedLogs] = useState([]);
   const pendingLogsRef = useRef(null);
   const pendingLogsTimeoutRef = useRef(null);
 
-  // Görünen bakiyelerle zenginleştirilmiş oyun durumu (Piyon adımlarken bakiyeyi eski değerde tutar)
+  // Görünen bakiyelerle ve görsel durumlarla zenginleştirilmiş oyun durumu (Piyon adımlarken bakiye, kodes ve konumu eski değerde tutar)
   const effectiveGameState = React.useMemo(() => {
     if (!gameState || !gameState.players) return gameState;
     return {
       ...gameState,
       players: gameState.players.map((p) => ({
         ...p,
-        money: displayedBalances[p.id] !== undefined ? displayedBalances[p.id] : p.money
+        money: displayedBalances[p.id] !== undefined ? displayedBalances[p.id] : p.money,
+        inJail: displayedJailStatus[p.id] !== undefined ? displayedJailStatus[p.id] : p.inJail,
+        jailTurns: (displayedJailStatus[p.id] !== undefined && !displayedJailStatus[p.id]) ? 0 : p.jailTurns,
+        position: displayedPlayerPositions[p.id] !== undefined ? displayedPlayerPositions[p.id] : p.position
       }))
     };
-  }, [gameState, displayedBalances]);
+  }, [gameState, displayedBalances, displayedJailStatus, displayedPlayerPositions]);
 
   useEffect(() => {
     if (moneyToast) {
@@ -433,13 +442,33 @@ export function App() {
     }
     pendingLogsRef.current = null;
 
-    // Piyon hedefe ulaştı: bekleyen TÜM oyuncu bakiyelerini aynı anda ekrana yansıt
+    // Piyon hedefe ulaştı: bekleyen TÜM oyuncu bakiyelerini, kodes durumunu ve pozisyonları aynı anda ekrana yansıt
     setDisplayedBalances((prev) => {
       const next = { ...prev };
       const currentPlayers = latestStateRef.current?.players || gameState?.players || [];
       currentPlayers.forEach((p) => {
         next[p.id] = p.money;
         delete pendingBalancesRef.current[p.id];
+      });
+      return next;
+    });
+
+    setDisplayedJailStatus((prev) => {
+      const next = { ...prev };
+      const currentPlayers = latestStateRef.current?.players || gameState?.players || [];
+      currentPlayers.forEach((p) => {
+        next[p.id] = p.inJail;
+        delete pendingJailStatusRef.current[p.id];
+      });
+      return next;
+    });
+
+    setDisplayedPlayerPositions((prev) => {
+      const next = { ...prev };
+      const currentPlayers = latestStateRef.current?.players || gameState?.players || [];
+      currentPlayers.forEach((p) => {
+        next[p.id] = p.position;
+        delete pendingPlayerPositionsRef.current[p.id];
       });
       return next;
     });
@@ -467,25 +496,41 @@ export function App() {
       state.lastDiceRollId &&
       state.lastDiceRollId !== prev.lastDiceRollId
     );
+    const flushVisualStateOnSafetyTimeout = () => {
+      setIsPawnMoving(false);
+      isPawnMovingRef.current = false;
+      setIsDiceRolling(false);
+      const curPlayers = latestStateRef.current?.players || [];
+      if (curPlayers.length > 0) {
+        setDisplayedBalances((prev) => {
+          const next = { ...prev };
+          curPlayers.forEach((p) => { next[p.id] = p.money; });
+          return next;
+        });
+        setDisplayedJailStatus((prev) => {
+          const next = { ...prev };
+          curPlayers.forEach((p) => { next[p.id] = p.inJail; });
+          return next;
+        });
+        setDisplayedPlayerPositions((prev) => {
+          const next = { ...prev };
+          curPlayers.forEach((p) => { next[p.id] = p.position; });
+          return next;
+        });
+      }
+    };
+
     if (isNewDiceRoll && state.status === 'playing') {
       setIsDiceRolling(true);
       setIsPawnMoving(true);
       isPawnMovingRef.current = true;
       if (pawnMovingSafetyTimeoutRef.current) clearTimeout(pawnMovingSafetyTimeoutRef.current);
-      pawnMovingSafetyTimeoutRef.current = setTimeout(() => {
-        setIsPawnMoving(false);
-        isPawnMovingRef.current = false;
-        setIsDiceRolling(false);
-      }, 4200);
+      pawnMovingSafetyTimeoutRef.current = setTimeout(flushVisualStateOnSafetyTimeout, 4200);
     } else if (hasPawnMoved && state.status === 'playing') {
       setIsPawnMoving(true);
       isPawnMovingRef.current = true;
       if (pawnMovingSafetyTimeoutRef.current) clearTimeout(pawnMovingSafetyTimeoutRef.current);
-      pawnMovingSafetyTimeoutRef.current = setTimeout(() => {
-        setIsPawnMoving(false);
-        isPawnMovingRef.current = false;
-        setIsDiceRolling(false);
-      }, 4200);
+      pawnMovingSafetyTimeoutRef.current = setTimeout(flushVisualStateOnSafetyTimeout, 4200);
     }
 
     const isMovementTurnInProgress = hasPawnMoved || isNewDiceRoll || isPawnMovingRef.current;
@@ -595,7 +640,7 @@ export function App() {
       }
     }
 
-    // Piyon ilerlemesi yoksa veya ilk yüklemede bakiyeleri hemen güncelle; piyon ilerlerken TÜM oyuncuları tamponla
+    // Piyon ilerlemesi yoksa veya ilk yüklemede bakiyeleri, kodes durumunu ve konumları hemen güncelle; piyon ilerlerken TÜM oyuncuları tamponla
     if (state.players) {
       setDisplayedBalances((prevBalances) => {
         const nextBalances = { ...prevBalances };
@@ -621,6 +666,70 @@ export function App() {
         });
 
         return changed ? nextBalances : prevBalances;
+      });
+
+      setDisplayedJailStatus((prevJail) => {
+        const nextJail = { ...prevJail };
+        let changed = false;
+
+        state.players.forEach((p) => {
+          const prevP = prev?.players?.find(op => op.id === p.id);
+          const wasInJail = prevP ? prevP.inJail : false;
+
+          // Eğer oyuncu yeni kodese giriyorsa (önceden kodeste değildi ama şimdi inJail true):
+          if (!wasInJail && p.inJail) {
+            if (isMovementTurnInProgress) {
+              // Piyon henüz kodese düşmedi, zarlar atılıyor veya yürüyor -> kodeste gösterme!
+              pendingJailStatusRef.current[p.id] = true;
+              if (nextJail[p.id] !== false) {
+                nextJail[p.id] = false;
+                changed = true;
+              }
+            } else {
+              delete pendingJailStatusRef.current[p.id];
+              if (nextJail[p.id] !== true) {
+                nextJail[p.id] = true;
+                changed = true;
+              }
+            }
+          } else {
+            // Kodesten çıkış veya olağan durum:
+            delete pendingJailStatusRef.current[p.id];
+            if (nextJail[p.id] !== p.inJail) {
+              nextJail[p.id] = p.inJail;
+              changed = true;
+            }
+          }
+        });
+
+        return changed ? nextJail : prevJail;
+      });
+
+      setDisplayedPlayerPositions((prevPos) => {
+        const nextPos = { ...prevPos };
+        let changed = false;
+
+        state.players.forEach((p) => {
+          const prevP = prev?.players?.find(op => op.id === p.id);
+          const oldPosition = prevP ? prevP.position : p.position;
+
+          if (isMovementTurnInProgress && prevP && prevP.position !== p.position) {
+            // Piyon hareket halinde: hedef kareye varmadan eski pozisyonu koru
+            pendingPlayerPositionsRef.current[p.id] = p.position;
+            if (nextPos[p.id] === undefined || nextPos[p.id] !== oldPosition) {
+              nextPos[p.id] = oldPosition;
+              changed = true;
+            }
+          } else {
+            delete pendingPlayerPositionsRef.current[p.id];
+            if (nextPos[p.id] !== p.position) {
+              nextPos[p.id] = p.position;
+              changed = true;
+            }
+          }
+        });
+
+        return changed ? nextPos : prevPos;
       });
     }
 
@@ -981,14 +1090,25 @@ export function App() {
       try {
         localStorage.setItem('vechiron_devtools_unlocked', '1');
       } catch {}
+      const now = Date.now();
+      const devElapsedMs = gameState?.gameStartTime
+        ? Math.max(0, now - gameState.gameStartTime - (gameState.totalPausedDuration || 0))
+        : 0;
+      const totalSecs = Math.floor(devElapsedMs / 1000);
+      const mins = Math.floor(totalSecs / 60);
+      const secs = totalSecs % 60;
+      const devTime = mins >= 60
+        ? `${Math.floor(mins / 60)}:${(mins % 60).toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+        : `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
       setChatMessages(prev => [
         ...prev,
         {
-          id: `dev_${Date.now()}`,
+          id: `dev_${now}`,
           senderName: '🛠️ SİSTEM',
           senderColor: '#f59e0b',
           text: '🛠️ Geliştirici & Test Paneli (DevTools) Aktif Edildi! Tur sarma, bakiye, piyon ışınlama, zar sabitleme ve tüm bildirimleri test edebilirsiniz.',
-          time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
+          time: devTime,
+          timestamp: now
         }
       ]);
       return;

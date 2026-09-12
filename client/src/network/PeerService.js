@@ -926,12 +926,14 @@ export class HostPeerService {
           const cleanText = String(payload.message || '').trim().substring(0, 300);
           if (!cleanText) break;
 
+          const gameTime = game.formatGameElapsed ? game.formatGameElapsed(now) : '00:00';
           const chatMsg = {
             id: Math.random().toString(36).substring(2, 9),
             senderName: sender ? sender.name : (spectator?.name ? `👁️ ${spectator.name}` : 'İzleyici'),
             senderColor: sender ? sender.color : '#38bdf8',
             text: cleanText,
-            time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
+            time: gameTime,
+            timestamp: now
           };
           // Host dahil herkese broadcast et
           this._broadcastChat(chatMsg);

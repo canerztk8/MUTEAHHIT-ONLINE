@@ -245,7 +245,7 @@ function PlayerPanelBase({ gameState, myPlayerId, onOpenTrade, onTileClick, onRe
                       İflas
                     </span>
                   ) : null}
-                  {player.inJail && !player.isBankrupt && !player.isKicked ? (
+                  {player.inJail && player.position === 10 && !player.isBankrupt && !player.isKicked ? (
                     <span className="text-[7.5px] bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-200 border border-rose-300 dark:border-rose-700 px-1 rounded font-bold flex items-center flex-shrink-0" title="Kodeste (Tam Kira Toplar)">
                       🚨
                     </span>
@@ -379,7 +379,7 @@ function PlayerPanelBase({ gameState, myPlayerId, onOpenTrade, onTileClick, onRe
                       )}
                     </div>
                     <div className="flex items-center gap-2 mt-0.5">
-                      {player.inJail ? (
+                      {player.inJail && player.position === 10 ? (
                         <span className="text-[11px] text-rose-600 dark:text-rose-400 font-bold flex items-center gap-0.5" title="Resmi Kural: Kodesteyken tam kira toplanır">
                           <ShieldAlert className="w-3 h-3" /> Kodeste ({player.jailTurns}/3)
                         </span>

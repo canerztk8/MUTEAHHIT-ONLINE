@@ -52,6 +52,32 @@ function getEventTooltip(timeStr) {
   return `Oyun Süresi: ${timeStr}`;
 }
 
+/**
+ * Sohbet mesajının gönderildiği oyun içi süreyi (MM:SS veya HH:MM:SS) hesaplar.
+ */
+function getChatMessageTime(m, gameStartTime, totalPausedDuration = 0) {
+  if (!m) return '00:00';
+
+  if (m.timestamp && gameStartTime) {
+    const elapsedMs = Math.max(0, m.timestamp - gameStartTime - (totalPausedDuration || 0));
+    const totalSecs = Math.floor(elapsedMs / 1000);
+    const mins = Math.floor(totalSecs / 60);
+    const secs = totalSecs % 60;
+    if (mins >= 60) {
+      const hrs = Math.floor(mins / 60);
+      const remMins = mins % 60;
+      return `${hrs}:${remMins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }
+
+  if (m.time && /^\d{1,2}:\d{2}(?::\d{2})?$/.test(m.time)) {
+    return m.time;
+  }
+
+  return m.time || '00:00';
+}
+
 function ChatAndLogBase({
   logs = [],
   messages = [],
@@ -227,17 +253,25 @@ function ChatAndLogBase({
               </div>
             ) : (
               <div className="space-y-1.5">
-                {messages.map((m) => (
-                  <div key={m.id} className="p-1.5 rounded-xl bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 shadow-xs">
-                    <div className="flex items-center justify-between mb-0.5">
-                      <span className="font-black text-[10.5px] font-space" style={{ color: m.senderColor }}>
-                        {m.senderName}
-                      </span>
-                      <span className="text-[8.5px] text-slate-400 font-mono font-jetbrains">{m.time}</span>
+                {messages.map((m) => {
+                  const msgTime = getChatMessageTime(m, gameStartTime, totalPausedDuration);
+                  return (
+                    <div key={m.id} className="p-1.5 rounded-xl bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 shadow-xs">
+                      <div className="flex items-center justify-between mb-0.5">
+                        <span className="font-black text-[10.5px] font-space" style={{ color: m.senderColor }}>
+                          {m.senderName}
+                        </span>
+                        <span
+                          className="text-[8.5px] text-slate-400 font-mono font-jetbrains"
+                          title={getEventTooltip(msgTime)}
+                        >
+                          {msgTime}
+                        </span>
+                      </div>
+                      <div className="text-slate-800 dark:text-slate-200 text-[11px] break-words leading-relaxed font-medium">{m.text}</div>
                     </div>
-                    <div className="text-slate-800 dark:text-slate-200 text-[11px] break-words leading-relaxed font-medium">{m.text}</div>
-                  </div>
-                ))}
+                  );
+                })}
                 {messages.length === 0 && (
                   <div className="text-center text-slate-500 dark:text-slate-400 py-6 text-xs italic flex flex-col items-center gap-1">
                     <MessageSquare className="w-5 h-5 text-slate-400" />
@@ -410,17 +444,25 @@ function ChatAndLogBase({
                   </div>
                 ) : (
                   <div className="space-y-2.5">
-                    {messages.map((m) => (
-                      <div key={m.id} className="p-2.5 rounded-2xl bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 shadow-xs">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="font-black text-xs font-space" style={{ color: m.senderColor }}>
-                            {m.senderName}
-                          </span>
-                          <span className="text-[10px] text-slate-400 font-mono font-jetbrains">{m.time}</span>
+                    {messages.map((m) => {
+                      const msgTime = getChatMessageTime(m, gameStartTime, totalPausedDuration);
+                      return (
+                        <div key={m.id} className="p-2.5 rounded-2xl bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 shadow-xs">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="font-black text-xs font-space" style={{ color: m.senderColor }}>
+                              {m.senderName}
+                            </span>
+                            <span
+                              className="text-[10px] text-slate-400 font-mono font-jetbrains"
+                              title={getEventTooltip(msgTime)}
+                            >
+                              {msgTime}
+                            </span>
+                          </div>
+                          <div className="text-slate-800 dark:text-slate-200 text-xs sm:text-sm break-words leading-relaxed font-medium">{m.text}</div>
                         </div>
-                        <div className="text-slate-800 dark:text-slate-200 text-xs sm:text-sm break-words leading-relaxed font-medium">{m.text}</div>
-                      </div>
-                    ))}
+                      );
+                    })}
                     {messages.length === 0 && (
                       <div className="text-center text-slate-500 dark:text-slate-400 py-16 text-xs italic flex flex-col items-center gap-2">
                         <MessageSquare className="w-8 h-8 text-slate-400" />
@@ -665,17 +707,25 @@ function ChatAndLogBase({
                 </div>
               ) : (
                 <div className="space-y-2.5">
-                  {messages.map((m) => (
-                    <div key={m.id} className="p-2.5 rounded-2xl bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 shadow-xs">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-black text-xs font-space" style={{ color: m.senderColor }}>
-                          {m.senderName}
-                        </span>
-                        <span className="text-[10px] text-slate-400 font-mono font-jetbrains">{m.time}</span>
+                  {messages.map((m) => {
+                    const msgTime = getChatMessageTime(m, gameStartTime, totalPausedDuration);
+                    return (
+                      <div key={m.id} className="p-2.5 rounded-2xl bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 shadow-xs">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-black text-xs font-space" style={{ color: m.senderColor }}>
+                            {m.senderName}
+                          </span>
+                          <span
+                            className="text-[10px] text-slate-400 font-mono font-jetbrains"
+                            title={getEventTooltip(msgTime)}
+                          >
+                            {msgTime}
+                          </span>
+                        </div>
+                        <div className="text-slate-800 dark:text-slate-200 text-xs sm:text-sm break-words leading-relaxed font-medium">{m.text}</div>
                       </div>
-                      <div className="text-slate-800 dark:text-slate-200 text-xs sm:text-sm break-words leading-relaxed font-medium">{m.text}</div>
-                    </div>
-                  ))}
+                    );
+                  })}
                   {messages.length === 0 && (
                     <div className="text-center text-slate-500 dark:text-slate-400 py-16 text-xs italic flex flex-col items-center gap-2">
                       <MessageSquare className="w-8 h-8 text-slate-400" />

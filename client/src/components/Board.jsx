@@ -1341,15 +1341,35 @@ export function Board({
             }, 60);
             activeIntervalsRef.current[`poll_${p.id}`] = pollInterval;
           } else {
-            // Doğrudan kodese yerleşme (örneğin kart çekimi)
-            setPawn3DPositions((prev) => ({ ...prev, [p.id]: targetPos }));
-            setDisplayedPositions((prev) => ({ ...prev, [p.id]: targetPos }));
-            setIsMovingPawn(false);
-            if (pendingRentRef.current) {
-              pendingRentRef.current = null;
-            }
-            if (onPawnLanded) {
-              onPawnLanded(p.id, targetPos);
+            // Doğrudan kodese yerleşme (örneğin 3. çift zar veya kart çekimi)
+            setIsMovingPawn(true);
+            const executeDirectJail = () => {
+              sounds.playJail();
+              setPawn3DPositions((prev) => ({ ...prev, [p.id]: targetPos }));
+              setDisplayedPositions((prev) => ({ ...prev, [p.id]: targetPos }));
+              setIsMovingPawn(false);
+              if (pendingRentRef.current) {
+                pendingRentRef.current = null;
+              }
+              if (onPawnLanded) {
+                onPawnLanded(p.id, targetPos);
+              }
+            };
+
+            if (isDiceRollingRef.current) {
+              const startTime = Date.now();
+              const pollInterval = setInterval(() => {
+                const elapsed = Date.now() - startTime;
+                if (!isDiceRollingRef.current || elapsed >= 1800) {
+                  clearInterval(pollInterval);
+                  delete activeIntervalsRef.current[`poll_${p.id}`];
+                  const timeout = setTimeout(executeDirectJail, 120);
+                  activeIntervalsRef.current[`timeout_${p.id}`] = timeout;
+                }
+              }, 60);
+              activeIntervalsRef.current[`poll_${p.id}`] = pollInterval;
+            } else {
+              executeDirectJail();
             }
           }
         }
