@@ -73,29 +73,31 @@ export function ActionControls({
   );
 
   return (
-    <div className="w-full flex flex-col items-center justify-center p-0.5 sm:p-1 text-center max-w-sm mx-auto select-none gap-1.5">
+    <div className="w-full flex flex-col items-center justify-start p-0.5 sm:p-1 text-center max-w-sm mx-auto select-none gap-2">
       {/* Diğer Oyuncunun Çektiği İhale & Fırsat / Belediye & İmar Kartı Bildirimi (Opsiyonel) */}
       <NonDrawerCardAlert
         card={drawnCardForNonDrawer}
         onDismiss={onDismissDrawnCard}
       />
 
-      {/* MİNİMALİST SIRA & SAYAÇ KAPSÜLÜ (Sıra Kimde, Durum ve Geri Sayan Sayaç Tek Satırda) */}
-      <TurnStatusCapsule
-        activePlayer={activePlayer}
-        isMyTurn={isMyTurn}
-        gameState={gameState}
-        myPlayerId={myPlayerId}
-        onTimeoutTurn={onTimeoutTurn}
-        dice={dice}
-        isRolling={isRolling}
-      />
+      {/* MİNİMALİST SIRA & SAYAÇ KAPSÜLÜ (Konumu Asla Oynamayan Sabit Üst Pozisyon) */}
+      <div className="flex-shrink-0 flex items-center justify-center min-h-[34px]">
+        <TurnStatusCapsule
+          activePlayer={activePlayer}
+          isMyTurn={isMyTurn}
+          gameState={gameState}
+          myPlayerId={myPlayerId}
+          onTimeoutTurn={onTimeoutTurn}
+          dice={dice}
+          isRolling={isRolling}
+        />
+      </div>
 
       {/* BOT SIRASINDA HIZLI ATLA BUTONU */}
       {!isMyTurn && activePlayer?.isBot && onFastForwardBot && !isPawnBusy && (
         <button
           onClick={onFastForwardBot}
-          className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-space font-black text-xs shadow-md border border-amber-300 transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 animate-pulse"
+          className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-space font-black text-xs shadow-md border border-amber-300 transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 animate-pulse flex-shrink-0"
           title="Botun turunu anında bitir ve sıradakine geç"
         >
           <Zap className="w-3.5 h-3.5 fill-slate-950" />
@@ -105,7 +107,7 @@ export function ActionControls({
 
       {/* SADECE ETKİLEŞİM GEREKTİREN AKSİYONLARDA GÖRÜNEN KOMPAKT KART */}
       {hasInteractiveAction && (
-        <div className="w-full max-w-[290px] flex flex-col gap-2 animate-fadeIn">
+        <div className="w-full max-w-[290px] flex flex-col gap-2 animate-fadeIn flex-shrink-0">
           {/* ÇEKİLEN KART BEKLEME EYLEMİ */}
           {phase === 'CARD_DRAWN' && (
             <button

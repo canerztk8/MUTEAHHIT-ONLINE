@@ -1765,8 +1765,8 @@ export function Board({
 
 
 
-          {/* Merkez Kontrol Alanı (Zar & Eylemler - ASLA KAPANMAZ!) */}
-          <div className="relative z-20 w-full flex-1 flex flex-col items-center justify-center my-0.5 sm:my-1 min-h-0 overflow-y-auto custom-scrollbar">
+          {/* Merkez Kontrol Alanı (Zar & Eylemler - Dikey Konum Sabit, Layout Shift Yok) */}
+          <div className="relative z-20 w-full flex-1 flex flex-col items-center justify-start pt-1 sm:pt-2 my-0.5 sm:my-1 min-h-0 overflow-y-auto custom-scrollbar">
             {React.isValidElement(centerControlsSlot)
               ? React.cloneElement(centerControlsSlot, {
                   isRolling: isDiceRolling || centerControlsSlot.props?.isRolling,
