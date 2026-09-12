@@ -705,14 +705,15 @@ export function Board({
   const deedsMenuRef = useRef(null);
 
   const deedsBreakdown = useMemo(() => {
+    const props = properties || {};
     const colorTiles = BOARD_TILES.filter(t => t.type === 'property');
-    const unownedColorTiles = colorTiles.filter(t => !properties?.[t.id]?.ownerId);
+    const unownedColorTiles = colorTiles.filter(t => !props[t.id]?.ownerId);
 
     const railroadTiles = BOARD_TILES.filter(t => t.type === 'railroad');
-    const unownedRailroadTiles = railroadTiles.filter(t => !properties?.[t.id]?.ownerId);
+    const unownedRailroadTiles = railroadTiles.filter(t => !props[t.id]?.ownerId);
 
     const utilityTiles = BOARD_TILES.filter(t => t.type === 'utility');
-    const unownedUtilityTiles = utilityTiles.filter(t => !properties?.[t.id]?.ownerId);
+    const unownedUtilityTiles = utilityTiles.filter(t => !props[t.id]?.ownerId);
 
     const totalUnowned = unownedColorTiles.length + unownedRailroadTiles.length + unownedUtilityTiles.length;
     const totalDeeds = colorTiles.length + railroadTiles.length + utilityTiles.length; // 28
@@ -728,7 +729,7 @@ export function Board({
       { key: 'dark_blue', name: 'Koyu Mavi', color: '#1e3a8a', total: 2 },
     ].map(g => {
       const groupTiles = colorTiles.filter(t => t.group === g.key);
-      const unownedCount = groupTiles.filter(t => !properties?.[t.id]?.ownerId).length;
+      const unownedCount = groupTiles.filter(t => !props[t.id]?.ownerId).length;
       return {
         ...g,
         total: groupTiles.length || g.total,
@@ -747,7 +748,7 @@ export function Board({
       totalUtilityCount: utilityTiles.length,
       colorGroups
     };
-  }, [properties]);
+  }, [properties, gameState?.lastPropertyAcquired, gameState?.lastAuctionResult, gameState?.roundNumber, gameState?.players]);
 
   useEffect(() => {
     if (!isDeedsMenuOpen) return;
@@ -1598,13 +1599,13 @@ export function Board({
                 isDarkMode ? 'bg-[#0f172a]/95 border-slate-700' : 'bg-white/95 border-slate-300'
               } border ${
                 isApocalypse ? 'border-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.3)]' : ''
-              } rounded-xl shadow-sm select-none backdrop-blur-sm`}>
+              } rounded-xl shadow-sm select-none backdrop-blur-sm overflow-visible`}>
                 {/* 4 Hücreli Kompakt Grid */}
-                <div className={`grid grid-cols-4 divide-x rounded-xl overflow-hidden ${
+                <div className={`grid grid-cols-4 divide-x rounded-xl overflow-visible ${
                   isDarkMode ? 'divide-slate-800 bg-[#0f172a]/95 text-slate-200' : 'divide-slate-200 bg-slate-50/95 text-slate-800'
                 }`}>
                   {/* 1. Hücre: Tur Sayısı */}
-                  <div className="p-1 sm:p-1.5 flex flex-col items-center justify-center text-center">
+                  <div className="p-1 sm:p-1.5 flex flex-col items-center justify-center text-center rounded-l-xl">
                     <span className="text-[7px] sm:text-[8px] font-bold text-slate-400 uppercase font-space tracking-wider">
                       TUR
                     </span>
@@ -1642,7 +1643,7 @@ export function Board({
                   {/* 4. Hücre: Satın Alınabilir Sahipsiz Tapu Sayısı (Renkli + Gar + Tesis) */}
                   <div
                     ref={deedsMenuRef}
-                    className={`relative p-1 sm:p-1.5 flex flex-col items-center justify-center text-center cursor-pointer transition-colors group ${
+                    className={`relative p-1 sm:p-1.5 flex flex-col items-center justify-center text-center cursor-pointer transition-colors group rounded-r-xl ${
                       isDeedsMenuOpen ? 'bg-sky-100/70 dark:bg-sky-950/70' : 'hover:bg-sky-50/70 dark:hover:bg-sky-950/50'
                     }`}
                     onClick={(e) => {
@@ -1662,10 +1663,10 @@ export function Board({
                     {/* Tıklandığında Hemen Altında Açılan Kompakt Menü */}
                     {isDeedsMenuOpen && (
                       <div
-                        className={`absolute top-full right-0 mt-1.5 z-50 w-52 sm:w-56 p-2 rounded-2xl shadow-2xl border backdrop-blur-md animate-fadeIn cursor-default text-left ${
+                        className={`absolute top-full right-0 mt-2 z-50 w-56 sm:w-60 p-2.5 rounded-2xl shadow-2xl border backdrop-blur-xl animate-fadeIn cursor-default text-left ${
                           isDarkMode
-                            ? 'bg-slate-900/98 border-slate-700 text-slate-100 shadow-black/70'
-                            : 'bg-white/98 border-slate-300 text-slate-900 shadow-slate-400/40'
+                            ? 'bg-slate-900/98 border-slate-700 text-slate-100 shadow-black/80'
+                            : 'bg-white/98 border-slate-300 text-slate-900 shadow-slate-400/50'
                         }`}
                         onClick={(e) => e.stopPropagation()}
                       >
@@ -1680,7 +1681,7 @@ export function Board({
                         </div>
 
                         {/* Kompakt Liste */}
-                        <div className="space-y-1">
+                        <div className="space-y-1 max-h-60 overflow-y-auto custom-scrollbar pr-0.5">
                           {/* 1. Renkli Tapu / Boş Arsa (Tıklanınca Renk Grupları Açılır) */}
                           <div>
                             <button

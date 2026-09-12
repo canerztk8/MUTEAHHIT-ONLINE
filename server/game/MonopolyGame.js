@@ -2590,7 +2590,12 @@ export class MonopolyGame {
     const round = this.roundNumber || 1;
     const sanitizedPlayers = this.players.map(({ sessionToken, ...safeProps }) => safeProps);
     const active = this.getActivePlayer();
-    const sanitizedActive = active ? (({ sessionToken, ...safeProps }) => safeProps)(active) : null;
+    const sanitizedProperties = {};
+    if (this.properties) {
+      for (const [id, prop] of Object.entries(this.properties)) {
+        sanitizedProperties[id] = { ...prop };
+      }
+    }
 
     return {
       roomCode: this.roomCode,
@@ -2630,7 +2635,7 @@ export class MonopolyGame {
       phase: this.phase,
       canRollAgain: this.canRollAgain,
       currentTile: this.currentTile,
-      properties: this.properties,
+      properties: sanitizedProperties,
       auction: this.auction,
       lastAuctionResult: this.lastAuctionResult,
       lastPropertyAcquired: this.lastPropertyAcquired,

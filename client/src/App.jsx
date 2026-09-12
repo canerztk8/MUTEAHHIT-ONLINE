@@ -1294,31 +1294,19 @@ export function App() {
         </div>
       )}
 
-      {/* Üst Kısayollar (Karanlık Mod & DevTools) */}
-      <div className="fixed top-2.5 right-2.5 lg:right-[305px] xl:right-[335px] 2xl:right-[355px] z-40 flex items-center gap-2 pointer-events-none">
-        {devToolsUnlocked && (
-          <button
-            onClick={() => setShowDevTools(prev => !prev)}
-            className="pointer-events-auto p-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-amber-400 border border-amber-500/80 shadow-lg backdrop-blur-md flex items-center justify-center cursor-pointer transition active:scale-95 animate-pulse"
-            title="Müteahhit DevTools Test Panelini Aç / Kapat"
-          >
-            <Wrench className="w-4 h-4 text-amber-400" />
-          </button>
-        )}
-
-        <div className="lg:hidden pointer-events-auto">
-          <button
-            onClick={toggleDarkMode}
-            title={isDarkMode ? 'Aydınlık Moda Geç' : 'Karanlık Moda Geç'}
-            className={`p-2 rounded-xl border transition shadow-lg cursor-pointer backdrop-blur-md flex items-center justify-center ${
-              isDarkMode
-                ? 'bg-slate-900/90 border-amber-400/60 text-amber-300 shadow-[0_0_15px_rgba(251,191,36,0.3)]'
-                : 'bg-white/90 border-slate-300 text-slate-700 shadow-sm'
-            }`}
-          >
-            {isDarkMode ? <Sun className="w-4 h-4 text-amber-400 animate-pulse" /> : <Moon className="w-4 h-4 text-indigo-600" />}
-          </button>
-        </div>
+      {/* Üst Kısayol (Mobil Karanlık Mod) */}
+      <div className="fixed top-2.5 right-2.5 z-40 flex items-center gap-2 pointer-events-none lg:hidden">
+        <button
+          onClick={toggleDarkMode}
+          title={isDarkMode ? 'Aydınlık Moda Geç' : 'Karanlık Moda Geç'}
+          className={`pointer-events-auto p-2 rounded-xl border transition shadow-lg cursor-pointer backdrop-blur-md flex items-center justify-center ${
+            isDarkMode
+              ? 'bg-slate-900/90 border-amber-400/60 text-amber-300 shadow-[0_0_15px_rgba(251,191,36,0.3)]'
+              : 'bg-white/90 border-slate-300 text-slate-700 shadow-sm'
+          }`}
+        >
+          {isDarkMode ? <Sun className="w-4 h-4 text-amber-400 animate-pulse" /> : <Moon className="w-4 h-4 text-indigo-600" />}
+        </button>
       </div>
 
       {/* Ana Oyun Alanı - Sol Panel (Kuşe Kağıt Kartela) + Orta Tahta (Blueprint Pafta) + Sağ Panel (3D Zar Tablası) */}
@@ -1802,6 +1790,17 @@ export function App() {
           </div>
         );
       })()}
+
+      {/* 🛠️ DevTools Kalıcı Tetikleyici Butonu (Ekranın En Sağ Altı - Saydam & Erişilebilir) */}
+      {devToolsUnlocked && (
+        <button
+          onClick={() => setShowDevTools(prev => !prev)}
+          className="fixed bottom-3 right-3 z-50 p-2.5 rounded-2xl bg-slate-900/60 hover:bg-slate-900/95 text-amber-400 border border-amber-500/40 hover:border-amber-400 shadow-xl backdrop-blur-md flex items-center justify-center cursor-pointer transition-all duration-200 active:scale-90 hover:scale-105 opacity-60 hover:opacity-100 select-none group"
+          title="Müteahhit DevTools Test Panelini Aç / Kapat"
+        >
+          <Wrench className="w-4 h-4 text-amber-400 group-hover:rotate-45 transition-transform duration-300" />
+        </button>
+      )}
 
       {/* 🛠️ DevTools Modal */}
       {showDevTools && (
