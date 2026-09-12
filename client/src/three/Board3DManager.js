@@ -371,8 +371,8 @@ export class Board3DManager {
 
       if (record.hopProgress < 1.0) {
         hasActiveAnimation = true;
-        // 175ms'lik adım süresine tam uyumlu, pürüzsüz ve doğal parabolik yay temposu (1.0 / 0.153s ≈ 6.5)
-        record.hopProgress = Math.min(1.0, record.hopProgress + dt * 6.5);
+        // 135ms'lik adım süresine ve 2D kayar oka tam senkronize parabolik yay temposu (1.0 / 0.135s ≈ 7.4)
+        record.hopProgress = Math.min(1.0, record.hopProgress + dt * 7.4);
         const t = record.hopProgress;
 
         // X ve Z ekseninde pürüzsüz smoothstep interpolasyonu

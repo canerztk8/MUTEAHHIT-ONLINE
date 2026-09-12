@@ -128,7 +128,7 @@ const GlidingBoardArrow = React.memo(function GlidingBoardArrow({
         left: `${finalX}%`,
         top: `${finalY}%`,
         transform: `translate(-50%, -50%) rotate(${smoothRot}deg) scale(${scale})`,
-        transition: 'left 125ms cubic-bezier(0.2, 0, 0.2, 1), top 125ms cubic-bezier(0.2, 0, 0.2, 1), transform 125ms ease-out, opacity 250ms ease-out',
+        transition: 'left 135ms cubic-bezier(0.42, 0, 0.58, 1), top 135ms cubic-bezier(0.42, 0, 0.58, 1), transform 135ms ease-in-out, opacity 250ms ease-out',
         opacity: isVisible ? opacity : 0
       }}
       title={title}
@@ -1213,7 +1213,7 @@ export function Board({
                   }, 100);
                   activeIntervalsRef.current[`final_${p.id}`] = finalTouchdown;
                 }
-              }, 125);
+              }, 135);
 
               activeIntervalsRef.current[p.id] = interval;
             };

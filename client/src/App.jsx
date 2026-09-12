@@ -1016,8 +1016,15 @@ export function App() {
     networkRef.current?.sendAction(ACTION.START_GAME);
   };
 
+  const diceRollingFallbackTimeoutRef = useRef(null);
+
   const handleRollDice = (data) => {
     setIsDiceRolling(true);
+    if (diceRollingFallbackTimeoutRef.current) clearTimeout(diceRollingFallbackTimeoutRef.current);
+    diceRollingFallbackTimeoutRef.current = setTimeout(() => {
+      setIsDiceRolling(false);
+    }, 1250);
+
     const payload = (data && typeof data === 'object' && !data.nativeEvent && Array.isArray(data.dice))
       ? { dice: data.dice, toss: data.toss }
       : {};
@@ -1026,6 +1033,11 @@ export function App() {
 
   const handleRollAgain = (data) => {
     setIsDiceRolling(true);
+    if (diceRollingFallbackTimeoutRef.current) clearTimeout(diceRollingFallbackTimeoutRef.current);
+    diceRollingFallbackTimeoutRef.current = setTimeout(() => {
+      setIsDiceRolling(false);
+    }, 1250);
+
     const payload = (data && typeof data === 'object' && !data.nativeEvent && Array.isArray(data.dice))
       ? { dice: data.dice, toss: data.toss }
       : {};
