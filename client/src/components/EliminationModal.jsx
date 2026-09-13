@@ -57,8 +57,8 @@ export function EliminationModal({
   // 1. DURUM: BİZ ELENDİK (Full screen dramatik iflas & seyirci modu seçeneği)
   if (isMe) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl animate-in fade-in duration-300">
-        <div className="relative w-full max-w-lg bg-gradient-to-b from-rose-950 via-slate-950 to-black border-2 border-rose-600/80 rounded-3xl p-6 sm:p-8 text-center shadow-2xl animate-elimination-pulse overflow-hidden">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/90 backdrop-blur-xl animate-in fade-in duration-300">
+        <div className="relative w-full max-w-lg bg-gradient-to-b from-rose-950 via-slate-950 to-black border-2 border-rose-600/80 rounded-3xl p-5 sm:p-8 text-center shadow-2xl animate-elimination-pulse overflow-hidden max-h-[92vh] overflow-y-auto custom-scrollbar my-auto">
           {/* Kırmızı arka plan ışık huzmesi */}
           <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-72 h-72 bg-rose-600/25 rounded-full blur-3xl pointer-events-none" />
 
@@ -72,7 +72,7 @@ export function EliminationModal({
               <AlertOctagon className="w-3.5 h-3.5" /> İFLAS BAYRAĞI ÇEKİLDİ
             </span>
 
-            <h2 className="text-2xl sm:text-4xl font-black text-white mb-2 tracking-tight">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white mb-2 tracking-tight">
               OYUNDAN ELENDİNİZ!
             </h2>
 

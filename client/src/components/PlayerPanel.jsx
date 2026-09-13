@@ -7,13 +7,13 @@ function MoneyHistoryModal({ player, history, onClose }) {
   const balance = player.money;
   return (
     <div
-      className="fixed inset-0 z-[999] flex items-center justify-center"
+      className="fixed inset-0 z-[999] flex items-center justify-center p-3 sm:p-4"
       onClick={onClose}
     >
       {/* backdrop */}
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
       <div
-        className="relative z-10 w-96 max-h-[75vh] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 flex flex-col overflow-hidden"
+        className="relative z-10 w-[92vw] max-w-sm max-h-[75vh] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 flex flex-col overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}

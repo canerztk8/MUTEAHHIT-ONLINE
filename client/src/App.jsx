@@ -10,6 +10,7 @@ import { ChatAndLog } from './components/ChatAndLog.jsx';
 import { TitleDeedCards } from './components/TitleDeedCards.jsx';
 import { DiceSidebarTray } from './components/DiceSidebarTray.jsx';
 import { MobileTopPlayerBar } from './components/MobileTopPlayerBar.jsx';
+import { MobileBottomActionBar } from './components/MobileBottomActionBar.jsx';
 import { ErrorBoundary } from './components/ErrorBoundary.jsx';
 
 // 🚀 Modallar — Dinamik code-splitting ile ana bundle yükü hafifletilir
@@ -388,6 +389,13 @@ export function App() {
 
   // Mobil Çekmece / Modal Menüsü (null | 'deeds' | 'chat')
   const [mobileDrawer, setMobileDrawer] = useState(null);
+  const [lastReadChatCount, setLastReadChatCount] = useState(0);
+
+  useEffect(() => {
+    if (mobileDrawer === 'chat') {
+      setLastReadChatCount(chatMessages?.length || 0);
+    }
+  }, [chatMessages, mobileDrawer]);
 
   // Görünen bakiyelerle ve görsel durumlarla zenginleştirilmiş oyun durumu (Piyon adımlarken bakiye, kodes ve konumu eski değerde tutar)
   const effectiveGameState = React.useMemo(() => {
@@ -1470,10 +1478,13 @@ export function App() {
           myPlayerId={effectiveMyPlayerId}
           onOpenTrade={(target) => handleOpenTradeForTile(target, null)}
           onOpenDeeds={() => setMobileDrawer('deeds')}
-          onOpenChat={() => setMobileDrawer('chat')}
+          onOpenChat={() => {
+            setMobileDrawer('chat');
+            setLastReadChatCount(chatMessages?.length || 0);
+          }}
           onKickPlayer={handleKickPlayer}
           onRemoveBot={handleRemoveBot}
-          unreadChatCount={chatMessages?.length || 0}
+          unreadChatCount={mobileDrawer === 'chat' ? 0 : Math.max(0, (chatMessages?.length || 0) - lastReadChatCount)}
         />
 
         {/* SOL PANEL: SADECE MASAÜSTÜ (Desktop - lg:flex, Mobilde Cardboard'ı İtmez) */}
@@ -1600,6 +1611,22 @@ export function App() {
             </ErrorBoundary>
           </div>
         </aside>
+
+        {/* MOBİL ALT KONTROL VE EYLEM ÇUBUĞU (Sadece < lg mobil/tablet ekranlarda görünür, masaüstünde tamamen gizlidir) */}
+        <MobileBottomActionBar
+          isHost={isHost}
+          isPaused={Boolean(gameState?.isPaused)}
+          onTogglePause={handleTogglePause}
+          activePlayerIsBot={Boolean(activePlayer?.isBot && gameState?.status === 'playing')}
+          onFastForwardBot={handleFastForwardBot}
+          volume={volume}
+          onVolumeToggle={() => handleVolumeChange(volume === 0 ? 0.6 : 0)}
+          onVolumeChange={handleVolumeChange}
+          roomCode={gameState?.roomCode || localStorage.getItem('muteahhit_room_code') || ''}
+          copiedLink={copiedLink}
+          onCopyLink={copyRoomLink}
+          onLeaveGame={() => handleLeaveGame(false)}
+        />
 
       </main>
 

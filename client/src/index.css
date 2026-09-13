@@ -799,5 +799,16 @@ html:not(.dark) .bg-white\/80 {
   background-color: rgba(255, 255, 255, 0.96) !important;
 }
 
-
-
+/* 📱 Mobil ve Tablet Özel Dokunma & Safe Area Optimizasyonları (<1024px) */
+@media (max-width: 1023px) {
+  button, a, input, select, textarea {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .pb-safe {
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+  }
+  .pt-safe {
+    padding-top: max(0.25rem, env(safe-area-inset-top, 0px));
+  }
+}

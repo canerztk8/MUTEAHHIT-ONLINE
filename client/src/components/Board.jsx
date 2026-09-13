@@ -2207,7 +2207,7 @@ export function Board({
               </button>
             </div>
           ) : (
-            <div className="pointer-events-auto relative w-full max-w-[340px] sm:max-w-sm bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 border-2 border-amber-400 rounded-3xl p-3.5 sm:p-4 shadow-[0_0_50px_rgba(251,191,36,0.35)] flex flex-col gap-3">
+            <div className="pointer-events-auto relative w-full max-w-[340px] sm:max-w-sm bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 border-2 border-amber-400 rounded-3xl p-3 sm:p-4 shadow-[0_0_50px_rgba(251,191,36,0.35)] flex flex-col gap-2.5 sm:gap-3 max-h-[85vh] overflow-y-auto custom-scrollbar">
             {/* Üst Başlık & Süre */}
             <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
               <div className="flex items-center gap-2">

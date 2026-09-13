@@ -101,8 +101,8 @@ export function WinnerModal({ winner, gameState, onRestart, onLeaveRoom }) {
 
   // 2. TAM EKRAN ŞAMPİYONLUK VE SIRALAMA MODALİ
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto animate-in fade-in duration-300">
-      <div className="relative w-full max-w-lg bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 border-2 border-amber-500/60 rounded-3xl p-5 sm:p-7 text-center shadow-2xl shadow-amber-500/20 overflow-hidden my-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto animate-in fade-in duration-300">
+      <div className="relative w-full max-w-lg bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 border-2 border-amber-500/60 rounded-3xl p-4 sm:p-7 text-center shadow-2xl shadow-amber-500/20 overflow-hidden my-auto max-h-[92vh] overflow-y-auto custom-scrollbar">
         {/* Altın Parıltı & Radial Glow */}
         <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-80 h-80 bg-amber-500/20 rounded-full blur-3xl pointer-events-none" />
 

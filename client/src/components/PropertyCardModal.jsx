@@ -235,7 +235,7 @@ export function PropertyCardModal({
     const info = getSpecialTileInfo(tile);
     return (
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fadeIn [perspective:1200px]"
+        className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/80 backdrop-blur-md animate-fadeIn [perspective:1200px]"
         onClick={(e) => {
           if (e.target === e.currentTarget) onClose();
         }}
@@ -248,7 +248,7 @@ export function PropertyCardModal({
             transform: `perspective(1000px) rotateX(${tilt.rotateX}deg) rotateY(${tilt.rotateY}deg) scale3d(${tilt.isHovering ? 1.008 : 1}, ${tilt.isHovering ? 1.008 : 1}, 1)`,
             transition: tilt.isHovering ? 'transform 0.12s ease-out' : 'transform 0.5s cubic-bezier(0.23, 1, 0.32, 1)'
           }}
-          className="relative w-full max-w-sm bg-slate-900 border-2 border-slate-700/80 rounded-3xl shadow-[0_25px_60px_rgba(0,0,0,0.85)] overflow-hidden flex flex-col will-change-transform select-none max-h-[92vh] overflow-y-auto custom-scrollbar"
+          className="relative w-full max-w-sm bg-slate-900 border-2 border-slate-700/80 rounded-3xl shadow-[0_25px_60px_rgba(0,0,0,0.85)] overflow-hidden flex flex-col will-change-transform select-none max-h-[90vh] overflow-y-auto custom-scrollbar"
         >
           {/* Specular Radial Gradient */}
           <div
@@ -365,7 +365,7 @@ export function PropertyCardModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fadeIn [perspective:1200px]"
+      className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/80 backdrop-blur-md animate-fadeIn [perspective:1200px]"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -379,7 +379,7 @@ export function PropertyCardModal({
           transform: `perspective(1000px) rotateX(${tilt.rotateX}deg) rotateY(${tilt.rotateY}deg) scale3d(${tilt.isHovering ? 1.008 : 1}, ${tilt.isHovering ? 1.008 : 1}, 1)`,
           transition: tilt.isHovering ? 'transform 0.12s ease-out' : 'transform 0.5s cubic-bezier(0.23, 1, 0.32, 1)'
         }}
-        className="relative w-full max-w-sm bg-slate-900 border-2 border-slate-700/80 rounded-3xl shadow-[0_25px_60px_rgba(0,0,0,0.85)] overflow-hidden flex flex-col will-change-transform select-none max-h-[92vh] overflow-y-auto custom-scrollbar"
+        className="relative w-full max-w-sm bg-slate-900 border-2 border-slate-700/80 rounded-3xl shadow-[0_25px_60px_rgba(0,0,0,0.85)] overflow-hidden flex flex-col will-change-transform select-none max-h-[90vh] overflow-y-auto custom-scrollbar"
       >
         {/* Güçsüzleştirilmiş & Yumuşatılmış Specular Radial Gradient Işık Yansıması */}
         <div

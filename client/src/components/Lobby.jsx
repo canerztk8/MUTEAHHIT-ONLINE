@@ -268,9 +268,9 @@ export function Lobby({
             </h1>
 
             {/* Oda Kodu & Link Kopyalama */}
-            <div className={`mt-4 inline-flex items-center gap-3 ${isDarkMode ? 'bg-slate-800/90 border-slate-700' : 'bg-slate-100 border-slate-300'} border rounded-2xl px-5 py-2.5`}>
+            <div className={`mt-4 inline-flex flex-wrap sm:flex-nowrap justify-center items-center gap-2 sm:gap-3 ${isDarkMode ? 'bg-slate-800/90 border-slate-700' : 'bg-slate-100 border-slate-300'} border rounded-2xl px-4 sm:px-5 py-2 sm:py-2.5 max-w-full`}>
               <span className={`${isDarkMode ? 'text-slate-400' : 'text-slate-600'} text-sm font-medium`}>Oda Kodu:</span>
-              <span className="font-mono text-2xl font-black text-amber-500 dark:text-amber-400 tracking-wider">
+              <span className="font-mono text-xl sm:text-2xl font-black text-amber-500 dark:text-amber-400 tracking-wider">
                 {gameState.roomCode}
               </span>
               <button
@@ -736,13 +736,13 @@ export function Lobby({
             <label className={`block text-xs font-bold ${isDarkMode ? 'text-slate-300' : 'text-slate-700'} uppercase tracking-wider mb-2`}>
               Piyon Rengi
             </label>
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-1.5 sm:gap-2">
               {PLAYER_COLORS.map((c) => (
                 <button
                   key={c}
                   type="button"
                   onClick={() => setSelectedColor(c)}
-                  className={`w-9 h-9 rounded-xl transition-all cursor-pointer ${
+                  className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl transition-all cursor-pointer flex-shrink-0 ${
                     selectedColor === c ? 'ring-4 ring-amber-400/80 scale-110 shadow-lg' : 'opacity-80 hover:opacity-100'
                   }`}
                   style={{ backgroundColor: c }}

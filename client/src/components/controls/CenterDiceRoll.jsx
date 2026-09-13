@@ -247,7 +247,7 @@ export function CenterDiceRoll({
             handleMobileShakeAndRoll(e);
           }}
           onTouchStart={requestMotionPermission}
-          className="lg:hidden group relative w-full py-2.5 sm:py-3 px-4 bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-400 hover:brightness-110 active:scale-95 text-slate-950 font-space font-extrabold text-xs sm:text-sm rounded-2xl shadow-[0_4px_16px_rgba(245,158,11,0.4)] transition-all flex items-center justify-center gap-2.5 cursor-pointer animate-dice-glow border-2 border-amber-300"
+          className="lg:hidden group relative w-full min-h-[48px] py-2.5 sm:py-3 px-3 sm:px-4 bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-400 hover:brightness-110 active:scale-95 text-slate-950 font-space font-extrabold text-xs sm:text-sm rounded-2xl shadow-[0_4px_16px_rgba(245,158,11,0.4)] transition-all flex items-center justify-center gap-2 sm:gap-2.5 cursor-pointer animate-dice-glow border-2 border-amber-300"
         >
           <div className="flex items-center gap-1 group-hover:scale-110 transition-transform">
             <DieFace value={1} size="sm" isShaking={false} />

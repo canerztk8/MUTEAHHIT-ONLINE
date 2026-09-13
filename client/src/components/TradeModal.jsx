@@ -140,10 +140,10 @@ export function TradeModal({
     : (pendingTrade && pendingTrade.offeredValue > 0 ? 100 : 0);
 
   return (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-colors ${
+    <div className={`fixed inset-0 z-50 flex items-end sm:items-center justify-center p-2 sm:p-4 transition-colors ${
       isIncomingTrade && isDetrimental ? 'bg-rose-950/25' : 'bg-black/25'
     }`}>
-      <div className={`relative w-full max-w-lg bg-slate-900/95 rounded-3xl shadow-2xl p-5 sm:p-6 overflow-hidden transition-all ${
+      <div className={`relative w-full max-w-lg bg-slate-900/95 rounded-3xl shadow-2xl p-4 sm:p-6 max-h-[88vh] overflow-y-auto custom-scrollbar transition-all ${
         isIncomingTrade && isDetrimental
           ? 'border-2 border-rose-500 ring-4 ring-rose-500/40 shadow-rose-900/70 animate-pulse'
           : 'border border-slate-700'
@@ -590,7 +590,7 @@ export function TradeModal({
               type="button"
               onClick={handleSendOffer}
               disabled={!canSubmitTrade || isOnCooldown}
-              className={`w-full py-3 font-bold text-sm rounded-xl shadow-lg transition flex items-center justify-center gap-2 ${
+              className={`w-full min-h-[44px] py-3 font-bold text-sm rounded-xl shadow-lg transition flex items-center justify-center gap-2 ${
                 !canSubmitTrade || isOnCooldown
                   ? 'bg-slate-800 border border-slate-700 text-slate-500 cursor-not-allowed opacity-60'
                   : 'bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 active:scale-95 cursor-pointer shadow-amber-500/20'
