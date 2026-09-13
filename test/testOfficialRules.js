@@ -276,6 +276,50 @@ assert(p1.position === 12, 'En yakın altyapı 12 olmalı');
 assert(p1.money === 1200, 'GO noktasından geçtiği için 200₺ maaş almalı');
 assert(game.phase === 'TILE_ACTION', 'Sahipsiz tesis için satın alma aşaması açılmalı');
 
+// Test 11.6: Tesis Kira Kuralları ve Kartla Tesis Kirası Testleri (1 tesis = 4x, 2 tesis = 10x, ipotekli = 4x)
+console.log('\n--- 11.6 Tesis Kira Kuralları Testleri (1 Tesis: 4x, 2 Tesis: 10x, İpotekli: 4x) ---');
+// p2 yalnızca 12 numaralı tesise sahip olsun
+game.properties[12].ownerId = 'p2';
+game.properties[12].mortgaged = false;
+game.properties[28].ownerId = null;
+game.properties[28].mortgaged = false;
+
+// 1 tesis varken normal calculateRent: 7 zar için 7 * 4 = 28₺ olmalı
+const utilRent1 = game.calculateRent(12, 7);
+assert(utilRent1 === 28, `1 tesis varken 7 zar kirası 28₺ olmalı (hesaplanan: ${utilRent1})`);
+
+// p2 her iki tesise de sahip olsun (12 ve 28)
+game.properties[28].ownerId = 'p2';
+const utilRent2 = game.calculateRent(12, 7);
+assert(utilRent2 === 70, `2 tesis varken 7 zar kirası 70₺ olmalı (hesaplanan: ${utilRent2})`);
+
+// 28 ipotek edilirse geriye 1 aktif tesis kaldığından kira tekrar 4x (28₺) olmalı
+game.properties[28].mortgaged = true;
+const utilRentMortgaged = game.calculateRent(12, 7);
+assert(utilRentMortgaged === 28, `Biri ipotekli 2 tesis varken kira 4x (28₺) olmalı (hesaplanan: ${utilRentMortgaged})`);
+
+// Kart ile gidildiğinde p2'nin 1 tesisi varken 4x kesilmeli:
+game.properties[28].ownerId = null;
+game.properties[28].mortgaged = false;
+p1.position = 36;
+p1.money = 1000;
+p2.money = 1000;
+game.applyCard(p1, card5, 7);
+// p1 GO'dan geçer (+200 = 1200). lastRentPayment miktarı p2'nin 1 tesisi olduğu için özel zar toplamının 4 katı olmalı (10 katı DEĞİL!)
+const specialRent = game.lastRentPayment.amount;
+assert(specialRent % 4 === 0, `1 tesisi olan rakibe kartla gidildiğinde kira 4'ün katı olmalı (alınan: ${specialRent})`);
+assert(p1.money === 1200 - specialRent, '1 tesis kirası doğru düşülmeli');
+
+// Kart ile gidildiğinde p2'nin 2 tesisi varken 10x kesilmeli:
+game.properties[28].ownerId = 'p2';
+p1.position = 36;
+p1.money = 1000;
+p2.money = 1000;
+game.applyCard(p1, card5, 7);
+const specialRent2 = game.lastRentPayment.amount;
+assert(specialRent2 % 10 === 0, `2 tesisi olan rakibe kartla gidildiğinde kira 10'un katı olmalı (alınan: ${specialRent2})`);
+assert(p1.money === 1200 - specialRent2, '2 tesis kirası doğru düşülmeli');
+
 // 12. "3 Kare Geri Git" Kartı Testi (Resmi Kurallarda Geriye Giden Tek Kart)
 console.log('\n--- 12. "3 Kare Geri Git" Kartı Testi ---');
 p1.position = 7;

@@ -954,9 +954,9 @@ export class MonopolyGame {
     return 0;
   }
 
-  getUtilityMultiplier(count = 2) {
+  getUtilityMultiplier(count = 1) {
     // Resmi Oyun Kuralı: 1 kamu kuruluşu zarın 4 katı, 2 kamu kuruluşu zarın 10 katı
-    return count === 2 ? 10 : 4;
+    return count >= 2 ? 10 : 4;
   }
 
   calculateRent(tileId, diceSum = 7) {
@@ -979,13 +979,13 @@ export class MonopolyGame {
       }
     } else if (tile.type === 'railroad') {
       const railroads = COLOR_GROUPS.railroad;
-      const count = railroads.filter(id => this.properties[id]?.ownerId === ownerId).length;
+      const count = railroads.filter(id => this.properties[id]?.ownerId === ownerId && !this.properties[id]?.mortgaged).length;
       // Resmi Oyun Kuralı: 1 Gar = 25₺, 2 Gar = 50₺, 3 Gar = 100₺, 4 Gar = 200₺
       const railroadRents = [25, 50, 100, 200];
       baseRent = railroadRents[Math.max(0, count - 1)] || 25;
     } else if (tile.type === 'utility') {
       const utilities = COLOR_GROUPS.utility;
-      const count = utilities.filter(id => this.properties[id]?.ownerId === ownerId).length;
+      const count = utilities.filter(id => this.properties[id]?.ownerId === ownerId && !this.properties[id]?.mortgaged).length;
       const multiplier = this.getUtilityMultiplier(count);
       baseRent = diceSum * multiplier;
     }
@@ -1127,11 +1127,13 @@ export class MonopolyGame {
         if (propState && propState.ownerId && propState.ownerId !== player.id && !propState.mortgaged) {
           const owner = this.players.find(p => p.id === propState.ownerId);
           if (owner && !owner.isBankrupt) {
-            // Resmi Oyun Kuralı: Sahibi varsa zar atılır ve toplamın 10 katı kira ödenir
+            // Resmi Oyun Kuralı: Sahibi varsa zar atılır ve sahip olunan tesis sayısına göre kira ödenir (1 tesis: 4x, 2 tesis: 10x)
+            const count = utilities.filter(id => this.properties[id]?.ownerId === owner.id && !this.properties[id]?.mortgaged).length;
+            const multiplier = this.getUtilityMultiplier(count);
             const roll1 = Math.floor(Math.random() * 6) + 1;
             const roll2 = Math.floor(Math.random() * 6) + 1;
             const specialSum = roll1 + roll2;
-            const utilRent = specialSum * 10;
+            const utilRent = specialSum * multiplier;
             this.adjustPlayerMoney(player, -utilRent, `${owner.name} oyuncusuna Tesis kirası ödendi`);
             this.adjustPlayerMoney(owner, utilRent, `${player.name} oyuncusundan Tesis kirası tahsil edildi`);
             player.lastCreditorId = owner.id;
@@ -1151,7 +1153,7 @@ export class MonopolyGame {
               tileName: tile.name,
               timestamp: Date.now()
             };
-            this.addLog(`💡 ${player.name}, Tesis için özel zar attı (${roll1}+${roll2}=${specialSum}) ve 10 katı olan ${utilRent}₺ kirayı ${owner.name} oyuncusuna ödedi!`, 'rent');
+            this.addLog(`💡 ${player.name}, Tesis için özel zar attı (${roll1}+${roll2}=${specialSum}) ve ${multiplier} katı olan ${utilRent}₺ kirayı ${owner.name} oyuncusuna ödedi!`, 'rent');
             this.checkBankruptcy(player, utilRent, owner.id);
             this.phase = 'TURN_ACTIONS';
             break;
