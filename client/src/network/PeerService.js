@@ -437,8 +437,12 @@ export class HostPeerService {
         },
         onConnected: () => {
           console.log(`[HostPeerService] Relay odasına katıldı/yeniden bağlandı: ${this._roomCode}`);
-          // Yeniden bağlanan veya bekleyen istemcilerin son durumu alması için derhal senkronize et
-          this._broadcastState();
+          // FIX: Relay odası kayıt yayılımı için 300ms bekle, ardından bekleyen client'ların durumu alması için senkronize et
+          setTimeout(() => {
+            if (!this._destroyed) {
+              this._broadcastState();
+            }
+          }, 300);
         },
         onDisconnected: () => console.warn('[HostPeerService] Relay bağlantısı geçici koptu (otomatik yeniden bağlanılıyor)...'),
       });
@@ -593,8 +597,9 @@ export class HostPeerService {
       const pong = createPong(msg.t0);
       if (conn) {
         this._sendTo(conn, pong);
-      } else if (this._relay?.isConnected) {
-        this._relay.broadcast(pong);
+      } else if (this._relay?.isConnected && fromRelayId) {
+        // FIX: broadcast yerine sadece ping'i gönderene hedefli yanıt ver
+        this._relay.send(pong, fromRelayId);
       }
       return;
     }
@@ -758,7 +763,8 @@ export class HostPeerService {
             }
             if (this._relay?.isConnected) {
               this._relay.send(spectatorEvent, joinId);
-              this._relay.broadcast(syncStateMsg);
+              // FIX: broadcast yerine hedefli send — sadece izleyiciye gönder, takılma sorunu giderildi
+              this._relay.send(syncStateMsg, joinId);
             }
             this._broadcastState();
             break;
@@ -882,7 +888,7 @@ export class HostPeerService {
           }
           const allowCustom = Boolean(game.isDevMode);
           game.rollDice(effectiveSenderId, allowCustom ? payload?.dice : undefined, allowCustom ? payload?.toss : undefined);
-          this._broadcast({
+          this._broadcastToAll({
             type: MSG.EVENT,
             event: 'DICE_ROLL',
             payload: { values: game.dice, rollId: game.lastDiceRollId }
@@ -899,7 +905,7 @@ export class HostPeerService {
           } else {
             game.rollDice(effectiveSenderId, allowCustom2 ? payload?.dice : undefined, allowCustom2 ? payload?.toss : undefined);
           }
-          this._broadcast({
+          this._broadcastToAll({
             type: MSG.EVENT,
             event: 'DICE_ROLL',
             payload: { values: game.dice, rollId: game.lastDiceRollId }
@@ -1288,8 +1294,23 @@ export class HostPeerService {
         this._onState(s2);
         const m2 = createSyncState(s2);
         for (const c of this._connections.values()) this._sendTo(c, m2);
+        // FIX: Bot auction sonucu Relay'e de yayınla (önceden eksikti)
         if (this._relay?.isConnected) this._relay.broadcast(m2);
       });
+    }
+  }
+
+  /**
+   * Hem WebRTC (DataChannel) hem WebSocket Relay üzerinden tüm bağlı client'lara mesaj yayınlar.
+   * _broadcastState()'den farklı olarak game state değil, EVENT gibi özel mesajlar için kullanılır.
+   * @param {object} msg - Gönderilecek mesaj objesi
+   */
+  _broadcastToAll(msg) {
+    for (const conn of this._connections.values()) {
+      this._sendTo(conn, msg);
+    }
+    if (this._relay?.isConnected) {
+      this._relay.broadcast(msg);
     }
   }
 
@@ -1750,6 +1771,12 @@ export class ClientPeerService {
           } catch (_) {}
         } else if (msg.event === 'SPECTATOR_JOINED') {
           this.isSpectator = true;
+          // FIX: İzleyici event'i geldiğinde watchdog'u durdur — state sync bekleniyor işareti ver
+          this._hasReceivedState = true;
+          if (this._stateWatchdogTimer) {
+            clearTimeout(this._stateWatchdogTimer);
+            this._stateWatchdogTimer = null;
+          }
           this._onSpectator?.(true);
         }
         break;
@@ -1790,18 +1817,24 @@ export class ClientPeerService {
   _ensureStateWatchdog() {
     if (this._hasReceivedState || this._destroyed) return;
     if (this._stateWatchdogTimer) clearTimeout(this._stateWatchdogTimer);
-    this._stateWatchdogTimer = setTimeout(() => {
-      if (!this._hasReceivedState && !this._destroyed && (this._conn?.open || this._relay?.isConnected)) {
-        console.log('[ClientPeerService] Oyun durumu henüz alınmadı, durum Host\'tan talep ediliyor...');
-        this.sendAction(ACTION.REQUEST_STATE, {});
-        // 2 saniye sonra hala alınmadıysa tekrar dene
-        this._stateWatchdogTimer = setTimeout(() => {
-          if (!this._hasReceivedState && !this._destroyed && (this._conn?.open || this._relay?.isConnected)) {
-            this.sendAction(ACTION.REQUEST_STATE, {});
-          }
-        }, 2000);
+
+    let attempt = 0;
+    const tryRequestState = () => {
+      if (this._hasReceivedState || this._destroyed) return;
+      if (!(this._conn?.open || this._relay?.isConnected)) return;
+
+      attempt++;
+      console.log(`[ClientPeerService] Oyun durumu henüz alınmadı, durum Host'tan talep ediliyor... (Deneme ${attempt}/3)`);
+      this.sendAction(ACTION.REQUEST_STATE, {});
+
+      if (attempt < 3) {
+        // FIX: 3 deneme, her biri 2.5sn arayla — daha güvenilir state alımı
+        this._stateWatchdogTimer = setTimeout(tryRequestState, 2500);
       }
-    }, 1200);
+    };
+
+    // 1.5sn bekleyip ilk denemeyi yap (JOIN_LOBBY'nin işlenmesi için süre ver)
+    this._stateWatchdogTimer = setTimeout(tryRequestState, 1500);
   }
 
   _startPing() {

@@ -418,9 +418,16 @@ export function App() {
 
   const matchedPlayer = effectiveGameState?.players?.find(p => !p.isBot && (
     (myPlayerId && p.id === myPlayerId) ||
-    (savedSessionToken && p.sessionToken === savedSessionToken) ||
     (savedPlayerName && p.name === savedPlayerName)
   )) || null;
+
+  // FIX: matchedPlayer bulunduğunda isSpectatorMode'u sıfırla —
+  // F5 sonrası reconnect esnasında "oyuncu yok" geçici durumunun izleyici moduna kilitlenmesini önler
+  useEffect(() => {
+    if (matchedPlayer && isSpectatorMode) {
+      setIsSpectatorMode(false);
+    }
+  }, [matchedPlayer?.id, isSpectatorMode]);
 
   const isSpectator = Boolean(
     isSpectatorMode ||
