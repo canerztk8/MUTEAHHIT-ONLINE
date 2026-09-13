@@ -763,8 +763,9 @@ export class HostPeerService {
             }
             if (this._relay?.isConnected) {
               this._relay.send(spectatorEvent, joinId);
-              // FIX: broadcast yerine hedefli send — sadece izleyiciye gönder, takılma sorunu giderildi
               this._relay.send(syncStateMsg, joinId);
+              // Güvence: Relay odasındaki herkese de broadcast et (joinId hedef eşleşmeme riskine karşı)
+              this._relay.broadcast(syncStateMsg);
             }
             this._broadcastState();
             break;
@@ -800,6 +801,7 @@ export class HostPeerService {
             this._sendTo(conn, syncMsg);
           } else if (this._relay?.isConnected) {
             this._relay.send(syncMsg, fromRelayId || senderId);
+            this._relay.broadcast(syncMsg);
           }
           break;
         }
@@ -1742,6 +1744,7 @@ export class ClientPeerService {
 
   _handleMessage(msg) {
     if (!msg || !msg.type) return;
+    this._lastHostMessageTime = Date.now();
 
     // Hedef filtreleme: Eğer bu mesaj belirli bir hedef oyuncuya özelse
     const target = msg.targetId || msg.payload?.targetId;
@@ -1771,13 +1774,11 @@ export class ClientPeerService {
           } catch (_) {}
         } else if (msg.event === 'SPECTATOR_JOINED') {
           this.isSpectator = true;
-          // FIX: İzleyici event'i geldiğinde watchdog'u durdur — state sync bekleniyor işareti ver
-          this._hasReceivedState = true;
-          if (this._stateWatchdogTimer) {
-            clearTimeout(this._stateWatchdogTimer);
-            this._stateWatchdogTimer = null;
-          }
           this._onSpectator?.(true);
+          // İzleyici olarak katıldık — state henüz alınmadıysa watchdog derhal devreye girsin
+          if (!this._hasReceivedState) {
+            this._ensureStateWatchdog();
+          }
         }
         break;
 
@@ -1824,27 +1825,34 @@ export class ClientPeerService {
       if (!(this._conn?.open || this._relay?.isConnected)) return;
 
       attempt++;
-      console.log(`[ClientPeerService] Oyun durumu henüz alınmadı, durum Host'tan talep ediliyor... (Deneme ${attempt}/3)`);
+      console.log(`[ClientPeerService] Oyun durumu henüz alınmadı, durum Host'tan talep ediliyor... (Deneme ${attempt}/4)`);
       this.sendAction(ACTION.REQUEST_STATE, {});
 
-      if (attempt < 3) {
-        // FIX: 3 deneme, her biri 2.5sn arayla — daha güvenilir state alımı
-        this._stateWatchdogTimer = setTimeout(tryRequestState, 2500);
+      if (attempt < 4) {
+        this._stateWatchdogTimer = setTimeout(tryRequestState, 1800);
       }
     };
 
-    // 1.5sn bekleyip ilk denemeyi yap (JOIN_LOBBY'nin işlenmesi için süre ver)
-    this._stateWatchdogTimer = setTimeout(tryRequestState, 1500);
+    // 1.2sn bekleyip ilk denemeyi yap (JOIN_LOBBY'nin işlenmesi için süre ver)
+    this._stateWatchdogTimer = setTimeout(tryRequestState, 1200);
   }
 
   _startPing() {
     this._stopPing();
+    this._lastHostMessageTime = Date.now();
     const handlePingResult = (rtt) => {
+      this._lastHostMessageTime = Date.now();
       this._onPing(rtt);
       this.sendAction(ACTION.UPDATE_PING, { ping: rtt });
     };
     this._pingInterval = setInterval(() => {
       if (this._conn?.open) {
+        // WebRTC sessizlik tespiti (silent drop): 8 saniyedir Host'tan hiçbir mesaj veya pong gelmediyse
+        if (this._lastHostMessageTime && Date.now() - this._lastHostMessageTime > 8000) {
+          console.warn('[ClientPeerService] WebRTC 8 saniyedir sessiz (silent drop), otomatik Relay fallback devreye giriyor...');
+          this._fallbackToRelay();
+          return;
+        }
         this._send(createPing(Date.now()));
       } else if (this._relay?.isConnected) {
         this._relay.ping((rtt) => handlePingResult(rtt));
@@ -1885,7 +1893,10 @@ export class ClientPeerService {
     } else if (this._relay?.isConnected) {
       this._relay.send(actionMsg);
     } else {
-      console.warn('[ClientPeerService] Bağlantı açık değil, eylem gönderilemedi:', action);
+      console.warn('[ClientPeerService] Bağlantı açık değil, derhal Relay fallback deneniyor:', action);
+      if (!this._destroyed) {
+        this._fallbackToRelay();
+      }
     }
   }
 
