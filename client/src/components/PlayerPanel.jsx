@@ -477,17 +477,21 @@ function PlayerPanelBase({ gameState, myPlayerId, onOpenTrade, onTileClick, onRe
                         key={tile.id}
                         onClick={() => onTileClick(tile)}
                         className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold text-white shadow-xs flex items-center gap-1 transition hover:brightness-110 cursor-pointer ${
-                          prop.mortgaged ? 'opacity-40 line-through' : ''
+                          prop.mortgaged ? 'opacity-60 ring-1 ring-rose-400' : ''
                         }`}
                         style={{ backgroundColor: tile.groupColor || '#475569' }}
-                        title={`${tile.name} (${prop.houses === 5 ? 'Otel' : `${prop.houses} Ev`})`}
+                        title={`${tile.name} ${prop.mortgaged ? `(${player.name} (İpotek))` : `(${prop.houses === 5 ? 'Otel' : `${prop.houses} Ev`})`}`}
                       >
                         <span className="font-space">{tile.name}</span>
-                        {prop.houses > 0 && (
+                        {prop.mortgaged ? (
+                          <span className="text-[7.5px] bg-rose-950/90 text-rose-200 px-1 rounded font-jetbrains">
+                            {player.name} (İpotek)
+                          </span>
+                        ) : prop.houses > 0 ? (
                           <span className="text-[8px] bg-black/40 px-1 rounded font-jetbrains">
                             {prop.houses === 5 ? '🏨' : `🏠${prop.houses}`}
                           </span>
-                        )}
+                        ) : null}
                       </button>
                     );
                   })}

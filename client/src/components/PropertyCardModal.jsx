@@ -446,6 +446,13 @@ export function PropertyCardModal({
               </span>
             )}
           </div>
+          {propState?.mortgaged && (
+            <div className="absolute inset-0 bg-rose-950/50 backdrop-blur-[1px] flex items-center justify-center pointer-events-none z-20">
+              <span className="text-xs sm:text-sm font-black text-rose-200 uppercase tracking-widest -rotate-12 border-2 border-rose-400 px-3 py-1 rounded-xl bg-rose-900 shadow-2xl font-space">
+                {owner?.name ? `${owner.name} (İpotek)` : 'İpotekli'}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Kart İçeriği & Kira Listesi */}
@@ -465,6 +472,19 @@ export function PropertyCardModal({
               </span>
             )}
           </div>
+
+          {/* İpotek Durumu ve Sahibi */}
+          {propState?.mortgaged && (
+            <div className="flex items-center justify-between p-2.5 rounded-xl bg-rose-950/80 border border-rose-600 text-rose-200 font-bold text-xs font-space">
+              <span className="flex items-center gap-1.5">
+                <ShieldAlert className="w-4 h-4 text-rose-400" />
+                <span>İpotek Durumu:</span>
+              </span>
+              <span className="px-2 py-0.5 rounded-lg bg-rose-900 border border-rose-500 text-rose-100 font-black">
+                {owner?.name ? `${owner.name} (İpotek)` : 'İpotekli'}
+              </span>
+            </div>
+          )}
 
           {/* Arsa Kira Tablosu */}
           {isProperty && (

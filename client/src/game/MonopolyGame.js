@@ -314,6 +314,79 @@ export class MonopolyGame {
     return { success: true, player };
   }
 
+  /**
+   * Host F5 Yenilemesi ve Host Migration için tam oyun durumunu geri yükler.
+   * @param {object} savedState - getPublicState() çıktısı
+   * @returns {boolean}
+   */
+  loadState(savedState) {
+    if (!savedState) return false;
+    try {
+      this.status = savedState.status || this.status;
+      this.roundNumber = savedState.roundNumber || this.roundNumber;
+      this.currentTurnIndex = savedState.currentTurnIndex !== undefined ? savedState.currentTurnIndex : this.currentTurnIndex;
+      this.phase = savedState.phase || this.phase;
+      this.canRollAgain = Boolean(savedState.canRollAgain);
+      this.dice = Array.isArray(savedState.dice) ? savedState.dice : this.dice;
+      this.diceToss = savedState.diceToss || this.diceToss;
+      this.lastDiceRollId = savedState.lastDiceRollId || this.lastDiceRollId;
+      this.currentTile = savedState.currentTile !== undefined ? savedState.currentTile : this.currentTile;
+      this.freeParkingPool = savedState.freeParkingPool ?? this.freeParkingPool;
+      this.gameStartTime = savedState.gameStartTime || this.gameStartTime;
+      this.totalPausedDuration = savedState.totalPausedDuration || 0;
+      this.isPaused = Boolean(savedState.isPaused);
+      this.logs = Array.isArray(savedState.logs) ? [...savedState.logs] : this.logs;
+      this.stats = savedState.stats || this.stats;
+      this.bankHouses = savedState.bankHouses ?? this.bankHouses;
+      this.bankHotels = savedState.bankHotels ?? this.bankHotels;
+      this.bankMoney = savedState.bankMoney ?? this.bankMoney;
+
+      if (savedState.properties) {
+        for (const [tileId, prop] of Object.entries(savedState.properties)) {
+          if (this.properties[tileId]) {
+            this.properties[tileId].ownerId = prop.ownerId;
+            this.properties[tileId].houses = prop.houses || 0;
+            this.properties[tileId].mortgaged = Boolean(prop.mortgaged);
+            this.properties[tileId].acquiredAt = prop.acquiredAt || 0;
+          }
+        }
+      }
+
+      if (Array.isArray(savedState.players) && savedState.players.length > 0) {
+        this.players = savedState.players.map(p => {
+          const restoredP = {
+            ...p,
+            lapsCompleted: p.lapsCompleted !== undefined ? p.lapsCompleted : (p.laps || 0),
+            get laps() { return this.lapsCompleted; },
+            set laps(v) { this.lapsCompleted = v; },
+            moneyHistory: Array.isArray(p.moneyHistory) ? [...p.moneyHistory] : []
+          };
+          return restoredP;
+        });
+      }
+
+      this.auction = savedState.auction || null;
+      this.lastAuctionResult = savedState.lastAuctionResult || null;
+      this.pendingTrade = savedState.pendingTrade || null;
+      this.pendingLoan = savedState.pendingLoan || null;
+      this.lastPropertyAcquired = savedState.lastPropertyAcquired || null;
+      this.lastPropertyLoss = savedState.lastPropertyLoss || null;
+      this.lastJailEvent = savedState.lastJailEvent || null;
+      this.lastMovement = savedState.lastMovement || null;
+      this.drawnCard = savedState.drawnCard || null;
+      this.lastRentPayment = savedState.lastRentPayment || null;
+      this.winner = savedState.winner || null;
+      this.eliminations = savedState.eliminations || [];
+      this.lastElimination = savedState.lastElimination || null;
+      this.disconnectNotice = savedState.disconnectNotice || null;
+      this.spectatorCount = savedState.spectatorCount || 0;
+      return true;
+    } catch (e) {
+      console.error('[MonopolyGame] loadState hatası:', e);
+      return false;
+    }
+  }
+
   removePlayer(playerId) {
     const pIndex = this.players.findIndex(p => p.id === playerId);
     if (pIndex === -1) return;
@@ -797,7 +870,7 @@ export class MonopolyGame {
       };
       this.phase = 'CARD_DRAWN';
       this.addLog(`${player.name} "${tile.name}" karesine geldi ve kart çekti.`, 'info');
-      this.addLog(`📜 ${player.name} "${card.title}" kartını açtı: ${card.desc}`, 'card', { deckType: card.deckType, drawerName: player.name, cardTitle: card.title, cardDesc: card.desc });
+      this.addLog(`📜 ${player.name} "${card.title}" kartını açtı: ${card.desc}`, 'card', { deckType: tile.type, cardId: card.id, drawerName: player.name, cardTitle: card.title, cardDesc: card.desc });
 
       return { success: true, tile, card: this.drawnCard };
     }
@@ -897,7 +970,7 @@ export class MonopolyGame {
     };
     this.phase = 'CARD_DRAWN';
     this.addLog(`${target.name} "İhale & Fırsat" karesine geldi ve kart çekti.`, 'info');
-    this.addLog(`📜 ${target.name} "${card.title}" kartını açtı: ${card.desc}`, 'card', { deckType: 'chance', drawerName: target.name, cardTitle: card.title, cardDesc: card.desc });
+    this.addLog(`📜 ${target.name} "${card.title}" kartını açtı: ${card.desc}`, 'card', { deckType: 'chance', cardId: card.id, drawerName: target.name, cardTitle: card.title, cardDesc: card.desc });
     return { success: true, card: this.drawnCard };
   }
 
@@ -919,7 +992,7 @@ export class MonopolyGame {
     };
     this.phase = 'CARD_DRAWN';
     this.addLog(`${target.name} "Belediye & İmar" karesine geldi ve kart çekti.`, 'info');
-    this.addLog(`📜 ${target.name} "${card.title}" kartını açtı: ${card.desc}`, 'card', { deckType: 'chest', drawerName: target.name, cardTitle: card.title, cardDesc: card.desc });
+    this.addLog(`📜 ${target.name} "${card.title}" kartını açtı: ${card.desc}`, 'card', { deckType: 'chest', cardId: card.id, drawerName: target.name, cardTitle: card.title, cardDesc: card.desc });
     return { success: true, card: this.drawnCard };
   }
 
@@ -1011,7 +1084,7 @@ export class MonopolyGame {
 
       case 'jail_free':
         player.jailCards++;
-        this.addLog(`📜 ${player.name} bir "Vergi Barışı & İmar Affı Belgesi" kazandı.`, 'card');
+        this.addLog(`📜 ${player.name} bir "Vergi Barışı & İmar Affı Belgesi" kazandı.`, 'info');
         break;
 
       case 'go_to_jail':

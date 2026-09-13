@@ -247,6 +247,19 @@ relayWss.on('connection', (ws) => {
             safeSend(client, outgoing);
           }
         });
+      } else if (msg.type === 'relay:leave') {
+        if (roomCode && relayRooms.has(roomCode)) {
+          const room = relayRooms.get(roomCode);
+          room.delete(ws);
+          const remaining = room.size;
+          console.log(`[Relay] ${playerId} odadan ayrıldı: ${roomCode} (${remaining} kişi kaldı)`);
+          if (remaining > 0 && playerId) {
+            const leaveNotice = JSON.stringify({ type: 'relay:peer_left', playerId, roomCode });
+            room.forEach((pid, client) => {
+              if (client !== ws && client.readyState === 1) safeSend(client, leaveNotice);
+            });
+          }
+        }
       }
     } catch (e) {
       console.error('[Relay] Mesaj işleme hatası:', e.message);
@@ -259,7 +272,22 @@ relayWss.on('connection', (ws) => {
         const room = relayRooms.get(roomCode);
         room.delete(ws);
         const remaining = room.size;
-        console.log(`[Relay] ${playerId} odadan ayrıldı: ${roomCode} (${remaining} kişi kaldı)`);
+        console.log(`[Relay] ${playerId} bağlantısı kapandı: ${roomCode} (${remaining} kişi kaldı)`);
+        
+        // Odadaki diğer üyelere (özellikle Host'a) kopma bildirimini anında ilet
+        if (remaining > 0 && playerId) {
+          const leaveNotice = JSON.stringify({
+            type: 'relay:peer_left',
+            playerId,
+            roomCode
+          });
+          room.forEach((pid, client) => {
+            if (client !== ws && client.readyState === 1) {
+              safeSend(client, leaveNotice);
+            }
+          });
+        }
+
         if (remaining === 0) {
           // F5 yenilemesi ve geçici ağ kopmalarında odayı ANINDA SİLME!
           // 60 saniyelik tolerans tanı:

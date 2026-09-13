@@ -554,41 +554,41 @@ export const COLOR_GROUPS = {
 };
 
 export const CHANCE_CARDS = [
-  { id: "ch1", title: "Merkez Şantiye'ye İlerle", desc: "Doğrudan Merkez Şantiye'ye git ve 200₺ maaşını al.", action: { type: "advance_to", tileId: 0, collectGo: true } },
-  { id: "ch2", title: "Kızılay Meydanı'na İlerle", desc: "Kızılay projesine git. Merkez Şantiye'den geçersen 200₺ al.", action: { type: "advance_to", tileId: 24, collectGo: true } },
-  { id: "ch3", title: "Altındağ'a İlerle", desc: "Altındağ projesine ilerle. Merkez Şantiye'den geçersen 200₺ al.", action: { type: "advance_to", tileId: 11, collectGo: true } },
-  { id: "ch4", title: "En Yakın Gara İlerle", desc: "En yakın tren garına ilerle. Sahipsizse alabilirsin, birine aitse normal kiranın 2 katını öde.", action: { type: "advance_nearest_railroad" } },
-  { id: "ch5", title: "En Yakın Altyapı Kurumuna İlerle", desc: "En yakın enerji/su kurumuna git. Sahipsizse al, birine aitse özel zar at ve kart kuralı gereği (tek tesis olsa dahi) zarların 10 katı kira öde.", action: { type: "advance_nearest_utility" } },
-  { id: "ch6", title: "Banka Temettü Geliri", desc: "Hisselerinden 50₺ kâr payı temettüsü aldın.", action: { type: "money", amount: 50 } },
-  { id: "ch7", title: "Vergi Barışı & İmar Affı Belgesi", desc: "Bu resmi belge seni Maliye Denetimi'nden anında muaf tutar. Saklayabilir veya satabilirsin.", action: { type: "jail_free" } },
-  { id: "ch8", title: "3 Kare Geri Git", desc: "Piyonunu 3 kare geriye çek.", action: { type: "move_relative", steps: -3 } },
-  { id: "ch9", title: "Vergi Müfettişi Denetime Aldı!", desc: "Doğrudan Maliye Denetimi'ne git! Merkez Şantiye'den geçemezsin, 200₺ alamazsın.", action: { type: "go_to_jail" } },
-  { id: "ch10", title: "Şantiye İSG & Tesisat Revizyonu", desc: "Yapı denetim ve tesisat güçlendirme masrafı: Her ev için 20₺, her otel için 90₺ öde.", action: { type: "repairs", houseCost: 20, hotelCost: 90 } },
-  { id: "ch11", title: "Belediye Zabıta Harcı", desc: "Kaldırım işgali ve şantiye moloz cezası: 20₺ öde.", action: { type: "money", amount: -20 } },
-  { id: "ch12", title: "Ortak Altyapı Dayanışması", desc: "Ortak altyapı gideri için diğer her oyuncuya 40₺ prim öde.", action: { type: "pay_all", amount: 40 } },
-  { id: "ch13", title: "Konut İnşaat Kredisi Vadesi Doldu", desc: "Gayrimenkul yatırım fonundan 150₺ nakit hesabına yattı.", action: { type: "money", amount: 150 } },
-  { id: "ch14", title: "İncek Villaları'na İlerle", desc: "Doğrudan İncek Villaları'na ilerle. Merkez Şantiye'den geçersen 200₺ al.", action: { type: "advance_to", tileId: 39, collectGo: true } },
-  { id: "ch15", title: "Ankara Tren Garı'na Git", desc: "Ankara Tren Garı'na ilerle. Merkez Şantiye'den geçersen 200₺ al.", action: { type: "advance_to", tileId: 5, collectGo: true } },
-  { id: "ch16", title: "Tatil Fonu Kazancı", desc: "Yatırım fonundan 100₺ kâr elde ettin.", action: { type: "money", amount: 100 } }
+  { id: "ch1", deckType: "chance", title: "Merkez Şantiye'ye İlerle", desc: "Doğrudan Merkez Şantiye'ye git ve 200₺ maaşını al.", action: { type: "advance_to", tileId: 0, collectGo: true } },
+  { id: "ch2", deckType: "chance", title: "Kızılay Meydanı'na İlerle", desc: "Kızılay projesine git. Merkez Şantiye'den geçersen 200₺ al.", action: { type: "advance_to", tileId: 24, collectGo: true } },
+  { id: "ch3", deckType: "chance", title: "Altındağ'a İlerle", desc: "Altındağ projesine ilerle. Merkez Şantiye'den geçersen 200₺ al.", action: { type: "advance_to", tileId: 11, collectGo: true } },
+  { id: "ch4", deckType: "chance", title: "En Yakın Gara İlerle", desc: "En yakın tren garına ilerle. Sahipsizse alabilirsin, birine aitse normal kiranın 2 katını öde.", action: { type: "advance_nearest_railroad" } },
+  { id: "ch5", deckType: "chance", title: "En Yakın Altyapı Kurumuna İlerle", desc: "En yakın enerji/su kurumuna git. Sahipsizse al, birine aitse özel zar at ve kart kuralı gereği (tek tesis olsa dahi) zarların 10 katı kira öde.", action: { type: "advance_nearest_utility" } },
+  { id: "ch6", deckType: "chance", title: "Banka Temettü Geliri", desc: "Hisselerinden 50₺ kâr payı temettüsü aldın.", action: { type: "money", amount: 50 } },
+  { id: "ch7", deckType: "chance", title: "Vergi Barışı & İmar Affı Belgesi", desc: "Bu resmi belge seni Maliye Denetimi'nden anında muaf tutar. Saklayabilir veya satabilirsin.", action: { type: "jail_free" } },
+  { id: "ch8", deckType: "chance", title: "3 Kare Geri Git", desc: "Piyonunu 3 kare geriye çek.", action: { type: "move_relative", steps: -3 } },
+  { id: "ch9", deckType: "chance", title: "Vergi Müfettişi Denetime Aldı!", desc: "Doğrudan Maliye Denetimi'ne git! Merkez Şantiye'den geçemezsin, 200₺ alamazsın.", action: { type: "go_to_jail" } },
+  { id: "ch10", deckType: "chance", title: "Şantiye İSG & Tesisat Revizyonu", desc: "Yapı denetim ve tesisat güçlendirme masrafı: Her ev için 20₺, her otel için 90₺ öde.", action: { type: "repairs", houseCost: 20, hotelCost: 90 } },
+  { id: "ch11", deckType: "chance", title: "Belediye Zabıta Harcı", desc: "Kaldırım işgali ve şantiye moloz cezası: 20₺ öde.", action: { type: "money", amount: -20 } },
+  { id: "ch12", deckType: "chance", title: "Ortak Altyapı Dayanışması", desc: "Ortak altyapı gideri için diğer her oyuncuya 40₺ prim öde.", action: { type: "pay_all", amount: 40 } },
+  { id: "ch13", deckType: "chance", title: "Konut İnşaat Kredisi Vadesi Doldu", desc: "Gayrimenkul yatırım fonundan 150₺ nakit hesabına yattı.", action: { type: "money", amount: 150 } },
+  { id: "ch14", deckType: "chance", title: "İncek Villaları'na İlerle", desc: "Doğrudan İncek Villaları'na ilerle. Merkez Şantiye'den geçersen 200₺ al.", action: { type: "advance_to", tileId: 39, collectGo: true } },
+  { id: "ch15", deckType: "chance", title: "Ankara Tren Garı'na Git", desc: "Ankara Tren Garı'na ilerle. Merkez Şantiye'den geçersen 200₺ al.", action: { type: "advance_to", tileId: 5, collectGo: true } },
+  { id: "ch16", deckType: "chance", title: "Tatil Fonu Kazancı", desc: "Yatırım fonundan 100₺ kâr elde ettin.", action: { type: "money", amount: 100 } }
 ];
 
 export const CHEST_CARDS = [
-  { id: "cc1", title: "Merkez Şantiye'ye İlerle", desc: "Doğrudan Merkez Şantiye'ye git ve 200₺ al.", action: { type: "advance_to", tileId: 0, collectGo: true } },
-  { id: "cc2", title: "Kamu İstimlak Tazminatı", desc: "Arsanın bir bölümüne belediye kavşağı yapıldı: 250₺ istimlak bedeli tahsil et.", action: { type: "money", amount: 250 } },
-  { id: "cc3", title: "Şantiye İSG Sağlık Taraması", desc: "Şantiye personeli periyodik sağlık muayenesi faturası: 50₺ öde.", action: { type: "money", amount: -50 } },
-  { id: "cc4", title: "Hisse Senedi Satış Kârı", desc: "Hisse satışından hesabına 50₺ kâr payı yattı.", action: { type: "money", amount: 50 } },
-  { id: "cc5", title: "Vergi Barışı & İmar Affı Belgesi", desc: "Bu resmi belge seni Maliye Denetimi'nden bedelsiz kurtarır. Saklayabilir veya satabilirsin.", action: { type: "jail_free" } },
-  { id: "cc6", title: "Mali Suçlar İncelemesi Başlatıldı", desc: "Doğrudan Maliye Denetimi'ne git. Merkez Şantiye'den geçemezsin, 200₺ alamazsın.", action: { type: "go_to_jail" } },
-  { id: "cc7", title: "Yıl Sonu Proje Teslim Primi", desc: "Konut projesini erken teslim ettin! Diğer her oyuncudan 15₺ tebrik primi al.", action: { type: "collect_from_all", amount: 15 } },
-  { id: "cc8", title: "Vergi İadesi", desc: "Maliyeden 20₺ fazla ödenen vergi iadesi aldın.", action: { type: "money", amount: 20 } },
-  { id: "cc9", title: "Hayat Sigortası Vadesi Doldu", desc: "Sigorta poliçesinden 100₺ tazminat aldın.", action: { type: "money", amount: 100 } },
-  { id: "cc10", title: "Hastane Faturası Masrafı", desc: "Hastane tedavi masrafları için 100₺ öde.", action: { type: "money", amount: -100 } },
-  { id: "cc11", title: "Mesleki Yeterlilik Harcı", desc: "Şantiye ustalarının Mesleki Yeterlilik Kurumu sertifikasyonu: 60₺ öde.", action: { type: "money", amount: -60 } },
-  { id: "cc12", title: "Danışmanlık Hizmet Geliri", desc: "Yaptığın teknik müşavirlik için 25₺ danışmanlık ücreti aldın.", action: { type: "money", amount: 25 } },
-  { id: "cc13", title: "Şantiye Altyapı Katılım Payı", desc: "Belediye asfalt ve kanalizasyon altyapı bedeli: Her ev için 35₺, her otel için 120₺ öde.", action: { type: "repairs", houseCost: 35, hotelCost: 120 } },
-  { id: "cc14", title: "Mimari Tasarım Başarı Ödülü", desc: "TMMOB Mimari Tasarım Yarışması'nda dereceye girdin: 30₺ ödül kazandın.", action: { type: "money", amount: 30 } },
-  { id: "cc15", title: "Miras İntikali", desc: "Eski bir kadastro parselinden sana 100₺ miras intikal etti.", action: { type: "money", amount: 100 } },
-  { id: "cc16", title: "Yatırım Fonu Geliri", desc: "Gayrimenkul ortaklık fonundan 100₺ kâr payı aldın.", action: { type: "money", amount: 100 } }
+  { id: "cc1", deckType: "chest", title: "Merkez Şantiye'ye İlerle", desc: "Doğrudan Merkez Şantiye'ye git ve 200₺ al.", action: { type: "advance_to", tileId: 0, collectGo: true } },
+  { id: "cc2", deckType: "chest", title: "Kamu İstimlak Tazminatı", desc: "Arsanın bir bölümüne belediye kavşağı yapıldı: 250₺ istimlak bedeli tahsil et.", action: { type: "money", amount: 250 } },
+  { id: "cc3", deckType: "chest", title: "Şantiye İSG Sağlık Taraması", desc: "Şantiye personeli periyodik sağlık muayenesi faturası: 50₺ öde.", action: { type: "money", amount: -50 } },
+  { id: "cc4", deckType: "chest", title: "Hisse Senedi Satış Kârı", desc: "Hisse satışından hesabına 50₺ kâr payı yattı.", action: { type: "money", amount: 50 } },
+  { id: "cc5", deckType: "chest", title: "Vergi Barışı & İmar Affı Belgesi", desc: "Bu resmi belge seni Maliye Denetimi'nden bedelsiz kurtarır. Saklayabilir veya satabilirsin.", action: { type: "jail_free" } },
+  { id: "cc6", deckType: "chest", title: "Mali Suçlar İncelemesi Başlatıldı", desc: "Doğrudan Maliye Denetimi'ne git. Merkez Şantiye'den geçemezsin, 200₺ alamazsın.", action: { type: "go_to_jail" } },
+  { id: "cc7", deckType: "chest", title: "Yıl Sonu Proje Teslim Primi", desc: "Konut projesini erken teslim ettin! Diğer her oyuncudan 15₺ tebrik primi al.", action: { type: "collect_from_all", amount: 15 } },
+  { id: "cc8", deckType: "chest", title: "Vergi İadesi", desc: "Maliyeden 20₺ fazla ödenen vergi iadesi aldın.", action: { type: "money", amount: 20 } },
+  { id: "cc9", deckType: "chest", title: "Hayat Sigortası Vadesi Doldu", desc: "Sigorta poliçesinden 100₺ tazminat aldın.", action: { type: "money", amount: 100 } },
+  { id: "cc10", deckType: "chest", title: "Hastane Faturası Masrafı", desc: "Hastane tedavi masrafları için 100₺ öde.", action: { type: "money", amount: -100 } },
+  { id: "cc11", deckType: "chest", title: "Mesleki Yeterlilik Harcı", desc: "Şantiye ustalarının Mesleki Yeterlilik Kurumu sertifikasyonu: 60₺ öde.", action: { type: "money", amount: -60 } },
+  { id: "cc12", deckType: "chest", title: "Danışmanlık Hizmet Geliri", desc: "Yaptığın teknik müşavirlik için 25₺ danışmanlık ücreti aldın.", action: { type: "money", amount: 25 } },
+  { id: "cc13", deckType: "chest", title: "Şantiye Altyapı Katılım Payı", desc: "Belediye asfalt ve kanalizasyon altyapı bedeli: Her ev için 35₺, her otel için 120₺ öde.", action: { type: "repairs", houseCost: 35, hotelCost: 120 } },
+  { id: "cc14", deckType: "chest", title: "Mimari Tasarım Başarı Ödülü", desc: "TMMOB Mimari Tasarım Yarışması'nda dereceye girdin: 30₺ ödül kazandın.", action: { type: "money", amount: 30 } },
+  { id: "cc15", deckType: "chest", title: "Miras İntikali", desc: "Eski bir kadastro parselinden sana 100₺ miras intikal etti.", action: { type: "money", amount: 100 } },
+  { id: "cc16", deckType: "chest", title: "Yatırım Fonu Geliri", desc: "Gayrimenkul ortaklık fonundan 100₺ kâr payı aldın.", action: { type: "money", amount: 100 } }
 ];
 
 export const PLAYER_TOKENS = [

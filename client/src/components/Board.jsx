@@ -439,9 +439,9 @@ const TileCell = React.memo(function TileCell({
 
       {/* İpotek Bandı */}
       {propState && propState.mortgaged && (
-        <div className="absolute inset-0 bg-rose-950/85 flex items-center justify-center z-20 backdrop-blur-[1px]">
-          <span className="text-[8px] sm:text-[10px] font-space font-extrabold text-rose-200 uppercase tracking-wider -rotate-12 border border-rose-400 px-1.5 py-0.5 rounded bg-rose-900 shadow-md">
-            İPOTEK
+        <div className="absolute inset-0 bg-rose-950/85 flex items-center justify-center z-20 backdrop-blur-[1px] p-0.5 pointer-events-none">
+          <span className="text-[7.5px] sm:text-[8.5px] md:text-[9.5px] font-space font-extrabold text-rose-200 uppercase tracking-wide -rotate-12 border border-rose-400 px-1 py-0.5 rounded bg-rose-900 shadow-md max-w-[96%] truncate text-center leading-tight">
+            {owner?.name ? `${owner.name} (İpotek)` : 'İpotek'}
           </span>
         </div>
       )}
@@ -519,9 +519,9 @@ const TileCell = React.memo(function TileCell({
               <span
                 className="text-[6.5px] sm:text-[7px] md:text-[7.5px] font-space font-black truncate leading-none uppercase tracking-tighter text-center"
                 style={{ color: owner.color }}
-                title={`Mülk Sahibi: ${owner.name}`}
+                title={`Mülk Sahibi: ${owner.name}${propState?.mortgaged ? ' (İpotekli)' : ''}`}
               >
-                {owner.name}
+                {owner.name}{propState?.mortgaged ? ' (İpotek)' : ''}
               </span>
             </div>
           ) : null}
@@ -602,7 +602,7 @@ const CenterInspectedTilePreview = React.memo(function CenterInspectedTilePrevie
           </div>
         </div>
         <div className="min-w-0 text-left leading-tight">
-          <div className="flex items-center gap-1.5 sm:gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
             <h4 className={`text-[11px] sm:text-xs font-black truncate font-space ${
               isDarkMode ? 'text-slate-100' : 'text-[#0f172a]'
             }`}>{inspectedTile.name}</h4>
@@ -611,6 +611,18 @@ const CenterInspectedTilePreview = React.memo(function CenterInspectedTilePrevie
                 isDarkMode ? 'text-amber-400' : 'text-amber-700'
               }`}>{inspectedTile.cost}₺</span>
             )}
+            {(() => {
+              const insProp = properties[inspectedTile.id];
+              const insOwner = insProp?.ownerId ? players.find(p => p.id === insProp.ownerId) : null;
+              if (insProp?.mortgaged) {
+                return (
+                  <span className="px-1.5 py-0.2 rounded-md bg-rose-900/90 border border-rose-500 text-rose-100 text-[8px] sm:text-[8.5px] font-black font-space">
+                    {insOwner?.name ? `${insOwner.name} (İpotek)` : 'İpotekli'}
+                  </span>
+                );
+              }
+              return null;
+            })()}
           </div>
           {inspectedTile.type === 'property' && inspectedTile.rent ? (
             <div className={`text-[8px] sm:text-[9px] flex items-center gap-1.5 sm:gap-2 flex-wrap font-jetbrains ${
@@ -1605,7 +1617,7 @@ export function Board({
                     <div className="bg-amber-500/95 text-slate-950 px-2.5 py-1.5 rounded-xl border-2 border-amber-300 shadow-xl flex items-center justify-center gap-1.5 text-[9px] sm:text-[11px] font-black backdrop-blur-md animate-pulse">
                       <span className="text-xs">⚠️</span>
                       <span className="truncate">
-                        <strong>{gameState.disconnectNotice.playerName}</strong> bağlantısı kesildi... (Yeniden bağlanması bekleniyor - 60sn)
+                        <strong>{gameState.disconnectNotice.playerName}</strong> bağlantısı kesildi... (Yeniden bağlanması bekleniyor - {gameState.disconnectNotice.remainingSeconds !== undefined ? gameState.disconnectNotice.remainingSeconds : Math.max(0, Math.ceil(((gameState.disconnectNotice.expiresAt || 0) - Date.now()) / 1000))}sn)
                       </span>
                     </div>
                   ) : gameState.disconnectNotice.type === 'kicked' ? (

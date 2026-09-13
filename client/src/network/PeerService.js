@@ -196,6 +196,8 @@ class RelayConnection {
           if (this._ws?.readyState === WebSocket.OPEN) {
             try { this._ws.send(JSON.stringify({ type: 'relay:pong', t0: msg.t })); } catch (_) {}
           }
+        } else if (msg.type === 'relay:peer_left') {
+          this._onMessage?.({ type: 'relay:peer_left', playerId: msg.playerId }, msg.playerId);
         } else if (msg.type === 'relay:msg') {
           this._onMessage?.(msg.payload, msg.from);
         }
@@ -428,6 +430,12 @@ export class HostPeerService {
     /** Çift kanal aksiyon tekilleştirme: tekrarlanan eylemleri engelle */
     this._processedActionIds = new Set();
 
+    /** PeerJS conn.peer -> Game Player ID eşleme haritası */
+    this._peerIdToPlayerId = new Map();
+
+    /** WebSocket Relay fromRelayId -> Game Player ID eşleme haritası */
+    this._relayIdToPlayerId = new Map();
+
     this._init();
   }
 
@@ -437,12 +445,25 @@ export class HostPeerService {
   get isHost() { return true; }
 
   _init() {
+    // 0. Host F5 veya Migration ile odayı geri yüklüyorsa oyunu DERHAL (0ms) ayağa kaldır
+    if (this._migratedState && !this._game) {
+      this._setupGame(this._roomCode);
+      this._onMyId(this._roomCode);
+      this._onReady(this._roomCode);
+    }
+
     // 1. WebSocket Relay odasını DERHAL kur — Host'un odası Render üzerinde hemen aktif olsun
     this._relay = new RelayConnection({
       roomCode: this._roomCode,
       playerId: this._roomCode,
       onMessage: (payload, fromRelayId) => {
         if (!payload) return;
+        // Sunucu tarafından iletilen oyuncu ayrıldı / soket kapandı bildirimi
+        if (payload.type === 'relay:peer_left' && payload.playerId) {
+          console.warn(`[HostPeerService] Relay: oyuncu soketi kapandı bildirimi: ${payload.playerId}`);
+          this._handleClientDisconnect(payload.playerId);
+          return;
+        }
         if (fromRelayId && !payload.senderId) {
           payload.senderId = fromRelayId;
         }
@@ -453,6 +474,12 @@ export class HostPeerService {
       },
       onConnected: () => {
         console.log(`[HostPeerService] Relay odasına bağlandı: ${this._roomCode}`);
+        // Eğer Host F5 veya Migration ile odayı geri yüklüyorsa oyunu Relay üzerinden hemen ayağa kaldır
+        if (!this._game) {
+          this._setupGame(this._roomCode);
+          this._onMyId(this._roomCode);
+          this._onReady(this._roomCode);
+        }
         setTimeout(() => {
           if (!this._destroyed && this._game) {
             this._broadcastState();
@@ -462,117 +489,208 @@ export class HostPeerService {
       onDisconnected: () => console.warn('[HostPeerService] Relay bağlantısı geçici koptu (otomatik yeniden bağlanılıyor)...'),
     });
 
-    // 2. WebRTC PeerJS bağlantısını başlat
-    const config = getPeerConfig();
-    this._peer = new Peer(this._roomCode, config);
+    // 2. WebRTC PeerJS bağlantısını paralel olarak başlat
+    this._initPeerJS();
+  }
 
-    // Sinyal sunucusunun LEAVE mesajı yollayarak WebRTC DataChannel'ı zorla kapatmasını engelle:
-    const origHandleMessage = this._peer._handleMessage?.bind(this._peer);
-    if (origHandleMessage) {
-      this._peer._handleMessage = (message) => {
-        if (message?.type === 'LEAVE') {
-          console.warn(`[HostPeerService] Sinyal sunucusundan LEAVE alındı (${message.src}), ancak P2P/Relay oyun bağlantısı KORUNUYOR.`);
+  _initPeerJS() {
+    if (this._destroyed) return;
+    try {
+      const config = getPeerConfig();
+      this._peer = new Peer(this._roomCode, config);
+
+      // Sinyal sunucusunun LEAVE mesajı yollayarak WebRTC DataChannel'ı zorla kapatmasını engelle:
+      const origHandleMessage = this._peer._handleMessage?.bind(this._peer);
+      if (origHandleMessage) {
+        this._peer._handleMessage = (message) => {
+          if (message?.type === 'LEAVE') {
+            console.warn(`[HostPeerService] Sinyal sunucusundan LEAVE alındı (${message.src}), ancak P2P/Relay oyun bağlantısı KORUNUYOR.`);
+            return;
+          }
+          return origHandleMessage(message);
+        };
+      }
+
+      this._peer.on('open', (id) => {
+        this._onMyId(id);
+        if (!this._game) {
+          this._setupGame(id);
+        }
+        this._onReady(id);
+
+        // Host Ping ölçümü (Relay bağlıysa sunucu RTT, yoksa yerel 1 ms)
+        if (!this._pingInterval) {
+          this._pingInterval = setInterval(() => {
+            const updateHostPing = (rtt) => {
+              this._onPing(rtt);
+              if (this._game && id) {
+                this._game.updatePlayerPing(id, rtt);
+              }
+            };
+            if (this._relay?.isConnected) {
+              this._relay.ping((rtt) => updateHostPing(rtt));
+            } else {
+              updateHostPing(1);
+            }
+          }, 2500);
+          this._onPing(1);
+        }
+      });
+
+      this._peer.on('connection', (conn) => {
+        this._handleIncomingConnection(conn);
+      });
+
+      this._peer.on('error', (err) => {
+        console.error('[HostPeerService] PeerJS error:', err.type, err);
+        if (err.type === 'unavailable-id') {
+          // F5 kurtarması veya Host Migration durumunda oda kodunu ASLA rastgele değiştirme!
+          if (this._migratedRoomCode || this._migratedState) {
+            console.warn(`[HostPeerService] ${this._roomCode} Peer ID sinyal sunucusunda henüz serbest kalmadı. Oyun Relay üzerinden devam ediyor, WebRTC 2sn sonra tekrar denenecek.`);
+            if (!this._game) {
+              this._setupGame(this._roomCode);
+              this._onMyId(this._roomCode);
+              this._onReady(this._roomCode);
+            }
+            setTimeout(() => {
+              if (!this._destroyed) {
+                try { this._peer?.destroy(); } catch (_) {}
+                this._initPeerJS();
+              }
+            }, 2000);
+            return;
+          }
+          // Sıfırdan yeni oda açarken rastgele kod çakışması — yeni kod dene
+          this._roomCode = generateRoomCode();
+          try { this._peer?.destroy(); } catch (_) {}
+          this._init();
           return;
         }
-        return origHandleMessage(message);
-      };
-    }
-
-    this._peer.on('open', (id) => {
-      this._onMyId(id);
-      this._setupGame(id);
-      this._onReady(id);
-
-      // Host Ping ölçümü (Relay bağlıysa sunucu RTT, yoksa yerel 1 ms)
-      this._pingInterval = setInterval(() => {
-        const updateHostPing = (rtt) => {
-          this._onPing(rtt);
-          if (this._game && id) {
-            this._game.updatePlayerPing(id, rtt);
-          }
-        };
-        if (this._relay?.isConnected) {
-          this._relay.ping((rtt) => updateHostPing(rtt));
-        } else {
-          updateHostPing(1);
+        if (err.type === 'network' || (err.message && err.message.includes('Lost connection'))) {
+          console.warn('[HostPeerService] Sinyal sunucusu bağlantısı koptu (Host oyunu kesintiye uğramaz). Yeniden bağlanılıyor...');
+          try { this._peer?.reconnect(); } catch (_) {}
+          return;
         }
-      }, 2500);
-      this._onPing(1);
-    });
+        // Oyun/Lobi zaten aktifse, tekil bir istemcinin bağlantı kopması veya STUN/TURN hatası yüzünden
+        // Host'un kendi odasını kapatma ve host'a hata ekranı gösterme!
+        if (this._game) {
+          console.warn('[HostPeerService] İstemci bağlantı/ICE uyarısı göz ardı edildi (Host aktif kalıyor):', err.type || err.message);
+          return;
+        }
+        this._onError(err);
+      });
 
-    this._peer.on('connection', (conn) => {
-      this._handleIncomingConnection(conn);
-    });
-
-    this._peer.on('error', (err) => {
-      console.error('[HostPeerService] PeerJS error:', err.type, err);
-      if (err.type === 'unavailable-id') {
-        // Oda kodu çakışması — yeni kod dene
-        this._roomCode = generateRoomCode();
-        this._peer.destroy();
-        this._init();
-        return;
-      }
-      if (err.type === 'network' || (err.message && err.message.includes('Lost connection'))) {
-        console.warn('[HostPeerService] Sinyal sunucusu bağlantısı koptu (Host oyunu kesintiye uğramaz). Yeniden bağlanılıyor...');
+      this._peer.on('disconnected', () => {
+        console.warn('[HostPeerService] Sinyal sunucusuyla bağlantı koptu, yeniden deneniyor...');
         try { this._peer?.reconnect(); } catch (_) {}
-        return;
+      });
+    } catch (e) {
+      console.warn('[HostPeerService] PeerJS başlatma hatası, Relay omurgası ile devam ediliyor:', e);
+      if (!this._game && (this._migratedRoomCode || this._migratedState)) {
+        this._setupGame(this._roomCode);
+        this._onMyId(this._roomCode);
+        this._onReady(this._roomCode);
       }
-      // Oyun/Lobi zaten aktifse, tekil bir istemcinin bağlantı kopması veya STUN/TURN hatası yüzünden
-      // Host'un kendi odasını kapatma ve host'a hata ekranı gösterme!
-      if (this._game) {
-        console.warn('[HostPeerService] İstemci bağlantı/ICE uyarısı göz ardı edildi (Host aktif kalıyor):', err.type || err.message);
-        return;
-      }
-      this._onError(err);
-    });
-
-    this._peer.on('disconnected', () => {
-      console.warn('[HostPeerService] Sinyal sunucusuyla bağlantı koptu, yeniden deneniyor...');
-      this._peer.reconnect();
-    });
+    }
   }
 
   _setupGame(hostPeerId) {
     this._game = new MonopolyGame(this._roomCode);
 
-    // Host Migration: eski durumu geri yükle
+    // Host F5 Yenilemesi veya Host Migration: eski durumu eksiksiz geri yükle
     if (this._migratedState) {
       this._restoreFromState(this._migratedState, hostPeerId);
     } else {
       // Normal akış: Host'u ilk oyuncu olarak ekle
-      const joinRes = this._game.addPlayer(
+      this._game.addPlayer(
         hostPeerId, this._playerName, this._token, this._color, false, this._sessionToken
       );
-      if (joinRes.success && joinRes.player) {
-        try {
-          localStorage.setItem('muteahhit_session_token', joinRes.player.sessionToken);
-          localStorage.setItem('muteahhit_room_code', this._roomCode);
-        } catch (_) {}
-      }
     }
+
+    try {
+      if (this._sessionToken) localStorage.setItem('muteahhit_session_token', this._sessionToken);
+      localStorage.setItem('muteahhit_room_code', this._roomCode);
+      localStorage.setItem('muteahhit_is_host_' + this._roomCode, '1');
+      localStorage.setItem('muteahhit_host_room', this._roomCode);
+    } catch (_) {}
 
     this._startWatchdog();
     this._broadcastState();
   }
 
   /**
-   * Host Migration: Yeni Host eski game state'i devralır.
-   * Bot'lar ve hayatta olan oyuncular güncellenir.
+   * Host F5 Yenilemesi ve Host Migration: Oyun durumunu eksiksiz devralır.
    */
   _restoreFromState(state, newHostPeerId) {
     try {
-      // Hayatta olan oyuncuları MonopolyGame'e manuel yükle
-      if (state.players) {
-        for (const p of state.players) {
-          if (!p.isBot && !p.isBankrupt) {
-            this._game.addPlayer(p.id, p.name, p.token, p.color, false, p.sessionToken);
+      const loaded = this._game.loadState(state);
+      if (loaded) {
+        console.log(`[HostPeerService] Oyun durumu başarıyla geri yüklendi (${this._game.status}, ${this._game.players?.length} oyuncu).`);
+
+        // Host oyuncuyu tespit et ve yeni soket/peer ID'si ile eşle
+        const hostPlayer = this._game.players?.find(p => p.isHost || (this._sessionToken && p.sessionToken === this._sessionToken) || p.name === this._playerName);
+        if (hostPlayer) {
+          const oldHostId = hostPlayer.id;
+          hostPlayer.id = newHostPeerId;
+          hostPlayer.isHost = true;
+          if (this._sessionToken) hostPlayer.sessionToken = this._sessionToken;
+
+          this._peerIdToPlayerId.set(oldHostId, newHostPeerId);
+          this._peerIdToPlayerId.set(newHostPeerId, newHostPeerId);
+          if (hostPlayer.sessionToken) {
+            this._peerIdToPlayerId.set(hostPlayer.sessionToken, newHostPeerId);
+          }
+
+          // Mülk sahipliklerini güncelle
+          for (const tileId in this._game.properties) {
+            if (this._game.properties[tileId].ownerId === oldHostId) {
+              this._game.properties[tileId].ownerId = newHostPeerId;
+            }
+          }
+
+          if (oldHostId !== newHostPeerId) {
+            if (this._game.pendingLoan) {
+              if (this._game.pendingLoan.borrowerId === oldHostId) this._game.pendingLoan.borrowerId = newHostPeerId;
+              if (this._game.pendingLoan.lenderId === oldHostId) this._game.pendingLoan.lenderId = newHostPeerId;
+            }
+            if (this._game.pendingTrade) {
+              if (this._game.pendingTrade.fromPlayerId === oldHostId) this._game.pendingTrade.fromPlayerId = newHostPeerId;
+              if (this._game.pendingTrade.toPlayerId === oldHostId) this._game.pendingTrade.toPlayerId = newHostPeerId;
+            }
+            if (this._game.auction) {
+              if (this._game.auction.highestBidderId === oldHostId) this._game.auction.highestBidderId = newHostPeerId;
+              if (this._game.auction.sellerId === oldHostId) this._game.auction.sellerId = newHostPeerId;
+              if (this._game.auction.passedPlayerIds) {
+                this._game.auction.passedPlayerIds = this._game.auction.passedPlayerIds.map(id => (id === oldHostId ? newHostPeerId : id));
+              }
+            }
+            if (this._game.lastRentPayment) {
+              if (this._game.lastRentPayment.ownerId === oldHostId) this._game.lastRentPayment.ownerId = newHostPeerId;
+              if (this._game.lastRentPayment.fromPlayerId === oldHostId) this._game.lastRentPayment.fromPlayerId = newHostPeerId;
+              if (this._game.lastRentPayment.toPlayerId === oldHostId) this._game.lastRentPayment.toPlayerId = newHostPeerId;
+            }
+          }
+        }
+
+        // F5 sonrası tüm oyuncuların canlılık takibini sıfırla (watchdog'un erken atmasını önler)
+        const now = Date.now();
+        for (const p of this._game.players) {
+          this._playerLastActivity.set(p.id, now);
+          if (p.sessionToken) this._playerLastActivity.set(p.sessionToken, now);
+          if (p.name) this._playerLastActivity.set(p.name, now);
+        }
+
+        this._game.addLog(`🔄 Oda yöneticisi (Host) sayfayı yenileyerek oyuna tekrar bağlandı.`, 'info');
+      } else {
+        // Geri yükleme başarısız olursa güvenli fallback
+        if (state.players) {
+          for (const p of state.players) {
+            if (!p.isBot && !p.isBankrupt) {
+              this._game.addPlayer(p.id, p.name, p.token, p.color, false, p.sessionToken);
+            }
           }
         }
       }
-      // Daha gelişmiş state restoration için MonopolyGame.loadState() eklenebilir
-      // Şimdilik lobby'e dön (güvenli fallback)
-      console.log('[HostPeerService] Host Migration: state restore, lobby fallback');
     } catch (e) {
       console.error('[HostPeerService] State restore hatası:', e);
     }
@@ -627,8 +745,20 @@ export class HostPeerService {
   _handleMessage(msg, conn, fromRelayId = null) {
     if (!msg) return;
 
-    // Ping isteğine anında Pong ile cevap ver
+    // Ping isteğine anında Pong ile cevap ver ve gönderici canlılığını kaydet
     if (msg.type === MSG.PING) {
+      const now = Date.now();
+      const sender = conn?.peer || fromRelayId || msg.senderId;
+      if (sender) {
+        this._playerLastActivity.set(sender, now);
+        const mapped = this._peerIdToPlayerId?.get(sender) || this._relayIdToPlayerId?.get(sender);
+        const p = this._game?.players?.find(x => x.id === sender || x.id === mapped || (x.sessionToken && x.sessionToken.includes(String(sender).replace(/^p_/, ''))));
+        if (p) {
+          if (p.id) this._playerLastActivity.set(p.id, now);
+          if (p.sessionToken) this._playerLastActivity.set(p.sessionToken, now);
+          if (p.name) this._playerLastActivity.set(p.name, now);
+        }
+      }
       const pong = createPong(msg.t0);
       if (conn) {
         this._sendTo(conn, pong);
@@ -676,9 +806,24 @@ export class HostPeerService {
       }
     }
 
+    if (senderPlayer) {
+      effectiveSenderId = senderPlayer.id;
+      if (fromRelayId) {
+        this._relayIdToPlayerId.set(fromRelayId, senderPlayer.id);
+        this._peerIdToPlayerId.set(fromRelayId, senderPlayer.id);
+      }
+      if (senderPlayer.sessionToken) {
+        this._peerIdToPlayerId.set(senderPlayer.sessionToken, senderPlayer.id);
+      }
+      if (conn?.peer) {
+        this._peerIdToPlayerId.set(conn.peer, senderPlayer.id);
+      }
+    }
+
     if (conn) {
       if (conn.peer) this._connections.set(conn.peer, conn);
       if (effectiveSenderId) this._connections.set(effectiveSenderId, conn);
+      if (conn.peer && effectiveSenderId) this._peerIdToPlayerId.set(conn.peer, effectiveSenderId);
     }
 
     // Oyuncu yeni bir bağlantı/transport ID'si ile gelmişse (reconnect / relay fallback),
@@ -704,14 +849,23 @@ export class HostPeerService {
       const p = senderPlayer || this._game.players?.find(x => x.id === activeSender);
       if (p?.sessionToken) this._playerLastActivity.set(p.sessionToken, now);
       if (p?.name) this._playerLastActivity.set(p.name, now);
+      if (p?.id) this._playerLastActivity.set(p.id, now);
 
       if (this._disconnectTimers.has(activeSender)) {
         clearTimeout(this._disconnectTimers.get(activeSender));
         this._disconnectTimers.delete(activeSender);
         console.log(`[HostPeerService] ${activeSender} aktif mesaj gönderdi, kopma geri sayımı iptal edildi.`);
       }
-      if (this._game.disconnectNotice && (this._game.disconnectNotice.playerId === activeSender || (p && this._game.disconnectNotice.playerName === p.name))) {
-        const pName = p?.name || 'Oyuncu';
+      if (senderPlayer && this._disconnectTimers.has(senderPlayer.id)) {
+        clearTimeout(this._disconnectTimers.get(senderPlayer.id));
+        this._disconnectTimers.delete(senderPlayer.id);
+      }
+      if (this._game.disconnectNotice && (
+        this._game.disconnectNotice.playerId === activeSender ||
+        (senderPlayer && this._game.disconnectNotice.playerId === senderPlayer.id) ||
+        (p && this._game.disconnectNotice.playerName === p.name)
+      )) {
+        const pName = p?.name || senderPlayer?.name || 'Oyuncu';
         this._game.disconnectNotice = null;
         this._game.addLog(`🟢 ${pName} oyuna tekrar bağlandı!`, 'info');
         this._broadcastState();
@@ -762,6 +916,17 @@ export class HostPeerService {
               }
               if (conn) {
                 this._connections.set(joinId, conn);
+              }
+
+              if (fromRelayId) {
+                this._relayIdToPlayerId.set(fromRelayId, existingPlayer.id);
+                this._peerIdToPlayerId.set(fromRelayId, existingPlayer.id);
+              }
+              if (conn?.peer) {
+                this._peerIdToPlayerId.set(conn.peer, existingPlayer.id);
+              }
+              if (existingPlayer.sessionToken) {
+                this._peerIdToPlayerId.set(existingPlayer.sessionToken, existingPlayer.id);
               }
 
               // İstemciye session token'ını ve son oyun durumunu HEM WebRTC HEM Relay üzerinden doğrudan bildir
@@ -822,6 +987,17 @@ export class HostPeerService {
           // 3. Lobi aşamasında normal yeni oyuncu katılımı
           const res = game.addPlayer(joinId, playerName, token, color, false, sessionToken);
           if (res.success && res.player) {
+            if (fromRelayId) {
+              this._relayIdToPlayerId.set(fromRelayId, res.player.id);
+              this._peerIdToPlayerId.set(fromRelayId, res.player.id);
+            }
+            if (conn?.peer) {
+              this._peerIdToPlayerId.set(conn.peer, res.player.id);
+            }
+            if (res.player.sessionToken) {
+              this._peerIdToPlayerId.set(res.player.sessionToken, res.player.id);
+            }
+
             const tokenMsg = {
               type: MSG.EVENT,
               event: 'SESSION_TOKEN',
@@ -1223,15 +1399,19 @@ export class HostPeerService {
     }
   }
 
-  _handleClientDisconnect(peerId) {
-    this._connections.delete(peerId);
-    this._connectionOrder = this._connectionOrder.filter(id => id !== peerId);
+  _handleClientDisconnect(rawId) {
+    if (!rawId) return;
+    const mappedId = this._peerIdToPlayerId?.get(rawId) || this._relayIdToPlayerId?.get(rawId) || rawId;
+    this._connections.delete(rawId);
+    this._connections.delete(mappedId);
+    this._connectionOrder = this._connectionOrder.filter(id => id !== rawId && id !== mappedId);
 
     // 1. İzleyici ayrıldıysa: ASLA kopma uyarısı veya geri sayım başlatma!
-    if (this._spectators?.has(peerId)) {
-      const spec = this._spectators.get(peerId);
-      this._spectators.delete(peerId);
-      console.log(`[HostPeerService] İzleyici ayrıldı: ${spec?.name || peerId}. Kalan İzleyici: ${this._spectators.size}`);
+    if (this._spectators?.has(rawId) || this._spectators?.has(mappedId)) {
+      const spec = this._spectators.get(rawId) || this._spectators.get(mappedId);
+      this._spectators.delete(rawId);
+      this._spectators.delete(mappedId);
+      console.log(`[HostPeerService] İzleyici ayrıldı: ${spec?.name || rawId}. Kalan İzleyici: ${this._spectators.size}`);
       if (this._game) {
         this._game.spectatorCount = this._spectators.size;
         this._broadcastState();
@@ -1239,35 +1419,38 @@ export class HostPeerService {
       return;
     }
 
-    // 2. Oyunda olmayan, bot olan veya zaten iflas etmiş / atılmış biri için uyarı verme
-    const player = this._game?.players?.find(p => p.id === peerId);
-    if (!player || player.isBot || player.isBankrupt || player.isKicked) {
+    // 2. Oyuncuyu bul (ID, mappedId, sessionToken, partial token veya isim üzerinden)
+    let player = this._game?.players?.find(p => {
+      if (p.isHost || p.isBot) return false;
+      if (p.id === rawId || p.id === mappedId) return true;
+      if (p.sessionToken && (p.sessionToken === rawId || p.sessionToken === mappedId)) return true;
+      // ClientPeerService._myId formatı: 'p_' + sessionToken.slice(3, 11)
+      if (typeof rawId === 'string' && rawId.startsWith('p_') && p.sessionToken && p.sessionToken.includes(rawId.slice(2))) return true;
+      if (typeof mappedId === 'string' && mappedId.startsWith('p_') && p.sessionToken && p.sessionToken.includes(mappedId.slice(2))) return true;
+      if (p.name && (p.name === rawId || p.name === mappedId)) return true;
+      return false;
+    });
+
+    if (!player || player.isHost || player.isBot || player.isBankrupt || player.isKicked) {
       return;
     }
 
-    // Oyuncu son 10 saniyede herhangi bir kanaldan (WebRTC veya Relay) aktif idiyse kopma uyarısı verme!
-    const lastActive = Math.max(
-      this._playerLastActivity.get(peerId) || 0,
-      this._playerLastActivity.get(player.sessionToken) || 0,
-      this._playerLastActivity.get(player.name) || 0
-    );
-    if (Date.now() - lastActive < 10000) {
-      console.log(`[HostPeerService] ${player.name} WebRTC DataChannel koptu fakat Relay üzerinde aktif, kopma uyarısı verilmedi.`);
-      return;
-    }
+    const playerId = player.id;
+    const playerName = player.name || 'Bir oyuncunun';
 
     // Eğer bu oyuncu için zaten aktif bir kopma geri sayımı varsa devam etsin
-    if (this._disconnectTimers.has(peerId)) return;
+    if (this._disconnectTimers.has(playerId)) return;
 
-    const playerName = player.name || 'Bir oyuncunun';
+    console.warn(`[HostPeerService] ${playerName} (${playerId}) bağlantısı koptu! 60sn geri sayım başlatılıyor...`);
 
     // 1. Aşama: Herkese kompakt bildirim gönder (bağlantı kesildi, 60 saniye bekleniyor)
     if (this._game) {
       this._game.disconnectNotice = {
         type: 'disconnecting',
-        playerId: peerId,
+        playerId: playerId,
         playerName: playerName,
         expiresAt: Date.now() + 60000,
+        remainingSeconds: 60,
       };
       this._game.addLog(`⚠️ ${playerName} bağlantısı kesildi, yeniden bağlanması bekleniyor (60sn)...`, 'warning');
       this._broadcastState();
@@ -1275,18 +1458,18 @@ export class HostPeerService {
 
     // 60 saniye tolerans tanı (Relay fallback veya WebRTC yeniden bağlanma için)
     const timer = setTimeout(() => {
-      this._disconnectTimers.delete(peerId);
-      this._lastChatTime.delete(peerId);
+      this._disconnectTimers.delete(playerId);
+      this._lastChatTime.delete(playerId);
 
-      // 60 saniye dolduğunda son bir kontrol: Oyuncu bu esnada Relay üzerinden bağlandıysa atma!
+      // 60 saniye dolduğunda son bir kontrol: Oyuncu bu esnada bağlandıysa atma!
       const finalActive = Math.max(
-        this._playerLastActivity.get(peerId) || 0,
+        this._playerLastActivity.get(playerId) || 0,
         this._playerLastActivity.get(player.sessionToken) || 0,
         this._playerLastActivity.get(player.name) || 0
       );
-      if (Date.now() - finalActive < 20000) {
-        console.log(`[HostPeerService] ${playerName} 60sn doldu fakat son 20sn içinde Relay'de aktif bulundu, oyundan atılmadı.`);
-        if (this._game?.disconnectNotice?.playerId === peerId) {
+      if (Date.now() - finalActive < 8000) {
+        console.log(`[HostPeerService] ${playerName} 60sn doldu fakat son 8sn içinde aktif bulundu, oyundan atılmadı.`);
+        if (this._game?.disconnectNotice?.playerId === playerId) {
           this._game.disconnectNotice = null;
           this._broadcastState();
         }
@@ -1294,17 +1477,18 @@ export class HostPeerService {
       }
 
       if (this._game) {
-        console.warn(`[HostPeerService] ${peerId} 60 saniye içinde yeniden bağlanamadı, oyundan tamamen çıkarılıyor.`);
+        console.warn(`[HostPeerService] ${playerId} 60 saniye içinde yeniden bağlanamadı, oyundan tamamen çıkarılıyor.`);
         // 2. Aşama: 60 saniye dolunca "atıldı" bildirimi ve oyundan tamamen çıkarma (iflas & piyon tasfiyesi)
         this._game.disconnectNotice = {
           type: 'kicked',
-          playerId: peerId,
+          playerId: playerId,
           playerName: playerName,
           timestamp: Date.now(),
         };
         this._game.addLog(`❌ ${playerName} 60 saniye içinde bağlanamadığı için oyundan atıldı.`, 'warning');
-        this._game.removePlayer(peerId);
+        this._game.removePlayer(playerId);
         this._broadcastState();
+        this._triggerBotIfNeeded();
 
         // 6 saniye sonra bildirimi tahtadan temizle
         setTimeout(() => {
@@ -1316,7 +1500,7 @@ export class HostPeerService {
       }
     }, 60000);
 
-    this._disconnectTimers.set(peerId, timer);
+    this._disconnectTimers.set(playerId, timer);
   }
 
   _broadcastState() {
@@ -1324,6 +1508,15 @@ export class HostPeerService {
     this._game.spectatorCount = this._spectators ? this._spectators.size : 0;
     const state = this._game.getPublicState();
     this._onState(state); // Host'un kendi UI'ını güncelle
+
+    // Host F5 ve kesintisiz oturum kurtarma için son geçerli durumu localStorage'a kaydet
+    if (this._roomCode) {
+      try {
+        localStorage.setItem('muteahhit_is_host_' + this._roomCode, '1');
+        localStorage.setItem('muteahhit_host_room', this._roomCode);
+        localStorage.setItem('muteahhit_host_state_' + this._roomCode, JSON.stringify(state));
+      } catch (_) {}
+    }
 
     const msg = createSyncState(state);
     // WebRTC DataChannel üzerinden doğrudan gönder
@@ -1340,6 +1533,11 @@ export class HostPeerService {
       this._game.triggerBotAuction(() => {
         const s2 = this._game.getPublicState();
         this._onState(s2);
+        if (this._roomCode) {
+          try {
+            localStorage.setItem('muteahhit_host_state_' + this._roomCode, JSON.stringify(s2));
+          } catch (_) {}
+        }
         const m2 = createSyncState(s2);
         for (const c of this._connections.values()) this._sendTo(c, m2);
         // FIX: Bot auction sonucu Relay'e de yayınla (önceden eksikti)
@@ -1390,8 +1588,42 @@ export class HostPeerService {
     this._stopWatchdog();
     this._watchdogInterval = setInterval(() => {
       const game = this._game;
-      if (!game || game.status !== 'playing' || game.isPaused) return;
+      if (!game) return;
       try {
+        const now = Date.now();
+
+        // 1. Canlı Geri Sayım Senkronizasyonu (Tüm istemcilerde saniye saniye geri sayımı güncelle)
+        if (game.disconnectNotice && game.disconnectNotice.type === 'disconnecting' && game.disconnectNotice.expiresAt) {
+          const remaining = Math.max(0, Math.ceil((game.disconnectNotice.expiresAt - now) / 1000));
+          if (game.disconnectNotice.remainingSeconds !== remaining) {
+            game.disconnectNotice.remainingSeconds = remaining;
+            this._broadcastState();
+          }
+        }
+
+        // 2. Oyuncu Canlılık / Hareketsizlik Kontrolü (Inactivity Liveness Check)
+        // 8.5 saniye boyunca hiçbir kanaldan (WebRTC veya Relay) ping/aksiyon yollamayan aktif insan oyuncular
+        if (game.players && game.players.length > 0) {
+          for (const p of game.players) {
+            if (p.isBot || p.isBankrupt || p.isKicked || p.isHost || p.id === this._peer?.id) continue;
+            const lastActive = Math.max(
+              this._playerLastActivity.get(p.id) || 0,
+              this._playerLastActivity.get(p.sessionToken) || 0,
+              this._playerLastActivity.get(p.name) || 0
+            );
+            if (!lastActive) {
+              this._playerLastActivity.set(p.id, now);
+              continue;
+            }
+            if (now - lastActive > 8500 && !this._disconnectTimers.has(p.id)) {
+              console.warn(`[HostPeerService] ${p.name} 8.5 saniyedir sessiz, bağlantı kesildi işlemi başlatılıyor...`);
+              this._handleClientDisconnect(p.id);
+            }
+          }
+        }
+
+        if (game.status !== 'playing' || game.isPaused) return;
+
         if (game.phase === 'AUCTION' && game.auction) {
           const elapsed = (Date.now() - (game.auction.lastBidTime || Date.now())) / 1000;
           if (elapsed >= (game.auction.timer || 15)) {
@@ -1457,8 +1689,10 @@ export class HostPeerService {
 
   /**
    * Odadan ayrıl — tüm bağlantıları kapat ve PeerJS'i yok et.
+   * @param {boolean} [isPermanent=false] - true ise oda kalıcı olarak kapatılır (Host ayrıldı mesajı gönderilir ve yerel durum temizlenir). false ise sayfa yenileme (F5) veya geçici durumdur.
    */
-  destroy() {
+  destroy(isPermanent = false) {
+    this._destroyed = true;
     this._onState = () => {};
     this._onChat = () => {};
     this._onError = () => {};
@@ -1470,19 +1704,42 @@ export class HostPeerService {
       clearInterval(this._pingInterval);
       this._pingInterval = null;
     }
-    // Tüm client'lara host düştü mesajı gönder
-    const dropMsg = createHostDropped();
-    for (const conn of this._connections.values()) {
-      this._sendTo(conn, dropMsg);
-      try { conn.close(); } catch (_) {}
-    }
-    if (this._relay) {
+
+    if (isPermanent) {
+      // Kalıcı ayrılma: Yerel Host durum kayıtlarını sil
       try {
-        if (this._relay.isConnected) this._relay.broadcast(dropMsg);
-        this._relay.destroy();
+        if (this._roomCode) {
+          localStorage.removeItem('muteahhit_is_host_' + this._roomCode);
+          localStorage.removeItem('muteahhit_host_state_' + this._roomCode);
+        }
+        localStorage.removeItem('muteahhit_host_room');
       } catch (_) {}
-      this._relay = null;
+
+      // Tüm client'lara host düştü mesajı gönder
+      const dropMsg = createHostDropped();
+      for (const conn of this._connections.values()) {
+        this._sendTo(conn, dropMsg);
+        try { conn.close(); } catch (_) {}
+      }
+      if (this._relay) {
+        try {
+          if (this._relay.isConnected) this._relay.broadcast(dropMsg);
+          this._relay.destroy();
+        } catch (_) {}
+        this._relay = null;
+      }
+    } else {
+      // F5 Yenilemesi / Geçici Kopma: Client'lara HOST_DROPPED gönderme!
+      // Soketleri sessizce kapat, client'lar 30 saniyelik toleransla beklesin
+      for (const conn of this._connections.values()) {
+        try { conn.close(); } catch (_) {}
+      }
+      if (this._relay) {
+        try { this._relay.destroy(); } catch (_) {}
+        this._relay = null;
+      }
     }
+
     for (const timer of this._disconnectTimers.values()) {
       clearTimeout(timer);
     }
@@ -1864,7 +2121,7 @@ export class ClientPeerService {
       }
       if (this._conn?.open) {
         try {
-          this._conn.send(createPing(Date.now()));
+          this._conn.send(createPing(Date.now(), this._myId));
         } catch (_) {}
       }
     }, 2500);
@@ -1872,7 +2129,7 @@ export class ClientPeerService {
     setTimeout(() => {
       if (this._relay?.isConnected) this._relay.ping((rtt) => handlePingResult(rtt));
       if (this._conn?.open) {
-        try { this._conn.send(createPing(Date.now())); } catch (_) {}
+        try { this._conn.send(createPing(Date.now(), this._myId)); } catch (_) {}
       }
     }, 300);
   }
@@ -1946,8 +2203,9 @@ export class ClientPeerService {
 
   /**
    * Odadan ayrıl.
+   * @param {boolean} [isPermanent=false] - true ise kalıcı ayrılma bildirimi gönderilir. false ise sayfa yenileme (F5) veya geçici durumdur.
    */
-  destroy() {
+  destroy(isPermanent = false) {
     this._destroyed = true;
     this._onState = () => {};
     this._onChat = () => {};
@@ -1973,20 +2231,28 @@ export class ClientPeerService {
       this._stateWatchdogTimer = null;
     }
 
-    const leaveMsg = createAction(ACTION.LEAVE_ROOM, {}, this._myId);
-    try {
-      if (this._conn?.open) {
-        this._conn.send(leaveMsg);
-        this._conn.close();
-      }
-    } catch (_) {}
-
-    if (this._relay) {
+    if (isPermanent) {
+      const leaveMsg = createAction(ACTION.LEAVE_ROOM, {}, this._myId);
       try {
-        if (this._relay.isConnected) this._relay.send(leaveMsg);
-        this._relay.destroy();
+        if (this._conn?.open) {
+          this._conn.send(leaveMsg);
+          this._conn.close();
+        }
       } catch (_) {}
-      this._relay = null;
+
+      if (this._relay) {
+        try {
+          if (this._relay.isConnected) this._relay.send(leaveMsg);
+          this._relay.destroy();
+        } catch (_) {}
+        this._relay = null;
+      }
+    } else {
+      try { if (this._conn?.open) this._conn.close(); } catch (_) {}
+      if (this._relay) {
+        try { this._relay.destroy(); } catch (_) {}
+        this._relay = null;
+      }
     }
 
     try { this._peer?.destroy(); } catch (_) {}

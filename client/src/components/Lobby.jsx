@@ -77,6 +77,28 @@ export function Lobby({
 
     const savedName = localStorage.getItem('muteahhit_name');
 
+    // 🚀 HOST F5 KONTROLÜ: Eğer kullanıcı bu odanın kurucusu/host'u ise ASLA client olarak katılmaya çalışma!
+    const isHostForThisRoom = localStorage.getItem('muteahhit_is_host_' + code) === '1';
+    const savedHostStateStr = localStorage.getItem('muteahhit_host_state_' + code);
+    if (isHostForThisRoom && savedHostStateStr) {
+      console.log(`[Lobby] ${code} odasının Host'u sayfayı yeniledi. Host olarak restore ediliyor...`);
+      try {
+        const savedHostState = JSON.parse(savedHostStateStr);
+        const hostP = savedHostState.players?.find(p => p.isHost || p.name === savedName);
+        onCreateRoom?.({
+          playerName: hostP?.name || savedName || 'Yönetici',
+          token: hostP?.token || selectedToken,
+          color: hostP?.color || selectedColor,
+          sessionToken: hostP?.sessionToken || localStorage.getItem('muteahhit_session_token'),
+          migratedRoomCode: code,
+          migratedState: savedHostState
+        });
+        return; // Client katılma veya oda kontrolü yapmadan derhal çık
+      } catch (err) {
+        console.warn('[Lobby] Host state parse hatası:', err);
+      }
+    }
+
     // Backend URL'ini belirle (PeerService ile aynı mantık)
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     const backendHost = isLocal
@@ -431,7 +453,7 @@ export function Lobby({
                 <div className="bg-amber-500/95 text-slate-950 px-3 py-2 rounded-xl border-2 border-amber-300 shadow-xl flex items-center justify-center gap-2 text-xs sm:text-sm font-black backdrop-blur-md animate-pulse">
                   <span className="text-base">⚠️</span>
                   <span className="truncate">
-                    <strong>{gameState.disconnectNotice.playerName}</strong> bağlantısı kesildi... (Yeniden bağlanması bekleniyor - 60sn)
+                    <strong>{gameState.disconnectNotice.playerName}</strong> bağlantısı kesildi... (Yeniden bağlanması bekleniyor - {gameState.disconnectNotice.remainingSeconds !== undefined ? gameState.disconnectNotice.remainingSeconds : Math.max(0, Math.ceil(((gameState.disconnectNotice.expiresAt || 0) - Date.now()) / 1000))}sn)
                   </span>
                 </div>
               ) : gameState.disconnectNotice.type === 'kicked' ? (

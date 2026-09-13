@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, Suspense, lazy } from 'react';
 import { HostPeerService, ClientPeerService } from './network/PeerService.js';
 import { ACTION } from './network/protocol.js';
-import { BOARD_TILES } from './game/boardData.js';
+import { BOARD_TILES, CHEST_CARDS, CHANCE_CARDS } from './game/boardData.js';
 import { Lobby } from './components/Lobby.jsx';
 import { Board } from './components/Board.jsx';
 import { ActionControls } from './components/ActionControls.jsx';
@@ -25,6 +25,7 @@ import { Volume2, VolumeX, Copy, Check, Users, Sparkles, LogOut, Wrench, Sun, Mo
 // 🃏 Son 3 Çekilen Kart Geçmişi Modalı (Deste kartına tıklanınca açılır)
 function CardHistoryModal({ deckType, logs, onClose }) {
   const isChance = deckType === 'chance';
+  const targetDeck = isChance ? 'chance' : 'chest';
   const deckName = isChance ? 'İhale & Fırsat' : 'Belediye & İmar';
   const icon = isChance ? '📜' : '🏛️';
   const accentColor = isChance ? 'bg-amber-500' : 'bg-emerald-700';
@@ -33,18 +34,78 @@ function CardHistoryModal({ deckType, logs, onClose }) {
     ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-700'
     : 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-700';
 
-  // Loglardan son 3 kart çekimini filtrele (hem meta field hem text fallback destekli)
-  const cardLogs = (logs || [])
-    .filter(l => {
-      if (l.type === 'card') {
-        if (l.deckType) return l.deckType === deckType;
-        const txt = (l.text || '').toLowerCase();
-        if (isChance) {
-          return txt.includes('ihale') || txt.includes('fırsat') || txt.includes('firsat') || (!txt.includes('belediye') && !txt.includes('imar'));
-        } else {
-          return txt.includes('belediye') || txt.includes('imar');
+  const norm = (s) => (s || '').replace(/İ/g, 'i').replace(/I/g, 'ı').toLowerCase().trim();
+
+  const allLogsList = logs || [];
+
+  // Loglardan son 3 kart çekimini filtrele (hem meta field, cardId, tam deste eşleştirmesi hem de text fallback destekli)
+  const cardLogs = allLogsList
+    .filter((l, index) => {
+      if (l.type !== 'card') return false;
+      // Salt ödül/ceza bildirimlerini (kart çekimi olmayan işlem loglarını) filtrele
+      const rawText = (l.text || '').replace(/<[^>]+>/g, '').trim();
+      if (rawText.includes('kazandı.') && !l.cardDesc && !rawText.includes('kartını açtı')) {
+        return false;
+      }
+
+      // 1. Doğrudan deckType meta verisi kontrolü
+      if (l.deckType) {
+        const normDeck = (l.deckType === 'community' || l.deckType === 'chest') ? 'chest' : l.deckType;
+        return normDeck === targetDeck;
+      }
+
+      // 2. cardId öneki kontrolü (ch = chance, cc = chest/community)
+      if (l.cardId) {
+        if (l.cardId.startsWith('ch')) return targetDeck === 'chance';
+        if (l.cardId.startsWith('cc')) return targetDeck === 'chest';
+      }
+
+      const titleMatch = rawText.match(/"([^"]+)"/);
+      const title = norm(l.cardTitle || (titleMatch ? titleMatch[1] : ''));
+      const txt = norm(rawText);
+
+      // 3. Her iki destede de bulunan ortak başlıklı kartlar (açıklama/metin farkı)
+      if (title.includes(norm('merkez şantiye'))) {
+        if (txt.includes(norm('maaşını al'))) return targetDeck === 'chance';
+        return targetDeck === 'chest';
+      }
+      if (title.includes(norm('vergi barışı'))) {
+        if (txt.includes(norm('anında muaf'))) return targetDeck === 'chance';
+        return targetDeck === 'chest';
+      }
+
+      // 4. CHEST_CARDS ve CHANCE_CARDS üzerinden tam ve alt dize başlık eşleştirmesi
+      const isChestCard = CHEST_CARDS.some(c => {
+        const ct = norm(c.title);
+        return title === ct || (title.length > 5 && (title.includes(ct) || ct.includes(title)));
+      });
+      if (isChestCard) return targetDeck === 'chest';
+
+      const isChanceCard = CHANCE_CARDS.some(c => {
+        const ct = norm(c.title);
+        return title === ct || (title.length > 5 && (title.includes(ct) || ct.includes(title)));
+      });
+      if (isChanceCard) return targetDeck === 'chance';
+
+      // 5. Bir önceki log adımında kare adı kontrolü ("Belediye & İmar" karesine geldi...)
+      if (index > 0) {
+        const prevText = norm(allLogsList[index - 1]?.text || '');
+        if (prevText.includes('belediye') || prevText.includes('imar') || prevText.includes('kamu')) {
+          return targetDeck === 'chest';
+        }
+        if (prevText.includes('ihale') || prevText.includes('fırsat') || prevText.includes('şans')) {
+          return targetDeck === 'chance';
         }
       }
+
+      // 6. Genel metin fallback
+      if (txt.includes('belediye') || txt.includes('imar') || txt.includes('kamu')) {
+        return targetDeck === 'chest';
+      }
+      if (txt.includes('ihale') || txt.includes('fırsat') || txt.includes('şans') || txt.includes('sans')) {
+        return targetDeck === 'chance';
+      }
+
       return false;
     })
     .map(l => {
@@ -52,10 +113,12 @@ function CardHistoryModal({ deckType, logs, onClose }) {
       const titleMatch = rawText.match(/"([^"]+)"/);
       const descMatch = rawText.match(/(?:açtı|çekti|çekiyor)\s*[:\-–]\s*(.+)$/);
       const drawerMatch = rawText.match(/^[📜\s]*([^\s"]+(?:\s+[^\s"]+)*?)\s+(?:bir|"|kartı|kartını)/);
+      const resolvedTitle = l.cardTitle || (titleMatch ? titleMatch[1] : rawText);
+      const foundCard = (isChance ? CHANCE_CARDS : CHEST_CARDS).find(c => norm(c.title) === norm(resolvedTitle));
       return {
         ...l,
-        cardTitle: l.cardTitle || (titleMatch ? titleMatch[1] : rawText),
-        cardDesc: l.cardDesc || (descMatch ? descMatch[1].trim() : ''),
+        cardTitle: resolvedTitle,
+        cardDesc: l.cardDesc || (descMatch ? descMatch[1].trim() : (foundCard ? foundCard.desc : '')),
         drawerName: l.drawerName || (drawerMatch ? drawerMatch[1].trim() : '')
       };
     })
@@ -419,6 +482,7 @@ export function App() {
 
   const matchedPlayer = effectiveGameState?.players?.find(p => !p.isBot && (
     (myPlayerId && p.id === myPlayerId) ||
+    (savedSessionToken && p.sessionToken === savedSessionToken) ||
     (savedPlayerName && p.name === savedPlayerName)
   )) || null;
 
@@ -839,19 +903,40 @@ export function App() {
     sounds.setVolume(volume);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ─── Network Ref Senkronizasyonu ─────────────────────────────────────────────
+  // ─── Network Ref Senkronizasyonu ve Ayrılma Güvencesi ─────────────────────────────
   useEffect(() => {
     networkRef.current = network;
   }, [network]);
 
+  useEffect(() => {
+    const handleUnload = () => {
+      try {
+        networkRef.current?.destroy(false);
+      } catch (_) {}
+    };
+    window.addEventListener('beforeunload', handleUnload);
+    window.addEventListener('pagehide', handleUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleUnload);
+      window.removeEventListener('pagehide', handleUnload);
+    };
+  }, []);
+
   // ─── Oda Oluşturma (Host) ─────────────────────────────────────────────────────
   /**
    * Yeni bir P2P odası oluşturur. Çağrıyı yapan kişi Host olur.
-   * Lobby.jsx'teki "Oda Oluştur" butonundan tetiklenir.
+   * Lobby.jsx'teki "Oda Oluştur" butonundan veya Host F5 kurtarmasından tetiklenir.
    */
-  const createRoom = useCallback(({ playerName, token, color, sessionToken }) => {
+  const createRoom = useCallback(({
+    playerName,
+    token,
+    color,
+    sessionToken,
+    migratedRoomCode = null,
+    migratedState = null,
+  }) => {
     // Önceki ağ bağlantısını temizle
-    networkRef.current?.destroy();
+    networkRef.current?.destroy(false);
     setIsSpectatorMode(false);
 
     const host = new HostPeerService({
@@ -859,6 +944,8 @@ export function App() {
       token,
       color,
       sessionToken,
+      migratedRoomCode,
+      migratedState,
       onMyId: (peerId) => {
         setMyPlayerId(peerId);
         myPlayerIdRef.current = peerId;
@@ -868,6 +955,8 @@ export function App() {
       onReady: (roomCode) => {
         try {
           localStorage.setItem('muteahhit_room_code', roomCode);
+          localStorage.setItem('muteahhit_host_room', roomCode);
+          localStorage.setItem(`muteahhit_is_host_${roomCode}`, '1');
           window.history.replaceState({}, '', `${window.location.pathname}?room=${roomCode}`);
         } catch (_) {}
       },
@@ -1009,6 +1098,40 @@ export function App() {
     networkRef.current = client;
   }, [handleIncomingState]);
 
+  // ─── Host F5 Otomatik Kurtarma Kalkanı ─────────────────────────────────────────
+  // Host sayfayı yenilediğinde (F5), oturumu ve tahtayı eksiksiz olarak Host kimliğiyle
+  // anında restore et (Lobiye veya "Odaya Bağlanılıyor..." hatasına düşmesini önler)
+  useEffect(() => {
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const roomParam = urlParams.get('room');
+      const targetRoom = (roomParam || localStorage.getItem('muteahhit_host_room') || '').trim().toUpperCase();
+      if (!targetRoom) return;
+
+      const isHostSaved = localStorage.getItem(`muteahhit_is_host_${targetRoom}`) === '1';
+      const savedStateRaw = localStorage.getItem(`muteahhit_host_state_${targetRoom}`);
+      if (isHostSaved && savedStateRaw && !networkRef.current) {
+        console.log(`[App] Host F5 kurtarma devrede! Oda: ${targetRoom}`);
+        const savedState = JSON.parse(savedStateRaw);
+        const savedName = localStorage.getItem('muteahhit_name') || 'Yönetici';
+        const savedSessionToken = localStorage.getItem('muteahhit_session_token');
+
+        const hostP = savedState.players?.find(p => p.isHost || (savedSessionToken && p.sessionToken === savedSessionToken) || p.name === savedName);
+
+        createRoom({
+          playerName: hostP?.name || savedName,
+          token: hostP?.token || { id: 'car', name: 'Klasik Araba', emoji: '🚗' },
+          color: hostP?.color || '#3b82f6',
+          sessionToken: hostP?.sessionToken || savedSessionToken,
+          migratedRoomCode: targetRoom,
+          migratedState: savedState
+        });
+      }
+    } catch (e) {
+      console.error('[App] Host F5 auto-restore hatası:', e);
+    }
+  }, [createRoom]);
+
   // ─── Sayfa Kapanırken Temizlik ────────────────────────────────────────────────
   useEffect(() => {
     return () => {
@@ -1020,7 +1143,7 @@ export function App() {
         clearTimeout(pendingLogsTimeoutRef.current);
         pendingLogsTimeoutRef.current = null;
       }
-      networkRef.current?.destroy();
+      networkRef.current?.destroy(false);
     };
   }, []);
 
@@ -1157,12 +1280,18 @@ export function App() {
   // Oyundan Çıkma
   const handleLeaveGame = (skipConfirm = false) => {
     if (skipConfirm || window.confirm('Oyundan ayrılmak ve ana menüye dönmek istediğinizden emin misiniz?')) {
+      const room = gameState?.roomCode || localStorage.getItem('muteahhit_room_code') || localStorage.getItem('muteahhit_host_room');
+      if (room) {
+        localStorage.removeItem(`muteahhit_is_host_${room}`);
+        localStorage.removeItem(`muteahhit_host_state_${room}`);
+      }
+      localStorage.removeItem('muteahhit_host_room');
       localStorage.removeItem('muteahhit_room_code');
       localStorage.removeItem('muteahhit_session_token');
       try {
         window.history.replaceState({}, '', window.location.pathname);
       } catch (_) {}
-      networkRef.current?.destroy();
+      networkRef.current?.destroy(true);
       setNetwork(null);
       setConnected(false);
       setGameState(null);
@@ -1174,14 +1303,20 @@ export function App() {
 
   // Odaya Bağlanırken İptal Etme
   const handleCancelConnecting = useCallback(() => {
+    const room = localStorage.getItem('muteahhit_room_code') || localStorage.getItem('muteahhit_host_room');
+    if (room) {
+      localStorage.removeItem(`muteahhit_is_host_${room}`);
+      localStorage.removeItem(`muteahhit_host_state_${room}`);
+    }
+    localStorage.removeItem('muteahhit_host_room');
+    localStorage.removeItem('muteahhit_room_code');
     try {
-      localStorage.removeItem('muteahhit_room_code');
       sessionStorage.removeItem('muteahhit_auto_join_cancelled');
     } catch (_) {}
 
     try {
       if (networkRef.current) {
-        networkRef.current.destroy();
+        networkRef.current.destroy(true);
         networkRef.current = null;
       }
     } catch (_) {}
@@ -1447,9 +1582,33 @@ export function App() {
   // Oyun Sahnesi
   return (
     <div className="h-screen max-h-[100dvh] overflow-hidden bg-transparent text-slate-900 dark:text-slate-100 flex flex-col selection:bg-amber-400 selection:text-black">
+      {/* ⚠️ Kopma / Yeniden Bağlanma Bildirimi (Global Floating Banner) */}
+      {effectiveGameState?.disconnectNotice && (
+        <div className={`fixed top-3 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 pointer-events-auto px-4 py-2 rounded-2xl shadow-2xl backdrop-blur-md transition-all duration-300 ${
+          effectiveGameState.disconnectNotice.type === 'disconnecting'
+            ? 'bg-amber-500/95 text-slate-950 border-2 border-amber-300 shadow-amber-500/25 animate-pulse'
+            : 'bg-rose-600/95 text-white border-2 border-rose-400 shadow-rose-600/30 animate-bounce'
+        }`}>
+          <span className="text-base sm:text-lg">
+            {effectiveGameState.disconnectNotice.type === 'disconnecting' ? '⚠️' : '❌'}
+          </span>
+          <span className="text-xs sm:text-sm font-black font-space tracking-wide">
+            {effectiveGameState.disconnectNotice.type === 'disconnecting' ? (
+              <>
+                <strong>{effectiveGameState.disconnectNotice.playerName}</strong> bağlantısı kesildi... (Yeniden bağlanması bekleniyor - {effectiveGameState.disconnectNotice.remainingSeconds !== undefined ? effectiveGameState.disconnectNotice.remainingSeconds : Math.max(0, Math.ceil(((effectiveGameState.disconnectNotice.expiresAt || 0) - Date.now()) / 1000))}sn)
+              </>
+            ) : (
+              <>
+                <strong>{effectiveGameState.disconnectNotice.playerName}</strong> 60sn içinde bağlanamadığı için oyundan atıldı.
+              </>
+            )}
+          </span>
+        </div>
+      )}
+
       {/* 👁️ Canlı Yayın / İzleyici Modu Üst Barı */}
       {isSpectator && (
-        <div className="fixed top-2.5 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2.5 pointer-events-auto bg-slate-950/90 dark:bg-slate-900/95 backdrop-blur-md border border-sky-500/60 px-3.5 py-1.5 rounded-2xl shadow-xl shadow-sky-500/15 animate-fadeIn">
+        <div className={`fixed ${effectiveGameState?.disconnectNotice ? 'top-16' : 'top-2.5'} left-1/2 -translate-x-1/2 z-40 flex items-center gap-2.5 pointer-events-auto bg-slate-950/90 dark:bg-slate-900/95 backdrop-blur-md border border-sky-500/60 px-3.5 py-1.5 rounded-2xl shadow-xl shadow-sky-500/15 animate-fadeIn transition-all duration-300`}>
           <span className="flex h-2.5 w-2.5 relative">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-sky-500"></span>
@@ -1758,7 +1917,7 @@ export function App() {
         <ErrorBoundary name="Kart Geçmişi Modalı" fallback={null}>
           <CardHistoryModal
             deckType={cardHistoryModal.deckType}
-            logs={gameState?.logs}
+            logs={gameState?.logs || effectiveGameState?.logs || []}
             onClose={() => setCardHistoryModal(null)}
           />
         </ErrorBoundary>

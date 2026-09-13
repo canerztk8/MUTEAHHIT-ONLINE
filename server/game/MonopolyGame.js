@@ -795,7 +795,7 @@ export class MonopolyGame {
       };
       this.phase = 'CARD_DRAWN';
       this.addLog(`${player.name} "${tile.name}" karesine geldi ve kart çekti.`, 'info');
-      this.addLog(`📜 ${player.name} "${card.title}" kartını açtı: ${card.desc}`, 'card', { deckType: card.deckType, drawerName: player.name, cardTitle: card.title, cardDesc: card.desc });
+      this.addLog(`📜 ${player.name} "${card.title}" kartını açtı: ${card.desc}`, 'card', { deckType: tile.type, cardId: card.id, drawerName: player.name, cardTitle: card.title, cardDesc: card.desc });
 
       return { success: true, tile, card: this.drawnCard };
     }
@@ -895,7 +895,7 @@ export class MonopolyGame {
     };
     this.phase = 'CARD_DRAWN';
     this.addLog(`${target.name} "İhale & Fırsat" karesine geldi ve kart çekti.`, 'info');
-    this.addLog(`📜 ${target.name} "${card.title}" kartını açtı: ${card.desc}`, 'card', { deckType: 'chance', drawerName: target.name, cardTitle: card.title, cardDesc: card.desc });
+    this.addLog(`📜 ${target.name} "${card.title}" kartını açtı: ${card.desc}`, 'card', { deckType: 'chance', cardId: card.id, drawerName: target.name, cardTitle: card.title, cardDesc: card.desc });
     return { success: true, card: this.drawnCard };
   }
 
@@ -917,7 +917,7 @@ export class MonopolyGame {
     };
     this.phase = 'CARD_DRAWN';
     this.addLog(`${target.name} "Belediye & İmar" karesine geldi ve kart çekti.`, 'info');
-    this.addLog(`📜 ${target.name} "${card.title}" kartını açtı: ${card.desc}`, 'card', { deckType: 'chest', drawerName: target.name, cardTitle: card.title, cardDesc: card.desc });
+    this.addLog(`📜 ${target.name} "${card.title}" kartını açtı: ${card.desc}`, 'card', { deckType: 'chest', cardId: card.id, drawerName: target.name, cardTitle: card.title, cardDesc: card.desc });
     return { success: true, card: this.drawnCard };
   }
 
@@ -1009,7 +1009,7 @@ export class MonopolyGame {
 
       case 'jail_free':
         player.jailCards++;
-        this.addLog(`📜 ${player.name} bir "Vergi Barışı & İmar Affı Belgesi" kazandı.`, 'card');
+        this.addLog(`📜 ${player.name} bir "Vergi Barışı & İmar Affı Belgesi" kazandı.`, 'info');
         break;
 
       case 'go_to_jail':

@@ -4,16 +4,28 @@ import { Building2, Home, Landmark, Train, Zap, ChevronRight, Layers, ArrowUpDow
 
 function TitleDeedCardsBase({ gameState = {}, myPlayerId, onTileClick }) {
   const { players = [], properties = {} } = gameState || {};
-  const myPlayer = players.find(p => p.id === myPlayerId);
+  // Yerel oyuncuyu güvenli çözümle (myPlayerId, oturum tokenı veya isim üzerinden)
+  const savedPlayerName = typeof localStorage !== 'undefined' ? localStorage.getItem('muteahhit_name') : null;
+  const savedSessionToken = typeof localStorage !== 'undefined' ? localStorage.getItem('muteahhit_session_token') : null;
+  const myPlayer = players.find(p => !p.isBot && (
+    (myPlayerId && p.id === myPlayerId) ||
+    (savedSessionToken && p.sessionToken === savedSessionToken) ||
+    (savedPlayerName && p.name === savedPlayerName)
+  )) || players.find(p => p.id === myPlayerId) || null;
+  const effectiveMyId = myPlayer?.id || myPlayerId;
 
   // Hangi oyuncunun tapularının incelendiği (varsayılan: kullanıcının kendisi)
-  const [selectedPlayerId, setSelectedPlayerId] = useState(myPlayerId);
-  // Sıralama modu: 'color' (renk grubu) | 'price' (fiyat) | 'time' (satın alma zamanı)
+  const [selectedPlayerId, setSelectedPlayerId] = useState(effectiveMyId);
+  // Sıralama modu: 'color' (renk grubu - en çok arsa başta) | 'price' (fiyat) | 'time' (satın alma zamanı)
   const [sortBy, setSortBy] = useState('color');
+  // İpotek filtresi: 'all' (tümü) | 'mortgaged' (sadece ipotekli olanlar)
+  const [mortgageFilter, setMortgageFilter] = useState('all');
 
   React.useEffect(() => {
-    if (myPlayerId) setSelectedPlayerId(myPlayerId);
-  }, [myPlayerId]);
+    if (effectiveMyId && (!selectedPlayerId || selectedPlayerId === myPlayerId)) {
+      setSelectedPlayerId(effectiveMyId);
+    }
+  }, [effectiveMyId, myPlayerId, selectedPlayerId]);
 
   const targetPlayer = players.find(p => p.id === selectedPlayerId && !p.isBankrupt)
     || myPlayer
@@ -21,8 +33,16 @@ function TitleDeedCardsBase({ gameState = {}, myPlayerId, onTileClick }) {
     || players[0]
     || null;
 
+  // Oyuncu sekmeleri: Kullanıcının kendisi (bizim oyuncu) her zaman en solda ilk sırada dursun
+  const sortedPlayers = React.useMemo(() => {
+    const active = players.filter(p => p && !p.isBankrupt);
+    const me = active.find(p => p.id === effectiveMyId);
+    if (!me) return active;
+    return [me, ...active.filter(p => p.id !== effectiveMyId)];
+  }, [players, effectiveMyId]);
+
   // Seçili oyuncunun sahip olduğu mülkler (useMemo ile memoize edildi)
-  const ownedTiles = React.useMemo(() => {
+  const allOwnedTiles = React.useMemo(() => {
     if (!targetPlayer) return [];
     const owned = Object.values(properties)
       .filter(prop => prop && prop.ownerId === targetPlayer.id)
@@ -33,7 +53,32 @@ function TitleDeedCardsBase({ gameState = {}, myPlayerId, onTileClick }) {
       })
       .filter(item => Boolean(item.tile));
 
+    // Renk grubu frekansı: Oyuncunun elinde en çok hangi renkten arsa varsa o renk grubu başta listelenir
+    const groupCounts = {};
+    const groupMinId = {};
+    owned.forEach(item => {
+      const g = item.tile?.group || item.tile?.type || 'other';
+      groupCounts[g] = (groupCounts[g] || 0) + 1;
+      const tid = item.tile?.id ?? 999;
+      if (groupMinId[g] === undefined || tid < groupMinId[g]) {
+        groupMinId[g] = tid;
+      }
+    });
+
     owned.sort((a, b) => {
+      if (sortBy === 'color') {
+        const groupA = a.tile?.group || a.tile?.type || 'other';
+        const groupB = b.tile?.group || b.tile?.type || 'other';
+        const countA = groupCounts[groupA] || 0;
+        const countB = groupCounts[groupB] || 0;
+        if (countB !== countA) {
+          return countB - countA; // En çok arsası olan renk grubu en başta
+        }
+        if (groupA !== groupB) {
+          return (groupMinId[groupA] || 0) - (groupMinId[groupB] || 0); // Aynı sayıda tapu varsa tahta sırasına göre grup bütünlüğünü koru
+        }
+        return (a.tile?.id || 0) - (b.tile?.id || 0); // Grup içi tahta sırası
+      }
       if (sortBy === 'price') {
         const costA = a.tile?.cost || 0;
         const costB = b.tile?.cost || 0;
@@ -52,25 +97,47 @@ function TitleDeedCardsBase({ gameState = {}, myPlayerId, onTileClick }) {
     return owned;
   }, [targetPlayer, properties, sortBy]);
 
+  // Kaç arsanın ipotekli olduğunun hesaplanması
+  const mortgagedCount = React.useMemo(() => {
+    return allOwnedTiles.filter(item => Boolean(item.state?.mortgaged)).length;
+  }, [allOwnedTiles]);
+
+  // İpotek filtresine göre gösterilen mülkler
+  const displayedTiles = React.useMemo(() => {
+    if (mortgageFilter === 'mortgaged') {
+      return allOwnedTiles.filter(item => Boolean(item.state?.mortgaged));
+    }
+    return allOwnedTiles;
+  }, [allOwnedTiles, mortgageFilter]);
+
   return (
     <div className="cardstock-panel rounded-3xl p-3 sm:p-4 shadow-xl flex flex-col gap-2.5 sm:gap-3 min-h-[220px] lg:min-h-0 flex-1 text-slate-900 dark:text-slate-100 overflow-hidden">
       {/* Üst Kısım: Başlık & Oyuncu Seçim Sekmeleri */}
       <div className="flex flex-col gap-2 pb-2 border-b border-slate-200 dark:border-slate-800 flex-shrink-0">
         <div className="flex items-center justify-between">
-          <h2 className="text-xs font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider flex items-center gap-2 font-space">
-            <Landmark className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-            <span>Tapu Senetleri ({ownedTiles.length})</span>
-          </h2>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h2 className="text-xs font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider flex items-center gap-1.5 font-space">
+              <Landmark className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+              <span>Tapu Senetleri ({allOwnedTiles.length})</span>
+            </h2>
+            <span className={`text-[9.5px] font-black px-2 py-0.5 rounded-full font-jetbrains border ${
+              mortgagedCount > 0
+                ? 'bg-rose-100 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400 border-rose-300 dark:border-rose-800'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700'
+            }`}>
+              İpotekli: {mortgagedCount}
+            </span>
+          </div>
           <span className="text-[10px] sm:text-[10.5px] text-slate-500 dark:text-slate-400 font-medium">
-            {targetPlayer?.id !== myPlayerId ? 'Teklif yapmak için tapuya tıkla' : 'Yönetmek için tapuya tıkla'}
+            {targetPlayer?.id !== effectiveMyId ? 'Teklif yapmak için tapuya tıkla' : 'Yönetmek için tapuya tıkla'}
           </span>
         </div>
 
-        {/* Oyuncu Seçici Hap Butonlar (Tabs) */}
+        {/* Oyuncu Seçici Hap Butonlar (Tabs) - Bizim oyuncunun ismi hep en solda */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 custom-scrollbar">
-          {players.filter(p => p && !p.isBankrupt).map(p => {
+          {sortedPlayers.map(p => {
             const isSelected = p.id === targetPlayer?.id;
-            const isMe = p.id === myPlayerId;
+            const isMe = p.id === effectiveMyId;
             const pCount = Object.values(properties).filter(prop => prop && prop.ownerId === p.id).length;
             const tokenIcon = p.token?.icon || '●';
 
@@ -90,7 +157,7 @@ function TitleDeedCardsBase({ gameState = {}, myPlayerId, onTileClick }) {
                 >
                   {tokenIcon}
                 </div>
-                <span>{isMe ? 'Senin Tapuların' : p.name}</span>
+                <span>{isMe ? `${p.name} (Sen)` : p.name}</span>
                 <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-mono font-jetbrains ${
                   isSelected ? 'bg-slate-950/20 text-slate-950 font-bold' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600 font-bold'
                 }`}>
@@ -101,59 +168,76 @@ function TitleDeedCardsBase({ gameState = {}, myPlayerId, onTileClick }) {
           })}
         </div>
 
-        {/* Sıralama Butonları: Renge Göre, Fiyata Göre, Satın Alma Zamanına Göre */}
-        <div className="flex items-center justify-between gap-1.5 pt-1">
-          <span className="text-[10px] text-slate-600 dark:text-slate-400 font-bold flex items-center gap-1 font-space">
-            <ArrowUpDown className="w-3 h-3 text-amber-600 dark:text-amber-400" />
-            <span>Sırala:</span>
-          </span>
-          <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-300 dark:border-slate-700">
-            <button
-              type="button"
-              onClick={() => setSortBy('color')}
-              className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition cursor-pointer flex items-center gap-1 font-space ${
-                sortBy === 'color'
-                  ? 'bg-amber-400 text-slate-950 shadow-xs font-black'
-                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-700'
-              }`}
-              title="Renk grubuna ve harita semt sırasına göre sırala"
-            >
-              <span>🎨</span>
-              <span>Renk</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setSortBy('price')}
-              className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition cursor-pointer flex items-center gap-1 font-space ${
-                sortBy === 'price'
-                  ? 'bg-amber-400 text-slate-950 shadow-xs font-black'
-                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-700'
-              }`}
-              title="Fiyata göre (En pahalıdan en ucuza) sırala"
-            >
-              <span>💰</span>
-              <span>Fiyat</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setSortBy('time')}
-              className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition cursor-pointer flex items-center gap-1 font-space ${
-                sortBy === 'time'
-                  ? 'bg-amber-400 text-slate-950 shadow-xs font-black'
-                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-700'
-              }`}
-              title="Satın alma sırasına göre sırala"
-            >
-              <span>⏱️</span>
-              <span>Zaman</span>
-            </button>
+        {/* Sıralama & Filtreleme Butonları: Renge Göre, Fiyata Göre, Zamana Göre, İpoteğe Göre */}
+        <div className="flex flex-wrap items-center justify-between gap-1.5 pt-1">
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] text-slate-600 dark:text-slate-400 font-bold flex items-center gap-1 font-space">
+              <ArrowUpDown className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+              <span>Sırala:</span>
+            </span>
+            <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-300 dark:border-slate-700">
+              <button
+                type="button"
+                onClick={() => setSortBy('color')}
+                className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition cursor-pointer flex items-center gap-1 font-space ${
+                  sortBy === 'color'
+                    ? 'bg-amber-400 text-slate-950 shadow-xs font-black'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-700'
+                }`}
+                title="En çok arsanız olan renk grubu başta olacak şekilde sırala"
+              >
+                <span>🎨</span>
+                <span>Renk</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSortBy('price')}
+                className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition cursor-pointer flex items-center gap-1 font-space ${
+                  sortBy === 'price'
+                    ? 'bg-amber-400 text-slate-950 shadow-xs font-black'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-700'
+                }`}
+                title="Fiyata göre (En pahalıdan en ucuza) sırala"
+              >
+                <span>💰</span>
+                <span>Fiyat</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSortBy('time')}
+                className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition cursor-pointer flex items-center gap-1 font-space ${
+                  sortBy === 'time'
+                    ? 'bg-amber-400 text-slate-950 shadow-xs font-black'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-700'
+                }`}
+                title="Satın alma sırasına göre sırala"
+              >
+                <span>⏱️</span>
+                <span>Zaman</span>
+              </button>
+            </div>
           </div>
+
+          {/* İpoteğe Göre Filtrele Butonu */}
+          <button
+            type="button"
+            onClick={() => setMortgageFilter(prev => prev === 'mortgaged' ? 'all' : 'mortgaged')}
+            className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition cursor-pointer flex items-center gap-1 border font-space ${
+              mortgageFilter === 'mortgaged'
+                ? 'bg-rose-600 text-white border-rose-500 shadow-xs font-black ring-1 ring-rose-400'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:border-rose-400 hover:text-rose-600 dark:hover:text-rose-400'
+            }`}
+            title={mortgageFilter === 'mortgaged' ? 'Tüm tapuları göster' : 'Yalnızca ipotekli tapuları filtrele'}
+          >
+            <span>🏦</span>
+            <span>İpotekli ({mortgagedCount})</span>
+          </button>
         </div>
       </div>
 
       {/* Tapu Kartları Izgarası / Yatay Listesi */}
       <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar min-h-0">
-        {!targetPlayer || ownedTiles.length === 0 ? (
+        {!targetPlayer || allOwnedTiles.length === 0 ? (
           <div className="py-8 min-h-[140px] flex-1 flex flex-col items-center justify-center text-center p-4 rounded-2xl bg-white dark:bg-slate-900 border border-dashed border-slate-300 dark:border-slate-700">
             <div className="w-10 h-10 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/50 flex items-center justify-center text-xl mb-2 text-amber-600 dark:text-amber-400">
               📜
@@ -165,9 +249,27 @@ function TitleDeedCardsBase({ gameState = {}, myPlayerId, onTileClick }) {
               Karelere gelerek sahipsiz mülkleri satın alın ve kira geliri toplayın.
             </p>
           </div>
+        ) : displayedTiles.length === 0 ? (
+          <div className="py-8 min-h-[140px] flex-1 flex flex-col items-center justify-center text-center p-4 rounded-2xl bg-white dark:bg-slate-900 border border-dashed border-rose-300 dark:border-rose-800">
+            <div className="w-10 h-10 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/50 flex items-center justify-center text-xl mb-2 text-rose-600 dark:text-rose-400">
+              🏦
+            </div>
+            <p className="text-xs font-black text-slate-800 dark:text-slate-100 font-space">
+              İpotekli tapu bulunmuyor (0/{allOwnedTiles.length})
+            </p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 max-w-xs font-medium">
+              Bu oyuncunun şu anda ipotek edilmiş herhangi bir tapusu yoktur.
+            </p>
+            <button
+              onClick={() => setMortgageFilter('all')}
+              className="mt-2.5 px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-xl text-xs font-bold font-space cursor-pointer border border-slate-300 dark:border-slate-700"
+            >
+              Tüm Tapuları Göster ({allOwnedTiles.length})
+            </button>
+          </div>
         ) : (
           <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
-            {ownedTiles.map(({ tile, state }) => {
+            {displayedTiles.map(({ tile, state }) => {
               const houses = Math.max(0, Math.min(5, Number(state?.houses) || 0));
               const isMortgaged = Boolean(state?.mortgaged);
 
@@ -283,7 +385,7 @@ function TitleDeedCardsBase({ gameState = {}, myPlayerId, onTileClick }) {
                     <div className="flex items-center justify-between pb-1 border-b border-slate-200 dark:border-slate-800">
                       <span className="text-slate-500 dark:text-slate-400 font-semibold font-space">Geçerli Kira:</span>
                       <span className="font-mono font-black text-slate-900 dark:text-slate-100 text-xs font-jetbrains">
-                        {isMortgaged ? '0₺ (İpotek)' : `${currentRent}${typeof currentRent === 'number' ? '₺' : ''}`}
+                        {isMortgaged ? `0₺ (${targetPlayer?.name ? `${targetPlayer.name} İpotek` : 'İpotek'})` : `${currentRent}${typeof currentRent === 'number' ? '₺' : ''}`}
                       </span>
                     </div>
 
@@ -342,16 +444,16 @@ function TitleDeedCardsBase({ gameState = {}, myPlayerId, onTileClick }) {
 
                   {/* İpotek Damgası (Varsa) */}
                   {isMortgaged && (
-                    <div className="absolute inset-0 z-20 bg-rose-950/60 backdrop-blur-[1px] flex items-center justify-center">
-                      <div className="border-2 border-rose-500 bg-rose-600 text-white font-black text-xs sm:text-sm uppercase tracking-widest px-3 py-1 rounded-lg -rotate-12 shadow-xl font-space">
-                        İPOTEKLİ
+                    <div className="absolute inset-0 z-20 bg-rose-950/60 backdrop-blur-[1px] flex items-center justify-center p-2 pointer-events-none">
+                      <div className="border-2 border-rose-500 bg-rose-600 text-white font-black text-xs uppercase tracking-wider px-2.5 py-1 rounded-lg -rotate-12 shadow-xl font-space text-center max-w-[90%] truncate">
+                        {targetPlayer?.name ? `${targetPlayer.name} (İpotek)` : 'İpotekli'}
                       </div>
                     </div>
                   )}
 
                   {/* Kartın Alt Butonu / Hover Efekti */}
                   <div className="bg-slate-50 dark:bg-slate-850 p-1 text-center border-t border-slate-200 dark:border-slate-800 group-hover:bg-amber-100/80 dark:group-hover:bg-amber-950/80 group-hover:text-amber-950 dark:group-hover:text-amber-200 text-[9.5px] font-bold text-slate-600 dark:text-slate-300 transition-colors flex items-center justify-center gap-1 font-space">
-                    <span>{targetPlayer?.id !== myPlayerId ? 'Detay / Teklif Yap' : 'Detay / İnşa'}</span>
+                    <span>{targetPlayer?.id !== effectiveMyId ? 'Detay / Teklif Yap' : 'Detay / İnşa'}</span>
                     <ChevronRight className="w-3 h-3" />
                   </div>
                 </div>

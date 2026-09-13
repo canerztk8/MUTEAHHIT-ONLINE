@@ -171,9 +171,10 @@ export function createError(code, message) {
 /**
   * Ağ gecikmesi (Ping) ölçüm mesajı.
   * @param {number} t0 - Gönderim zaman damgası
+  * @param {string} [senderId] - Gönderen oyuncu kimliği
   */
-export function createPing(t0 = Date.now()) {
-  return { type: MSG.PING, t0 };
+export function createPing(t0 = Date.now(), senderId = null) {
+  return { type: MSG.PING, t0, senderId };
 }
 
 /**
