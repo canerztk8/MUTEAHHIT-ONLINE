@@ -429,6 +429,7 @@ export function App() {
   );
   const myPlayer = isSpectator ? null : matchedPlayer;
   const effectiveMyPlayerId = myPlayer?.id || myPlayerId;
+  const isHost = Boolean(myPlayer?.isHost);
 
   useEffect(() => {
     if (myPlayer?.id && myPlayerId !== myPlayer.id) {
