@@ -1790,6 +1790,65 @@ export function Board({
 
 
 
+              {/* Canlı Kira Ödeme Bildirimi Banner'ı (Tur/Ev/Otel/Tapu Barının Hemen Altında) */}
+              {rentNotification && myPlayerId && (rentNotification.payerId === myPlayerId || rentNotification.ownerId === myPlayerId) && (
+                <div className="relative z-30 w-full max-w-xs sm:max-w-sm mx-auto my-1 pointer-events-none animate-rent-banner-bounce">
+                  <div className="bg-gradient-to-r from-rose-950/95 via-slate-900/95 to-emerald-950/95 border-2 border-amber-400 rounded-2xl px-3 sm:px-4 py-2 shadow-[0_0_30px_rgba(251,191,36,0.6)] flex items-center gap-2.5 backdrop-blur-md">
+                    <div className="w-8 h-8 rounded-xl bg-amber-400/20 border border-amber-400/50 flex items-center justify-center text-lg flex-shrink-0">
+                      💸
+                    </div>
+                    <div className="min-w-0 flex-1 leading-tight text-left">
+                      <span className="text-[8.5px] font-black uppercase tracking-widest text-amber-400 block">
+                        KİRA ÖDEMESİ GERÇEKLEŞTİ!
+                      </span>
+                      <div className="text-[11px] sm:text-xs font-black text-white truncate flex items-center gap-1 mt-0.5">
+                        <span style={{ color: rentNotification.payerColor }}>{rentNotification.payerName}</span>
+                        <span className="text-slate-400">➔</span>
+                        <span style={{ color: rentNotification.ownerColor }}>{rentNotification.ownerName}</span>
+                        <span className="text-amber-400 font-mono text-xs sm:text-sm font-extrabold ml-1">
+                          {rentNotification.amount}₺
+                        </span>
+                      </div>
+                      <span className="text-[8px] sm:text-[8.5px] text-slate-300 italic truncate block">
+                        {rentNotification.tileName} mülkü için
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Canlı Tapu Satın Alma / İhale Kazanma Bildirimi (Tur/Ev/Otel/Tapu Barının Hemen Altında) */}
+              {propertyAcquiredNotification && (propertyAcquiredNotification.playerId === (myPlayer?.id || myPlayerId)) && (
+                <div className="relative z-30 w-full max-w-xs sm:max-w-sm mx-auto my-1 pointer-events-auto animate-fadeIn">
+                  <div className="bg-gradient-to-r from-emerald-950/95 via-slate-900/95 to-amber-950/90 border-2 border-amber-400 shadow-[0_0_30px_rgba(245,158,11,0.6)] rounded-2xl px-3 sm:px-4 py-2 flex items-center justify-between gap-2.5 backdrop-blur-md">
+                    <div className="w-8 h-8 rounded-xl bg-amber-400/20 border border-amber-400/50 flex items-center justify-center text-lg flex-shrink-0">
+                      🏛️
+                    </div>
+                    <div className="min-w-0 flex-1 text-left leading-tight">
+                      <span className="text-[8.5px] font-black uppercase tracking-widest text-amber-400 flex items-center gap-1">
+                        <Sparkles className="w-2.5 h-2.5 text-amber-400 animate-spin" />
+                        TEBRİKLER! YENİ TAPU KAZANDINIZ
+                      </span>
+                      <h4 className="text-xs sm:text-sm font-black text-white truncate">
+                        {propertyAcquiredNotification.tileName}
+                      </h4>
+                      <p className="text-[10px] sm:text-xs text-slate-300 mt-0.5">
+                        {propertyAcquiredNotification.cost}₺ karşılığı tapu kasanıza eklendi.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setPropertyAcquiredNotification(null)}
+                      className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition cursor-pointer flex-shrink-0"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              )}
+
+
+
+
           {/* Merkez Kontrol Alanı (Zar & Eylemler - Tahtanın Tam Ortasında) */}
           <div className="relative z-20 w-full flex-1 flex flex-col items-center justify-center my-0.5 sm:my-1 min-h-0 overflow-y-auto custom-scrollbar">
             {React.isValidElement(centerControlsSlot)
@@ -1817,82 +1876,23 @@ export function Board({
           </div>
         </div>
 
-        {/* Canlı Kira Ödeme Bildirimi Banner'ı (Sadece ödeyen ve mülk sahibine gözükür) */}
-        {rentNotification && myPlayerId && (rentNotification.payerId === myPlayerId || rentNotification.ownerId === myPlayerId) && (
-          <div className="fixed top-6 inset-x-0 z-50 pointer-events-none flex justify-center px-4">
-            <div className="w-full max-w-sm animate-rent-banner-bounce">
-              <div className="bg-gradient-to-r from-rose-950/95 via-slate-900/95 to-emerald-950/95 border-2 border-amber-400 rounded-2xl px-4 py-2.5 shadow-[0_0_35px_rgba(251,191,36,0.65)] flex items-center gap-3 backdrop-blur-md">
-                <div className="w-9 h-9 rounded-xl bg-amber-400/20 border border-amber-400/50 flex items-center justify-center text-xl flex-shrink-0">
-                  💸
-                </div>
-                <div className="min-w-0 flex-1 leading-tight text-left">
-                  <span className="text-[9px] font-black uppercase tracking-widest text-amber-400 block">
-                    KİRA ÖDEMESİ GERÇEKLEŞTİ!
-                  </span>
-                  <div className="text-xs font-black text-white truncate flex items-center gap-1 mt-0.5">
-                    <span style={{ color: rentNotification.payerColor }}>{rentNotification.payerName}</span>
-                    <span className="text-slate-400">➔</span>
-                    <span style={{ color: rentNotification.ownerColor }}>{rentNotification.ownerName}</span>
-                    <span className="text-amber-400 font-mono text-sm font-extrabold ml-1">
-                      {rentNotification.amount}₺
-                    </span>
-                  </div>
-                  <span className="text-[8.5px] text-slate-300 italic truncate block">
-                    {rentNotification.tileName} mülkü için
-                  </span>
-                </div>
-              </div>
+        {/* Başkaları tapu satın alınca altta çıkan küçük, göz yormayan mini bilgilendirme çubuğu */}
+        {propertyAcquiredNotification && propertyAcquiredNotification.playerId !== (myPlayer?.id || myPlayerId) && (
+          <div className="fixed bottom-20 sm:bottom-24 inset-x-0 z-[100] pointer-events-none flex justify-center px-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="bg-slate-900/95 border border-slate-700/80 shadow-lg px-3.5 py-1.5 rounded-full flex items-center gap-2 backdrop-blur-md text-[11px] text-slate-300 pointer-events-auto">
+              <span className="text-xs">📜</span>
+              <span>
+                <strong className="text-slate-100 font-bold">{propertyAcquiredNotification.playerName}</strong>,{' '}
+                <span className="text-amber-300 font-medium">{propertyAcquiredNotification.tileName}</span> tapusunu satın aldı ({(propertyAcquiredNotification.tileCost ?? propertyAcquiredNotification.cost ?? '')}₺).
+              </span>
+              <button
+                onClick={() => setPropertyAcquiredNotification(null)}
+                className="ml-1 text-slate-500 hover:text-slate-300 text-[10px] font-bold cursor-pointer"
+              >
+                ✕
+              </button>
             </div>
           </div>
-        )}
-
-        {/* Canlı Tapu Satın Alma / İhale Kazanma Bildirimi */}
-        {propertyAcquiredNotification && (
-          propertyAcquiredNotification.playerId === (myPlayer?.id || myPlayerId) ? (
-            <div className="fixed top-6 sm:top-8 inset-x-0 z-50 pointer-events-auto flex justify-center px-4 animate-fadeIn">
-              <div className="w-full max-w-sm sm:max-w-md bg-gradient-to-r from-emerald-950 via-slate-900 to-amber-950/90 border-2 border-amber-400 shadow-[0_0_40px_rgba(245,158,11,0.6)] rounded-2xl p-3 sm:p-4 flex items-center justify-between gap-3 backdrop-blur-md">
-                <div className="w-10 h-10 rounded-xl bg-amber-400/20 border border-amber-400/50 flex items-center justify-center text-xl flex-shrink-0">
-                  🏛️
-                </div>
-                <div className="min-w-0 flex-1 text-left">
-                  <span className="text-[9.5px] font-black uppercase tracking-widest text-amber-400 flex items-center gap-1">
-                    <Sparkles className="w-3 h-3 text-amber-400 animate-spin" />
-                    TEBRİKLER! YENİ TAPU KAZANDINIZ
-                  </span>
-                  <h4 className="text-xs sm:text-sm font-black text-white truncate">
-                    {propertyAcquiredNotification.tileName}
-                  </h4>
-                  <p className="text-xs text-slate-300 mt-0.5">
-                    <span className="text-emerald-400 font-bold">{(propertyAcquiredNotification.tileCost ?? propertyAcquiredNotification.cost ?? '')}₺ karşılığında portföyünüze eklendi!</span>
-                  </p>
-                </div>
-                <button
-                  onClick={() => setPropertyAcquiredNotification(null)}
-                  className="w-6 h-6 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-xs font-bold transition flex-shrink-0 cursor-pointer"
-                  title="Kapat"
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-          ) : (
-            /* Başkaları tapu satın alınca altta çıkan küçük, göz yormayan mini bilgilendirme çubuğu */
-            <div className="fixed bottom-20 sm:bottom-24 inset-x-0 z-[100] pointer-events-none flex justify-center px-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-              <div className="bg-slate-900/95 border border-slate-700/80 shadow-lg px-3.5 py-1.5 rounded-full flex items-center gap-2 backdrop-blur-md text-[11px] text-slate-300 pointer-events-auto">
-                <span className="text-xs">📜</span>
-                <span>
-                  <strong className="text-slate-100 font-bold">{propertyAcquiredNotification.playerName}</strong>,{' '}
-                  <span className="text-amber-300 font-medium">{propertyAcquiredNotification.tileName}</span> tapusunu satın aldı ({(propertyAcquiredNotification.tileCost ?? propertyAcquiredNotification.cost ?? '')}₺).
-                </span>
-                <button
-                  onClick={() => setPropertyAcquiredNotification(null)}
-                  className="ml-1 text-slate-500 hover:text-slate-300 text-[10px] font-bold cursor-pointer"
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-          )
         )}
 
 
