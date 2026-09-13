@@ -62,49 +62,49 @@ const ICE_SERVERS = [
   },
 ];
 
-export function getPeerConfig() {
+const DEFAULT_BACKEND_HOST = 'muteahhit-online-backend.onrender.com';
+
+function resolveBackendHost() {
   const envHost = import.meta.env.VITE_PEER_HOST;
-  const envPort = import.meta.env.VITE_PEER_PORT;
-  const envPath = import.meta.env.VITE_PEER_PATH || '/peerjs';
+  if (envHost && envHost.trim()) return envHost.trim();
 
-  // Çevre değişkeni ile override
-  if (envHost) {
-    return {
-      host: envHost,
-      port: Number(envPort) || 443,
-      path: envPath,
-      secure: Number(envPort) !== 9000,
-      debug: import.meta.env.DEV ? 2 : 0,
-      config: { iceServers: ICE_SERVERS, iceCandidatePoolSize: 2 },
-    };
-  }
-
-  // Production otomatik algılama:
-  // Sayfa localhost'tan değil gerçek bir domain'den geliyorsa (Render, vb.)
-  // kendi sunucumuzdaki /peerjs sinyal endpoint'ini kullan.
-  // Bu, PeerJS Cloud (0.peerjs.com) yerine kendi kontrolümüzdeki sunucuyu
-  // kullanır — Türkiye'den 0.peerjs.com engellenmiş olsa bile çalışır.
   const hostname = window.location.hostname;
   const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.');
-
-  if (!isLocalhost) {
-    return {
-      host: hostname,
-      port: window.location.port ? Number(window.location.port) : 443,
-      path: '/peerjs',
-      secure: window.location.protocol === 'https:',
-      debug: 0,
-      config: { iceServers: ICE_SERVERS, iceCandidatePoolSize: 2 },
-    };
+  if (isLocalhost) {
+    return 'localhost';
   }
 
-  // Lokal geliştirme: kendi local sunucusu (npm run dev:server → :3000/peerjs)
+  // Eğer doğrudan Render domain'indeyse o domain, Cloudflare Pages (*.pages.dev)
+  // veya başka bir statik CDN üzerindeyse Render backend'ini hedefle!
+  if (hostname.includes('onrender.com')) {
+    return hostname;
+  }
+  return DEFAULT_BACKEND_HOST;
+}
+
+function resolveBackendPort() {
+  const envPort = import.meta.env.VITE_PEER_PORT;
+  if (envPort) return Number(envPort);
+
+  const hostname = window.location.hostname;
+  const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.');
+  if (isLocalhost) {
+    return 3000;
+  }
+  return 443;
+}
+
+export function getPeerConfig() {
+  const host = resolveBackendHost();
+  const port = resolveBackendPort();
+  const isLocalhost = host === 'localhost';
+
   return {
-    host: 'localhost',
-    port: 3000,
-    path: '/peerjs',
-    secure: false,
-    debug: import.meta.env.DEV ? 2 : 0,
+    host,
+    port,
+    path: import.meta.env.VITE_PEER_PATH || '/peerjs',
+    secure: !isLocalhost,
+    debug: 0,
     config: { iceServers: ICE_SERVERS, iceCandidatePoolSize: 2 },
   };
 }
@@ -118,18 +118,15 @@ export function getPeerConfig() {
 // Client ACTION'ı relay:msg ile gönderir (sadece diğerlerine iletilir).
 
 function getRelayUrl() {
-  const envHost = import.meta.env.VITE_PEER_HOST;
-  if (envHost) {
-    const protocol = (import.meta.env.VITE_PEER_SECURE === 'false') ? 'ws:' : 'wss:';
-    const port = import.meta.env.VITE_PEER_PORT ? `:${import.meta.env.VITE_PEER_PORT}` : '';
-    return `${protocol}//${envHost}${port}/wsrelay`;
+  const host = resolveBackendHost();
+  const port = resolveBackendPort();
+  const isLocalhost = host === 'localhost';
+
+  if (isLocalhost) {
+    return `ws://localhost:${port}/wsrelay`;
   }
-  const hostname = window.location.hostname;
-  const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const port = isLocalhost ? ':3000' : (window.location.port ? `:${window.location.port}` : '');
-  const host = isLocalhost ? 'localhost' : hostname;
-  return `${protocol}//${host}${port}/wsrelay`;
+  const protocol = (import.meta.env.VITE_PEER_SECURE === 'false') ? 'ws:' : 'wss:';
+  return `${protocol}//${host}/wsrelay`;
 }
 
 class RelayConnection {
@@ -1565,13 +1562,13 @@ export class ClientPeerService {
       };
     }
 
-    // 3.5 saniye içinde WebRTC açılamazsa (DPI / WARP / CGNAT blokajı veya sinyal kopması) otomatik Relay'e geç
+    // 1.8 saniye içinde WebRTC açılamazsa (DPI / WARP / CGNAT blokajı veya sinyal gecikmesi) derhal Relay'e geç
     this._fallbackTimeout = setTimeout(() => {
       if (!this._isConnected && !this._destroyed) {
-        console.warn('[ClientPeerService] WebRTC 3.5 saniyede açılamadı, WebSocket Relay devreye giriyor...');
+        console.warn('[ClientPeerService] WebRTC 1.8 saniyede açılamadı, WebSocket Relay devreye giriyor...');
         this._fallbackToRelay();
       }
-    }, 3500);
+    }, 1800);
 
     this._peer.on('open', (id) => {
       if (this._isRelayActive || this._destroyed) return;
