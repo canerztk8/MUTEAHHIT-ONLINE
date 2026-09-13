@@ -298,19 +298,19 @@ game.properties[28].mortgaged = true;
 const utilRentMortgaged = game.calculateRent(12, 7);
 assert(utilRentMortgaged === 28, `Biri ipotekli 2 tesis varken kira 4x (28₺) olmalı (hesaplanan: ${utilRentMortgaged})`);
 
-// Kart ile gidildiğinde p2'nin 1 tesisi varken 4x kesilmeli:
+// Kart ile gidildiğinde p2'nin 1 tesisi olsa bile Şans kartı kuralı gereği 10x kesilmeli:
 game.properties[28].ownerId = null;
 game.properties[28].mortgaged = false;
 p1.position = 36;
 p1.money = 1000;
 p2.money = 1000;
 game.applyCard(p1, card5, 7);
-// p1 GO'dan geçer (+200 = 1200). lastRentPayment miktarı p2'nin 1 tesisi olduğu için özel zar toplamının 4 katı olmalı (10 katı DEĞİL!)
+// p1 GO'dan geçer (+200 = 1200). lastRentPayment miktarı Şans kartı kuralı gereği (1 tesis olsa dahi) özel zar toplamının 10 katı olmalı!
 const specialRent = game.lastRentPayment.amount;
-assert(specialRent % 4 === 0, `1 tesisi olan rakibe kartla gidildiğinde kira 4'ün katı olmalı (alınan: ${specialRent})`);
-assert(p1.money === 1200 - specialRent, '1 tesis kirası doğru düşülmeli');
+assert(specialRent % 10 === 0, `1 tesisi olan rakibe Şans kartıyla gidildiğinde dahi kart kuralı gereği kira 10'un katı olmalı (alınan: ${specialRent})`);
+assert(p1.money === 1200 - specialRent, 'Kart kuralı 10x tesis kirası doğru düşülmeli');
 
-// Kart ile gidildiğinde p2'nin 2 tesisi varken 10x kesilmeli:
+// Kart ile gidildiğinde p2'nin 2 tesisi varken de 10x kesilmeli:
 game.properties[28].ownerId = 'p2';
 p1.position = 36;
 p1.money = 1000;

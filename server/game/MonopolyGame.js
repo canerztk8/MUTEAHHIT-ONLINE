@@ -1125,13 +1125,11 @@ export class MonopolyGame {
         if (propState && propState.ownerId && propState.ownerId !== player.id && !propState.mortgaged) {
           const owner = this.players.find(p => p.id === propState.ownerId);
           if (owner && !owner.isBankrupt) {
-            // Resmi Oyun Kuralı: Sahibi varsa zar atılır ve sahip olunan tesis sayısına göre kira ödenir (1 tesis: 4x, 2 tesis: 10x)
-            const count = utilities.filter(id => this.properties[id]?.ownerId === owner.id && !this.properties[id]?.mortgaged).length;
-            const multiplier = this.getUtilityMultiplier(count);
+            // Resmi Şans Kartı Kuralı: Sahibi tek bir tesise sahip olsa dahi kart kuralı gereği doğrudan zar toplamının 10 katı kira ödenir
             const roll1 = Math.floor(Math.random() * 6) + 1;
             const roll2 = Math.floor(Math.random() * 6) + 1;
             const specialSum = roll1 + roll2;
-            const utilRent = specialSum * multiplier;
+            const utilRent = specialSum * 10;
             this.adjustPlayerMoney(player, -utilRent, `${owner.name} oyuncusuna Tesis kirası ödendi`);
             this.adjustPlayerMoney(owner, utilRent, `${player.name} oyuncusundan Tesis kirası tahsil edildi`);
             player.lastCreditorId = owner.id;
@@ -1151,7 +1149,7 @@ export class MonopolyGame {
               tileName: tile.name,
               timestamp: Date.now()
             };
-            this.addLog(`💡 ${player.name}, Tesis için özel zar attı (${roll1}+${roll2}=${specialSum}) ve ${multiplier} katı olan ${utilRent}₺ kirayı ${owner.name} oyuncusuna ödedi!`, 'rent');
+            this.addLog(`💡 ${player.name}, Şans Kartı gereği Tesis için özel zar attı (${roll1}+${roll2}=${specialSum}) ve sahibinin tek tesisi olsa dahi kart kuralı gereği 10 katı olan ${utilRent}₺ kirayı ${owner.name} oyuncusuna ödedi!`, 'rent');
             this.checkBankruptcy(player, utilRent, owner.id);
             this.phase = 'TURN_ACTIONS';
             break;
