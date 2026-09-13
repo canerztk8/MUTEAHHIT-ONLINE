@@ -1222,17 +1222,19 @@ export function Board({
               const timeout = setTimeout(startStepMovement, 250);
               activeIntervalsRef.current[`timeout_${p.id}`] = timeout;
             } else {
-              // Zarlar 3D tepside durulana kadar bekle; durulunca piyon derhal (25ms içinde) adımlamaya başlasın
+              // Zarlar 3D tepside tamamen durulana kadar bekle; zarlar yere oturmadan piyon ASLA hareket etmez
               const startTime = Date.now();
+              const minWaitMs = isDiceRollingRef.current ? 2200 : 0;
               const pollInterval = setInterval(() => {
                 const elapsed = Date.now() - startTime;
-                if (!isDiceRollingRef.current || elapsed >= 1200) {
+                const isSettled = !isDiceRollingRef.current;
+                if ((isSettled && elapsed >= minWaitMs) || elapsed >= 3200) {
                   clearInterval(pollInterval);
                   delete activeIntervalsRef.current[`poll_${p.id}`];
-                  const timeout = setTimeout(startStepMovement, 25);
+                  const timeout = setTimeout(startStepMovement, 30);
                   activeIntervalsRef.current[`timeout_${p.id}`] = timeout;
                 }
-              }, 50);
+              }, 40);
               activeIntervalsRef.current[`poll_${p.id}`] = pollInterval;
             }
           } else {
@@ -1242,7 +1244,7 @@ export function Board({
               let current = prevPos;
               setIsMovingPawn(true);
 
-              const timeout = setTimeout(() => {
+              const executeLongMovement = () => {
                 const interval = setInterval(() => {
                   step++;
                   const nextTile = (current + 1) % 40;
@@ -1275,9 +1277,20 @@ export function Board({
                 }, 110);
 
                 activeIntervalsRef.current[p.id] = interval;
-              }, 250);
+              };
 
-              activeIntervalsRef.current[`timeout_${p.id}`] = timeout;
+              const startTime = Date.now();
+              const minWaitMs = isDiceRollingRef.current ? 2200 : 250;
+              const pollInterval = setInterval(() => {
+                const elapsed = Date.now() - startTime;
+                const isSettled = !isDiceRollingRef.current;
+                if ((isSettled && elapsed >= minWaitMs) || elapsed >= 3200) {
+                  clearInterval(pollInterval);
+                  delete activeIntervalsRef.current[`poll_long_${p.id}`];
+                  executeLongMovement();
+                }
+              }, 40);
+              activeIntervalsRef.current[`poll_long_${p.id}`] = pollInterval;
             } else {
               setPawn3DPositions((prev) => ({ ...prev, [p.id]: targetPos }));
               setDisplayedPositions((prev) => ({ ...prev, [p.id]: targetPos }));
@@ -1344,15 +1357,17 @@ export function Board({
             };
 
             const startTime = Date.now();
+            const minWaitMs = isDiceRollingRef.current ? 2200 : 0;
             const pollInterval = setInterval(() => {
               const elapsed = Date.now() - startTime;
-              if (!isDiceRollingRef.current || elapsed >= 1800) {
+              const isSettled = !isDiceRollingRef.current;
+              if ((isSettled && elapsed >= minWaitMs) || elapsed >= 3200) {
                 clearInterval(pollInterval);
                 delete activeIntervalsRef.current[`poll_${p.id}`];
                 const timeout = setTimeout(startInspectorMovement, 35);
                 activeIntervalsRef.current[`timeout_${p.id}`] = timeout;
               }
-            }, 60);
+            }, 40);
             activeIntervalsRef.current[`poll_${p.id}`] = pollInterval;
           } else {
             // Doğrudan kodese yerleşme (örneğin 3. çift zar veya kart çekimi)
@@ -1374,13 +1389,14 @@ export function Board({
               const startTime = Date.now();
               const pollInterval = setInterval(() => {
                 const elapsed = Date.now() - startTime;
-                if (!isDiceRollingRef.current || elapsed >= 1800) {
+                const isSettled = !isDiceRollingRef.current;
+                if ((isSettled && elapsed >= 2200) || elapsed >= 3200) {
                   clearInterval(pollInterval);
                   delete activeIntervalsRef.current[`poll_${p.id}`];
                   const timeout = setTimeout(executeDirectJail, 120);
                   activeIntervalsRef.current[`timeout_${p.id}`] = timeout;
                 }
-              }, 60);
+              }, 40);
               activeIntervalsRef.current[`poll_${p.id}`] = pollInterval;
             } else {
               executeDirectJail();

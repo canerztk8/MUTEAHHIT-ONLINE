@@ -282,7 +282,7 @@ export function DiceSidebarTray({
         try {
           if (!managerRef.current || !isSceneReady) {
             pendingRollRef.current = { dice: target, toss };
-            await new Promise(resolve => setTimeout(resolve, 1400));
+            await new Promise(resolve => setTimeout(resolve, 2200));
           } else {
             await managerRef.current.rollDice(target, toss);
           }

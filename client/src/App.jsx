@@ -357,6 +357,7 @@ export function App() {
 
   // 3D Zar Tablasında Zarların Yuvarlanma / Durulma Durumu (Erken UI güncellemesini ve erken piyon adımını önler)
   const [isDiceRolling, setIsDiceRolling] = useState(false);
+  const diceRollActiveUntilRef = useRef(0);
   // Piyonun tahtada kare kare yürüme durumu (Erken bakiye, kart, kira ve tapu tetiklenmesini önler)
   const [isPawnMoving, setIsPawnMoving] = useState(false);
   const isPawnMovingRef = useRef(false);
@@ -570,24 +571,28 @@ export function App() {
       }
     };
 
+    const now = Date.now();
     if (isNewDiceRoll && state.status === 'playing') {
+      diceRollActiveUntilRef.current = now + 2300;
       setIsDiceRolling(true);
       setIsPawnMoving(true);
       isPawnMovingRef.current = true;
       if (pawnMovingSafetyTimeoutRef.current) clearTimeout(pawnMovingSafetyTimeoutRef.current);
-      pawnMovingSafetyTimeoutRef.current = setTimeout(flushVisualStateOnSafetyTimeout, 4200);
+      pawnMovingSafetyTimeoutRef.current = setTimeout(flushVisualStateOnSafetyTimeout, 4500);
     } else if (hasPawnMoved && state.status === 'playing') {
       setIsPawnMoving(true);
       isPawnMovingRef.current = true;
       if (pawnMovingSafetyTimeoutRef.current) clearTimeout(pawnMovingSafetyTimeoutRef.current);
-      pawnMovingSafetyTimeoutRef.current = setTimeout(flushVisualStateOnSafetyTimeout, 4200);
+      pawnMovingSafetyTimeoutRef.current = setTimeout(flushVisualStateOnSafetyTimeout, 4500);
     } else if ((state.phase === 'TURN_ACTIONS' || state.phase === 'TILE_ACTION' || state.phase === 'WAITING_ROLL') && !hasPawnMoved && !isNewDiceRoll) {
-      setIsPawnMoving(false);
-      isPawnMovingRef.current = false;
-      setIsDiceRolling(false);
-      if (pawnMovingSafetyTimeoutRef.current) {
-        clearTimeout(pawnMovingSafetyTimeoutRef.current);
-        pawnMovingSafetyTimeoutRef.current = null;
+      if (now >= (diceRollActiveUntilRef.current || 0)) {
+        setIsPawnMoving(false);
+        isPawnMovingRef.current = false;
+        setIsDiceRolling(false);
+        if (pawnMovingSafetyTimeoutRef.current) {
+          clearTimeout(pawnMovingSafetyTimeoutRef.current);
+          pawnMovingSafetyTimeoutRef.current = null;
+        }
       }
       if (state.players && state.players.length > 0) {
         setDisplayedBalances((prev) => {
@@ -1036,10 +1041,11 @@ export function App() {
 
   const handleRollDice = (data) => {
     setIsDiceRolling(true);
+    diceRollActiveUntilRef.current = Date.now() + 2300;
     if (diceRollingFallbackTimeoutRef.current) clearTimeout(diceRollingFallbackTimeoutRef.current);
     diceRollingFallbackTimeoutRef.current = setTimeout(() => {
       setIsDiceRolling(false);
-    }, 1250);
+    }, 3200);
 
     const payload = (data && typeof data === 'object' && !data.nativeEvent && Array.isArray(data.dice))
       ? { dice: data.dice, toss: data.toss }
@@ -1049,10 +1055,11 @@ export function App() {
 
   const handleRollAgain = (data) => {
     setIsDiceRolling(true);
+    diceRollActiveUntilRef.current = Date.now() + 2300;
     if (diceRollingFallbackTimeoutRef.current) clearTimeout(diceRollingFallbackTimeoutRef.current);
     diceRollingFallbackTimeoutRef.current = setTimeout(() => {
       setIsDiceRolling(false);
-    }, 1250);
+    }, 3200);
 
     const payload = (data && typeof data === 'object' && !data.nativeEvent && Array.isArray(data.dice))
       ? { dice: data.dice, toss: data.toss }
@@ -1593,9 +1600,18 @@ export function App() {
                 isDarkMode={isDarkMode}
                 onToggleDarkMode={toggleDarkMode}
                 isPerformanceMode={isPerformanceMode}
-                onTogglePause={handleTogglePause}
-                onRollStart={() => setIsDiceRolling(true)}
-                onRollSettled={() => setIsDiceRolling(false)}
+                onRollStart={() => {
+                  diceRollActiveUntilRef.current = Date.now() + 2300;
+                  setIsDiceRolling(true);
+                }}
+                onRollSettled={() => {
+                  const remaining = Math.max(0, (diceRollActiveUntilRef.current || 0) - Date.now());
+                  if (remaining > 0) {
+                    setTimeout(() => setIsDiceRolling(false), remaining);
+                  } else {
+                    setIsDiceRolling(false);
+                  }
+                }}
               />
             </ErrorBoundary>
           </div>
