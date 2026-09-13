@@ -114,23 +114,33 @@ const relayWss = new WebSocketServer({ noServer: true });
 
 // Map<roomCode, Map<WebSocket, playerId>>
 const relayRooms = new Map();
+// Map<roomCode, TimeoutId> — Boşalan odaların anında silinmesini önleyen 60sn grace period (F5 / reconnect koruması)
+const roomGraceTimers = new Map();
 
-// 🔋 Zombi Bağlantı Temizleme (Dead connection reaper - 30sn aralık, 3 cevapsız ping toleransı = 90sn)
-// Mobil veya arka plan sekmelerinde (background throttling) timer yavaşlaması nedeniyle
-// aktif oyuncuların bağlantısının erkenden koparılmasını engellemek için toleranslı kontrol:
+// 🔋 Bağlantı Canlılık Takibi (Application-level Heartbeat & Keepalive)
+// Render reverse proxy ham WebSocket PING frame'lerini istemciye iletmediğinden,
+// bağlantılar hem JSON düzeyinde hem de WS düzeyinde canlı tutulur.
+// Bağlantı sadece 5 dakika (300sn) boyunca hiçbir veri veya ping göndermezse sonlandırılır.
 const relayHeartbeat = setInterval(() => {
+  const now = Date.now();
   relayWss.clients.forEach((ws) => {
-    if (ws.missedPings >= 3) {
-      console.warn('[Relay] Zombi bağlantı temizlendi (3 cevapsız ping)');
-      return ws.terminate();
+    if (ws.readyState === 1 /* OPEN */) {
+      // 5 dakika mutlak sessizlik kontrolü
+      if (ws.lastActive && (now - ws.lastActive > 300000)) {
+        console.warn('[Relay] 5 dakikadır hareketsiz bağlantı temizlendi');
+        return ws.terminate();
+      }
+      // Render/Cloudflare 100sn boşta kalma zaman aşımını engellemek için keepalive gönder
+      safeSend(ws, JSON.stringify({ type: 'relay:keepalive', t: now }));
+      try { ws.ping(); } catch (_) {}
     }
-    ws.missedPings = (ws.missedPings || 0) + 1;
-    try { ws.ping(); } catch (_) {}
   });
-}, 30000);
+}, 20000);
 
 relayWss.on('close', () => {
   clearInterval(relayHeartbeat);
+  for (const timer of roomGraceTimers.values()) clearTimeout(timer);
+  roomGraceTimers.clear();
 });
 
 relayWss.on('connection', (ws) => {
@@ -138,21 +148,20 @@ relayWss.on('connection', (ws) => {
   let playerId = null;
 
   ws.isAlive = true;
-  ws.missedPings = 0;
+  ws.lastActive = Date.now();
   ws.on('pong', () => {
     ws.isAlive = true;
-    ws.missedPings = 0;
+    ws.lastActive = Date.now();
   });
 
   ws.on('message', (raw) => {
-    ws.missedPings = 0;
+    ws.lastActive = Date.now();
+    ws.isAlive = true;
     // Tüm mesaj işleme try/catch içinde — bu throw atarsa sadece bu mesaj atlanır, sunucu çalışmaya devam eder
     try {
       const msg = JSON.parse(raw.toString());
 
       if (msg.type === 'relay:ping') {
-        ws.isAlive = true;
-        ws.missedPings = 0;
         safeSend(ws, JSON.stringify({ type: 'relay:pong', t0: msg.t0 }));
         return;
       }
@@ -162,7 +171,14 @@ relayWss.on('connection', (ws) => {
         const newPlayerId = String(msg.playerId || '');
         if (!newRoomCode) { ws.close(); return; }
 
-        // FIX: Aynı WebSocket başka bir odadan ayrılıyorsa temizle (re-join senaryosu)
+        // Bu oda için bekleyen bir grace timer varsa iptal et (oyuncu/host odaya geri döndü)
+        if (roomGraceTimers.has(newRoomCode)) {
+          clearTimeout(roomGraceTimers.get(newRoomCode));
+          roomGraceTimers.delete(newRoomCode);
+          console.log(`[Relay] Oda grace period iptal edildi (yeniden katılım): ${newRoomCode}`);
+        }
+
+        // Aynı WebSocket başka bir odadan ayrılıyorsa temizle (re-join senaryosu)
         if (roomCode && roomCode !== newRoomCode && relayRooms.has(roomCode)) {
           relayRooms.get(roomCode).delete(ws);
           if (relayRooms.get(roomCode).size === 0) {
@@ -176,7 +192,7 @@ relayWss.on('connection', (ws) => {
 
         if (!relayRooms.has(roomCode)) relayRooms.set(roomCode, new Map());
         
-        // FIX: Aynı ws için eski kaydı sil (duplicate entry önleme — reconnect senaryosu)
+        // Aynı ws için kaydı güncelle
         relayRooms.get(roomCode).set(ws, playerId);
 
         safeSend(ws, JSON.stringify({ type: 'relay:joined', roomCode, playerId }));
@@ -190,13 +206,30 @@ relayWss.on('connection', (ws) => {
         const targetId = msg.targetId || msg.payload?.targetId;
         const outgoing = JSON.stringify({ type: 'relay:msg', payload: msg.payload, from: playerId, targetId });
 
-        // FIX: forEach içinde her client.send() try/catch içinde — EPIPE server crash'ini önler
+        let delivered = false;
         room.forEach((pid, client) => {
           if (client !== ws && client.readyState === 1 /* OPEN */) {
-            if (targetId && pid !== targetId) return;
-            safeSend(client, outgoing);
+            if (targetId) {
+              if (pid === targetId) {
+                safeSend(client, outgoing);
+                delivered = true;
+              }
+            } else {
+              safeSend(client, outgoing);
+              delivered = true;
+            }
           }
         });
+
+        // Hedefe özel mesajda targetId eşleşmediyse (örneğin reconnect esnasında ID değişimi),
+        // paketin kaybolmaması için odadaki diğer açık istemcilere güvenle ilet (istemci filtreler)
+        if (targetId && !delivered) {
+          room.forEach((pid, client) => {
+            if (client !== ws && client.readyState === 1) {
+              safeSend(client, outgoing);
+            }
+          });
+        }
 
       } else if (msg.type === 'relay:broadcast') {
         // Host → tüm client'lara (SYNC_STATE gibi)
@@ -207,7 +240,6 @@ relayWss.on('connection', (ws) => {
         const targetId = msg.targetId || msg.payload?.targetId;
         const outgoing = JSON.stringify({ type: 'relay:msg', payload: msg.payload, from: playerId, targetId });
 
-        // FIX: forEach içinde her client.send() try/catch içinde — EPIPE server crash'ini önler
         room.forEach((pid, client) => {
           // Gönderen istemciye (Host) gereksiz echo geri gönderme!
           if (client !== ws && client.readyState === 1) {
@@ -224,12 +256,22 @@ relayWss.on('connection', (ws) => {
   ws.on('close', () => {
     try {
       if (roomCode && relayRooms.has(roomCode)) {
-        relayRooms.get(roomCode).delete(ws);
-        const remaining = relayRooms.get(roomCode).size;
+        const room = relayRooms.get(roomCode);
+        room.delete(ws);
+        const remaining = room.size;
         console.log(`[Relay] ${playerId} odadan ayrıldı: ${roomCode} (${remaining} kişi kaldı)`);
         if (remaining === 0) {
-          relayRooms.delete(roomCode);
-          console.log(`[Relay] Boş oda silindi: ${roomCode}`);
+          // F5 yenilemesi ve geçici ağ kopmalarında odayı ANINDA SİLME!
+          // 60 saniyelik tolerans tanı:
+          if (roomGraceTimers.has(roomCode)) clearTimeout(roomGraceTimers.get(roomCode));
+          const timer = setTimeout(() => {
+            roomGraceTimers.delete(roomCode);
+            if (relayRooms.has(roomCode) && relayRooms.get(roomCode).size === 0) {
+              relayRooms.delete(roomCode);
+              console.log(`[Relay] Boş oda (60sn grace period doldu) silindi: ${roomCode}`);
+            }
+          }, 60000);
+          roomGraceTimers.set(roomCode, timer);
         }
       }
     } catch (err) {
@@ -238,7 +280,6 @@ relayWss.on('connection', (ws) => {
   });
 
   ws.on('error', (err) => {
-    // FIX: WebSocket hata event'ini yakala — yakalanmayan hata sunucuyu crash'ler
     console.warn('[Relay] WebSocket bağlantı hatası (sessiz):', err.message);
   });
 });
@@ -308,7 +349,9 @@ app.get('/api/room-check', (req, res) => {
   if (!code) {
     return res.status(400).json({ error: 'code parametresi gerekli' });
   }
-  const exists = connectedPeers.has(code) || (relayRooms.has(code) && relayRooms.get(code).size > 0);
+  const hasPeers = connectedPeers.has(code);
+  const hasRelay = relayRooms.has(code) && (relayRooms.get(code).size > 0 || roomGraceTimers.has(code));
+  const exists = hasPeers || hasRelay;
   res.json({ exists, code });
 });
 

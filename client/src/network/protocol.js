@@ -105,8 +105,10 @@ export const ACTION = Object.freeze({
  * @param {object} payload - Eyleme özgü veri
  * @param {string} senderId - Gönderen oyuncunun peer ID'si
  */
-export function createAction(action, payload = {}, senderId = '') {
-  return { type: MSG.ACTION, action, payload, senderId };
+export function createAction(action, payload = {}, senderId = '', actionId = null) {
+  const msg = { type: MSG.ACTION, action, payload, senderId };
+  if (actionId) msg.actionId = actionId;
+  return msg;
 }
 
 /**

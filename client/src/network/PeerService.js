@@ -145,6 +145,21 @@ class RelayConnection {
     this._sendQueue = [];
     this._ws = null;
 
+    this._onVisibilityChange = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible' && !this._destroyed) {
+        if (!this._connected || this._ws?.readyState !== WebSocket.OPEN) {
+          console.log('[Relay] Sekme ön plana geçti, bağlantı tazeleniyor...');
+          this._connect();
+        } else {
+          this.ping();
+        }
+      }
+    };
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', this._onVisibilityChange);
+      window.addEventListener('online', this._onVisibilityChange);
+    }
+
     this._connect();
   }
 
@@ -176,6 +191,11 @@ class RelayConnection {
         } else if (msg.type === 'relay:pong') {
           const rtt = Math.max(1, Date.now() - (msg.t0 || Date.now()));
           this._onPong?.(rtt);
+        } else if (msg.type === 'relay:keepalive') {
+          // Sunucu keepalive mesajına pong gönder
+          if (this._ws?.readyState === WebSocket.OPEN) {
+            try { this._ws.send(JSON.stringify({ type: 'relay:pong', t0: msg.t })); } catch (_) {}
+          }
         } else if (msg.type === 'relay:msg') {
           this._onMessage?.(msg.payload, msg.from);
         }
@@ -201,7 +221,7 @@ class RelayConnection {
 
   _scheduleReconnect() {
     if (this._destroyed || this._reconnectTimer) return;
-    const delay = Math.min(1000 * Math.pow(1.3, this._reconnectAttempts), 5000);
+    const delay = Math.min(800 * Math.pow(1.3, this._reconnectAttempts), 4000);
     this._reconnectAttempts++;
     this._reconnectTimer = setTimeout(() => {
       this._reconnectTimer = null;
@@ -213,14 +233,14 @@ class RelayConnection {
 
   _startHeartbeat() {
     this._stopHeartbeat();
-    // Render proxy 100s zaman aşımını önlemek için 8 saniyede bir ping gönder
+    // Render/Cloudflare 100s zaman aşımını önlemek için 6 saniyede bir ping gönder
     this._heartbeatTimer = setInterval(() => {
-      if (this._ws?.readyState === WebSocket.OPEN && this._connected) {
+      if (this._ws?.readyState === WebSocket.OPEN) {
         try {
           this._ws.send(JSON.stringify({ type: 'relay:ping', t0: Date.now() }));
         } catch (_) {}
       }
-    }, 8000);
+    }, 6000);
   }
 
   _stopHeartbeat() {
@@ -247,8 +267,13 @@ class RelayConnection {
   send(payload, targetId = null) {
     const data = { type: 'relay:msg', payload };
     if (targetId) data.targetId = targetId;
-    if (this._ws?.readyState === WebSocket.OPEN && this._connected) {
-      this._ws.send(JSON.stringify(data));
+    if (this._ws?.readyState === WebSocket.OPEN) {
+      try {
+        this._ws.send(JSON.stringify(data));
+      } catch (e) {
+        console.warn('[Relay] send hatası:', e);
+        if (this._sendQueue.length < 50) this._sendQueue.push(data);
+      }
     } else if (!this._destroyed) {
       if (this._sendQueue.length < 50) this._sendQueue.push(data);
     }
@@ -258,8 +283,13 @@ class RelayConnection {
   broadcast(payload, targetId = null) {
     const data = { type: 'relay:broadcast', payload };
     if (targetId) data.targetId = targetId;
-    if (this._ws?.readyState === WebSocket.OPEN && this._connected) {
-      this._ws.send(JSON.stringify(data));
+    if (this._ws?.readyState === WebSocket.OPEN) {
+      try {
+        this._ws.send(JSON.stringify(data));
+      } catch (e) {
+        console.warn('[Relay] broadcast hatası:', e);
+        if (this._sendQueue.length < 50) this._sendQueue.push(data);
+      }
     } else if (!this._destroyed) {
       if (this._sendQueue.length < 50) this._sendQueue.push(data);
     }
@@ -268,8 +298,10 @@ class RelayConnection {
   /** Relay sunucusuna ping gönder ve RTT süresini ölç */
   ping(onPong) {
     if (this._ws?.readyState === WebSocket.OPEN) {
-      this._onPong = onPong;
-      this._ws.send(JSON.stringify({ type: 'relay:ping', t0: Date.now() }));
+      if (onPong) this._onPong = onPong;
+      try {
+        this._ws.send(JSON.stringify({ type: 'relay:ping', t0: Date.now() }));
+      } catch (_) {}
     }
   }
 
@@ -278,6 +310,10 @@ class RelayConnection {
   destroy() {
     this._destroyed = true;
     this._stopHeartbeat();
+    if (this._onVisibilityChange && typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', this._onVisibilityChange);
+      window.removeEventListener('online', this._onVisibilityChange);
+    }
     if (this._reconnectTimer) {
       clearTimeout(this._reconnectTimer);
       this._reconnectTimer = null;
@@ -389,15 +425,44 @@ export class HostPeerService {
     /** Oyuncu son etkinlik zamanı takibi (WebRTC + Relay birleşik) */
     this._playerLastActivity = new Map();
 
+    /** Çift kanal aksiyon tekilleştirme: tekrarlanan eylemleri engelle */
+    this._processedActionIds = new Set();
+
     this._init();
   }
 
   get roomCode() { return this._roomCode; }
-  get peerId() { return this._peer?.id || null; }
+  get peerId() { return this._peer?.id || this._roomCode; }
   get game() { return this._game; }
   get isHost() { return true; }
 
   _init() {
+    // 1. WebSocket Relay odasını DERHAL kur — Host'un odası Render üzerinde hemen aktif olsun
+    this._relay = new RelayConnection({
+      roomCode: this._roomCode,
+      playerId: this._roomCode,
+      onMessage: (payload, fromRelayId) => {
+        if (!payload) return;
+        if (fromRelayId && !payload.senderId) {
+          payload.senderId = fromRelayId;
+        }
+        // Relay üzerinden gelen ACTION, PING, CHAT vb. tüm mesajları işle
+        if (payload.type === MSG.ACTION || payload.type === MSG.PING || payload.type === MSG.CHAT) {
+          this._handleMessage(payload, null, fromRelayId);
+        }
+      },
+      onConnected: () => {
+        console.log(`[HostPeerService] Relay odasına bağlandı: ${this._roomCode}`);
+        setTimeout(() => {
+          if (!this._destroyed && this._game) {
+            this._broadcastState();
+          }
+        }, 300);
+      },
+      onDisconnected: () => console.warn('[HostPeerService] Relay bağlantısı geçici koptu (otomatik yeniden bağlanılıyor)...'),
+    });
+
+    // 2. WebRTC PeerJS bağlantısını başlat
     const config = getPeerConfig();
     this._peer = new Peer(this._roomCode, config);
 
@@ -418,39 +483,12 @@ export class HostPeerService {
       this._setupGame(id);
       this._onReady(id);
 
-      // Relay odasına da katıl — WebRTC bağlanamayan client'lar için fallback
-      this._relay = new RelayConnection({
-        roomCode: this._roomCode,
-        playerId: id,
-        onMessage: (payload, fromRelayId) => {
-          if (!payload) return;
-          if (fromRelayId && !payload.senderId) {
-            payload.senderId = fromRelayId;
-          }
-          // Relay üzerinden gelen ACTION, PING, CHAT vb. tüm mesajları işle
-          if (payload.type === MSG.ACTION || payload.type === MSG.PING || payload.type === MSG.CHAT) {
-            this._handleMessage(payload, null, fromRelayId);
-          }
-        },
-        onConnected: () => {
-          console.log(`[HostPeerService] Relay odasına katıldı/yeniden bağlandı: ${this._roomCode}`);
-          // FIX: Relay odası kayıt yayılımı için 300ms bekle, ardından bekleyen client'ların durumu alması için senkronize et
-          setTimeout(() => {
-            if (!this._destroyed) {
-              this._broadcastState();
-            }
-          }, 300);
-        },
-        onDisconnected: () => console.warn('[HostPeerService] Relay bağlantısı geçici koptu (otomatik yeniden bağlanılıyor)...'),
-      });
-
       // Host Ping ölçümü (Relay bağlıysa sunucu RTT, yoksa yerel 1 ms)
       this._pingInterval = setInterval(() => {
         const updateHostPing = (rtt) => {
           this._onPing(rtt);
           if (this._game && id) {
             this._game.updatePlayerPing(id, rtt);
-            // Sadece ping değişti diye tüm oyun durumunu her 2.5 saniyede bir herkese yayınlama (VRAM/GC fırtınasını önler)
           }
         };
         if (this._relay?.isConnected) {
@@ -602,9 +640,19 @@ export class HostPeerService {
     }
 
     if (msg.type !== MSG.ACTION) return;
-    const { action, payload, senderId } = msg;
+    const { action, payload, senderId, actionId } = msg;
     const game = this._game;
     if (!game) return;
+
+    // Aksiyon tekilleştirme: Çift kanaldan (WebRTC + Relay) gelebilecek aynı aksiyonu 2 kez çalıştırma
+    if (actionId) {
+      if (this._processedActionIds.has(actionId)) return;
+      this._processedActionIds.add(actionId);
+      if (this._processedActionIds.size > 500) {
+        const first = this._processedActionIds.values().next().value;
+        this._processedActionIds.delete(first);
+      }
+    }
 
     // Gönderici oyuncuyu kesin ve güvenli olarak tespit et
     let effectiveSenderId = senderId || conn?.peer || fromRelayId;
@@ -628,10 +676,15 @@ export class HostPeerService {
       }
     }
 
+    if (conn) {
+      if (conn.peer) this._connections.set(conn.peer, conn);
+      if (effectiveSenderId) this._connections.set(effectiveSenderId, conn);
+    }
+
     // Oyuncu yeni bir bağlantı/transport ID'si ile gelmişse (reconnect / relay fallback),
     // motor üzerindeki ID'yi, mülk sahipliklerini ve aktif bağlantıyı derhal senkronize et:
     const incomingConnId = senderId || fromRelayId || conn?.peer;
-    if (senderPlayer && incomingConnId && senderPlayer.id !== incomingConnId && action !== ACTION.LEAVE_ROOM) {
+    if ((action === ACTION.JOIN_LOBBY || action === ACTION.REQUEST_STATE) && senderPlayer && incomingConnId && senderPlayer.id !== incomingConnId && action !== ACTION.LEAVE_ROOM) {
       const oldPlayerId = senderPlayer.id;
       console.log(`[HostPeerService] Oyuncu transport/ID senkronizasyonu: ${senderPlayer.name} (${oldPlayerId} -> ${incomingConnId})`);
       game.reconnectPlayer(incomingConnId, senderPlayer.sessionToken, senderPlayer.name);
@@ -711,25 +764,23 @@ export class HostPeerService {
                 this._connections.set(joinId, conn);
               }
 
-              // İstemciye session token'ını ve son oyun durumunu kesin olarak doğrudan bildir
+              // İstemciye session token'ını ve son oyun durumunu HEM WebRTC HEM Relay üzerinden doğrudan bildir
               const publicState = game.getPublicState();
               const syncMsg = createSyncState(publicState);
+              const sessionTokenMsg = {
+                type: MSG.EVENT,
+                event: 'SESSION_TOKEN',
+                payload: { sessionToken: existingPlayer.sessionToken },
+                targetId: joinId
+              };
               if (conn) {
-                this._sendTo(conn, {
-                  type: MSG.EVENT,
-                  event: 'SESSION_TOKEN',
-                  payload: { sessionToken: existingPlayer.sessionToken },
-                  targetId: joinId
-                });
+                this._sendTo(conn, sessionTokenMsg);
                 this._sendTo(conn, syncMsg);
-              } else if (this._relay?.isConnected) {
-                this._relay.send({
-                  type: MSG.EVENT,
-                  event: 'SESSION_TOKEN',
-                  payload: { sessionToken: existingPlayer.sessionToken },
-                  targetId: joinId
-                }, joinId);
+              }
+              if (this._relay?.isConnected) {
+                this._relay.send(sessionTokenMsg, joinId);
                 this._relay.send(syncMsg, joinId);
+                this._relay.broadcast(syncMsg);
               }
 
               this._broadcastState();
@@ -771,20 +822,17 @@ export class HostPeerService {
           // 3. Lobi aşamasında normal yeni oyuncu katılımı
           const res = game.addPlayer(joinId, playerName, token, color, false, sessionToken);
           if (res.success && res.player) {
+            const tokenMsg = {
+              type: MSG.EVENT,
+              event: 'SESSION_TOKEN',
+              payload: { sessionToken: res.player.sessionToken },
+              targetId: joinId
+            };
             if (conn) {
-              this._sendTo(conn, {
-                type: MSG.EVENT,
-                event: 'SESSION_TOKEN',
-                payload: { sessionToken: res.player.sessionToken },
-                targetId: joinId
-              });
-            } else if (this._relay?.isConnected) {
-              this._relay.send({
-                type: MSG.EVENT,
-                event: 'SESSION_TOKEN',
-                payload: { sessionToken: res.player.sessionToken },
-                targetId: joinId
-              }, joinId);
+              this._sendTo(conn, tokenMsg);
+            }
+            if (this._relay?.isConnected) {
+              this._relay.send(tokenMsg, joinId);
             }
           }
           break;
@@ -796,7 +844,8 @@ export class HostPeerService {
           const syncMsg = createSyncState(publicState);
           if (conn) {
             this._sendTo(conn, syncMsg);
-          } else if (this._relay?.isConnected) {
+          }
+          if (this._relay?.isConnected) {
             this._relay.send(syncMsg, fromRelayId || senderId);
             this._relay.broadcast(syncMsg);
           }
@@ -1515,6 +1564,9 @@ export class ClientPeerService {
     this._onSpectator = onSpectator || (() => {});
     this.isSpectator = false;
 
+    // Her iki transport (WebRTC + Relay) ve F5 reconnect için sabit, tutarlı istemci kimliği
+    this._myId = this._sessionToken ? ('p_' + this._sessionToken.slice(3, 11)) : ('p_' + Math.random().toString(36).substring(2, 10));
+
     /** @type {import('peerjs').DataConnection | null} */
     this._conn = null;
 
@@ -1525,88 +1577,125 @@ export class ClientPeerService {
 
     /** @type {RelayConnection | null} */
     this._relay = null;
-    this._isRelayActive = false;
     this._isConnected = false;
     this._destroyed = false;
-    this._fallbackTimeout = null;
-    this._myRelayId = null;
-    this._assignedPeerId = null;
+    this._initialConnectTimeout = null;
     this._relayReconnectTimeout = null;
     this._hasReceivedState = false;
     this._stateWatchdogTimer = null;
+    this._assignedPeerId = null;
+    this._lastHostMessageTime = Date.now();
 
     this._init();
   }
 
   get peerId() {
-    if (this._isRelayActive && this._myRelayId) return this._myRelayId;
-    return this._assignedPeerId || this._peer?.id || this._myRelayId || null;
+    return this._myId || this._assignedPeerId || this._peer?.id || null;
   }
   get isHost() { return false; }
-  get isRelayActive() { return Boolean(this._isRelayActive); }
+  get isRelayActive() { return Boolean(this._relay?.isConnected); }
 
   _init() {
-    const config = getPeerConfig();
-    // Client için random PeerID
-    this._peer = new Peer(config);
+    // 1. Kendi kimliğimizi UI'a bildir
+    this._onMyId(this._myId);
 
-    // Sinyal sunucusunun "LEAVE" mesajı yollayarak WebRTC DataChannel'ı zorla kapatmasını engelle:
-    const origHandleMessage = this._peer._handleMessage?.bind(this._peer);
-    if (origHandleMessage) {
-      this._peer._handleMessage = (message) => {
-        if (message?.type === 'LEAVE') {
-          console.warn('[ClientPeerService] Sinyal sunucusundan LEAVE alındı, aktif oyun bağlantısı korunuyor.');
-          return;
+    // 2. WebSocket Relay'e DERHAL (0ms) bağlan — Render backend üzerinden kesintisiz ana omurga
+    this._initRelay();
+
+    // 3. WebRTC PeerJS bağlantısını paralel olarak başlat (P2P düşük gecikme)
+    this._initWebRTC();
+
+    // 4. Güvenlik zaman aşımı: 8 saniye boyunca hiçbir kanaldan bağlantı kurulamazsa hata ver
+    this._initialConnectTimeout = setTimeout(() => {
+      if (!this._isConnected && !this._destroyed) {
+        console.warn('[ClientPeerService] 8 saniyede odaya bağlanılamadı.');
+        this._onError({ type: 'peer-unavailable', message: 'Oda bulunamadı veya bağlantı kurulamadı.' });
+      }
+    }, 8000);
+  }
+
+  _initRelay() {
+    if (this._destroyed) return;
+    this._relay = new RelayConnection({
+      roomCode: this._hostPeerId,
+      playerId: this._myId,
+      onMessage: (payload) => {
+        this._handleMessage(payload);
+      },
+      onConnected: () => {
+        if (this._destroyed) return;
+        console.log(`[ClientPeerService] WebSocket Relay odasına bağlandı: ${this._hostPeerId}`);
+        this._markConnected();
+        // Host'a katılım / reconnect bildirimi gönder
+        this._relay.send(createAction(ACTION.JOIN_LOBBY, {
+          playerName: this._playerName,
+          token: this._token,
+          color: this._color,
+          sessionToken: this._sessionToken,
+        }, this._myId));
+      },
+      onDisconnected: () => {
+        console.warn('[ClientPeerService] Relay bağlantısı geçici koptu (otomatik yeniden bağlanılıyor)...');
+        if (!this._relayReconnectTimeout && !this._destroyed) {
+          this._relayReconnectTimeout = setTimeout(() => {
+            this._relayReconnectTimeout = null;
+            if (!this._relay?.isConnected && !this._conn?.open && !this._destroyed) {
+              console.error('[ClientPeerService] 30 saniye boyunca hiçbir bağlantı kurulamadı, Host koptu kabul ediliyor.');
+              this._onHostDropped();
+            }
+          }, 30000);
         }
-        return origHandleMessage(message);
-      };
-    }
-
-    // 1.8 saniye içinde WebRTC açılamazsa (DPI / WARP / CGNAT blokajı veya sinyal gecikmesi) derhal Relay'e geç
-    this._fallbackTimeout = setTimeout(() => {
-      if (!this._isConnected && !this._destroyed) {
-        console.warn('[ClientPeerService] WebRTC 1.8 saniyede açılamadı, WebSocket Relay devreye giriyor...');
-        this._fallbackToRelay();
+      },
+      onError: (err) => {
+        console.warn('[ClientPeerService] Relay hata:', err);
       }
-    }, 1800);
-
-    this._peer.on('open', (id) => {
-      if (this._isRelayActive || this._destroyed) return;
-      this._assignedPeerId = id;
-      this._onMyId(id);
-      this._connectToHost();
-    });
-
-    this._peer.on('error', (err) => {
-      console.warn('[ClientPeerService] PeerJS error:', err?.type, err?.message);
-
-      // Sinyal sunucusu hatası veya kopması:
-      // Zaten odaya bağlanmışsak (P2P veya Relay aktifse) OYUN KESİNTİYE UĞRAMAZ!
-      if (this._isConnected || this._conn?.open || this._relay?.isConnected) {
-        console.warn('[ClientPeerService] Sinyal sunucusunda hata oluştu ancak oyun zaten aktif, arka planda reconnect deneniyor...');
-        try { this._peer?.reconnect(); } catch (_) {}
-        return;
-      }
-
-      // Henüz odaya bağlanamadıysa (ilk bağlantı aşaması): hemen relay dene
-      if (!this._isConnected && !this._destroyed) {
-        this._fallbackToRelay(err);
-        return;
-      }
-
-      // Zaten bağlıyken sadece hem WebRTC hem Relay kapalıysa hata bildir
-      if (!this._conn?.open && !this._relay?.isConnected) {
-        this._onError(err);
-      }
-    });
-
-    this._peer.on('disconnected', () => {
-      console.warn('[ClientPeerService] Sinyal sunucusundan koptu, arka planda yeniden bağlanılıyor...');
-      try { this._peer?.reconnect(); } catch (_) {}
     });
   }
 
-  _connectToHost() {
+  _initWebRTC() {
+    if (this._destroyed) return;
+    try {
+      const config = getPeerConfig();
+      this._peer = new Peer(config);
+
+      // Sinyal sunucusunun "LEAVE" mesajı yollayarak WebRTC DataChannel'ı zorla kapatmasını engelle:
+      const origHandleMessage = this._peer._handleMessage?.bind(this._peer);
+      if (origHandleMessage) {
+        this._peer._handleMessage = (message) => {
+          if (message?.type === 'LEAVE') {
+            console.warn('[ClientPeerService] Sinyal sunucusundan LEAVE alındı, aktif oyun bağlantısı korunuyor.');
+            return;
+          }
+          return origHandleMessage(message);
+        };
+      }
+
+      this._peer.on('open', (id) => {
+        if (this._destroyed) return;
+        this._assignedPeerId = id;
+        this._connectWebRTCToHost();
+      });
+
+      this._peer.on('error', (err) => {
+        console.warn('[ClientPeerService] PeerJS uyarısı/hatası:', err?.type, err?.message);
+        // Relay zaten bağlıysa WebRTC hatası oyunu kesintiye uğratmaz
+        if (this._isConnected || this._relay?.isConnected) {
+          try { this._peer?.reconnect(); } catch (_) {}
+          return;
+        }
+      });
+
+      this._peer.on('disconnected', () => {
+        console.warn('[ClientPeerService] Sinyal sunucusundan koptu, arka planda yeniden bağlanılıyor...');
+        try { this._peer?.reconnect(); } catch (_) {}
+      });
+    } catch (e) {
+      console.warn('[ClientPeerService] WebRTC başlatılamadı, Relay omurgası ile devam ediliyor:', e);
+    }
+  }
+
+  _connectWebRTCToHost() {
+    if (this._destroyed || !this._peer) return;
     try {
       const conn = this._peer.connect(this._hostPeerId, {
         reliable: true,
@@ -1615,24 +1704,18 @@ export class ClientPeerService {
       this._conn = conn;
 
       conn.on('open', () => {
-        if (this._destroyed || this._isRelayActive) return;
-        this._isConnected = true;
-        if (this._fallbackTimeout) {
-          clearTimeout(this._fallbackTimeout);
-          this._fallbackTimeout = null;
-        }
-        console.log('[ClientPeerService] WebRTC DataChannel başarıyla kuruldu!');
-        const activeId = this._assignedPeerId || this._peer.id;
-        this._onConnected(activeId);
-        this._startPing();
-        this._ensureStateWatchdog();
-        // Host'a katılım bildirimi
-        this._send(createAction(ACTION.JOIN_LOBBY, {
-          playerName: this._playerName,
-          token: this._token,
-          color: this._color,
-          sessionToken: this._sessionToken,
-        }, activeId));
+        if (this._destroyed) return;
+        console.log('[ClientPeerService] WebRTC DataChannel başarıyla kuruldu (P2P aktif)!');
+        this._markConnected();
+        // Host'a WebRTC üzerinden de katılım gönder
+        try {
+          conn.send(createAction(ACTION.JOIN_LOBBY, {
+            playerName: this._playerName,
+            token: this._token,
+            color: this._color,
+            sessionToken: this._sessionToken,
+          }, this._myId));
+        } catch (_) {}
       });
 
       conn.on('data', (msg) => {
@@ -1640,103 +1723,35 @@ export class ClientPeerService {
       });
 
       conn.on('close', () => {
-        console.warn('[ClientPeerService] WebRTC DataChannel kapandı. Relay durumu kontrol ediliyor...');
-        if (this._relay?.isConnected) {
-          console.log('[ClientPeerService] Relay aktif, oyun WebSocket üzerinden kesintisiz devam ediyor.');
-          return;
-        }
-        if (!this._destroyed) {
-          console.log('[ClientPeerService] WebRTC kapandı, otomatik Relay fallback devreye giriyor...');
-          this._fallbackToRelay();
-        }
+        console.warn('[ClientPeerService] WebRTC DataChannel kapandı. Relay durumu:', this._relay?.isConnected ? 'Aktif (Oyun Devam Ediyor)' : 'Bağlanıyor');
+        this._conn = null;
       });
 
       conn.on('error', (err) => {
-        console.error('[ClientPeerService] DataChannel bağlantı hatası:', err);
-        if (!this._destroyed) {
-          this._fallbackToRelay(err);
-        }
+        console.warn('[ClientPeerService] WebRTC DataChannel hatası:', err);
+        this._conn = null;
       });
     } catch (e) {
-      if (!this._isConnected && !this._destroyed) {
-        this._fallbackToRelay(e);
-      }
+      console.warn('[ClientPeerService] WebRTC bağlantı hatası:', e);
     }
   }
 
-  _fallbackToRelay(originalError = null) {
-    if (this._isRelayActive || this._destroyed) return;
-    this._isRelayActive = true;
-    if (this._fallbackTimeout) {
-      clearTimeout(this._fallbackTimeout);
-      this._fallbackTimeout = null;
+  _markConnected() {
+    if (this._destroyed) return;
+    if (this._initialConnectTimeout) {
+      clearTimeout(this._initialConnectTimeout);
+      this._initialConnectTimeout = null;
     }
-
-    // WebRTC denemesini sessizce temizle
-    try { this._conn?.close(); } catch (_) {}
-    this._conn = null;
-
-    // Oyuncu ID'sini koru — random yeni ID yerine mevcut peer ID'yi kullan
-    this._myRelayId = this._assignedPeerId || this._peer?.id || ('c_' + Math.random().toString(36).substring(2, 9));
-    this._onMyId(this._myRelayId);
-
-    console.log(`[ClientPeerService] WebSocket Relay odasına bağlanılıyor: ${this._hostPeerId} (ID: ${this._myRelayId})`);
-
-    let relayTimeout = null;
+    if (this._relayReconnectTimeout) {
+      clearTimeout(this._relayReconnectTimeout);
+      this._relayReconnectTimeout = null;
+    }
     if (!this._isConnected) {
-      relayTimeout = setTimeout(() => {
-        if (!this._isConnected && !this._destroyed) {
-          this._onError(originalError || { type: 'peer-unavailable', message: 'Oda bulunamadı veya bağlantı kurulamadı.' });
-        }
-      }, 7000);
+      this._isConnected = true;
+      this._onConnected(this._myId);
+      this._startPing();
+      this._ensureStateWatchdog();
     }
-
-    this._relay = new RelayConnection({
-      roomCode: this._hostPeerId,
-      playerId: this._myRelayId,
-      onMessage: (payload) => {
-        this._handleMessage(payload);
-      },
-      onConnected: () => {
-        if (this._destroyed) return;
-        if (relayTimeout) clearTimeout(relayTimeout);
-        if (this._relayReconnectTimeout) {
-          clearTimeout(this._relayReconnectTimeout);
-          this._relayReconnectTimeout = null;
-        }
-        this._isConnected = true;
-        console.log('[ClientPeerService] WebSocket Relay ile odaya başarıyla bağlanıldı!');
-        this._onConnected(this._myRelayId);
-        this._startPing();
-        this._ensureStateWatchdog();
-        // Host'a katılım / reconnect bildirimi
-        this._relay.send(createAction(ACTION.JOIN_LOBBY, {
-          playerName: this._playerName,
-          token: this._token,
-          color: this._color,
-          sessionToken: this._sessionToken,
-        }, this._myRelayId));
-      },
-      onDisconnected: () => {
-        console.warn('[ClientPeerService] Relay bağlantısı geçici koptu, arka planda yeniden bağlanılıyor...');
-        // Doğrudan HOST_DROPPED tetikleme! 30 saniye boyunca yeniden bağlanmayı dene
-        if (!this._relayReconnectTimeout && !this._destroyed) {
-          this._relayReconnectTimeout = setTimeout(() => {
-            this._relayReconnectTimeout = null;
-            if (!this._relay?.isConnected && !this._conn?.open && !this._destroyed) {
-              console.error('[ClientPeerService] 30 saniye boyunca bağlantı kurulamadı, Host koptu kabul ediliyor.');
-              this._onHostDropped();
-            }
-          }, 30000);
-        }
-      },
-      onError: (err) => {
-        if (!this._isConnected && !this._destroyed) {
-          if (relayTimeout) clearTimeout(relayTimeout);
-          this._onError(originalError || err);
-        }
-      }
-    });
   }
 
   _handleMessage(msg) {
@@ -1746,7 +1761,7 @@ export class ClientPeerService {
     // Hedef filtreleme: Eğer bu mesaj belirli bir hedef oyuncuya özelse
     const target = msg.targetId || msg.payload?.targetId;
     if (target) {
-      const isForMe = target === this._myRelayId ||
+      const isForMe = target === this._myId ||
                       target === this._assignedPeerId ||
                       target === this._peer?.id ||
                       (this._sessionToken && target === this._sessionToken);
@@ -1822,16 +1837,16 @@ export class ClientPeerService {
       if (!(this._conn?.open || this._relay?.isConnected)) return;
 
       attempt++;
-      console.log(`[ClientPeerService] Oyun durumu henüz alınmadı, durum Host'tan talep ediliyor... (Deneme ${attempt}/4)`);
+      console.log(`[ClientPeerService] Oyun durumu henüz alınmadı, durum Host'tan talep ediliyor... (Deneme ${attempt}/6)`);
       this.sendAction(ACTION.REQUEST_STATE, {});
 
-      if (attempt < 4) {
-        this._stateWatchdogTimer = setTimeout(tryRequestState, 1800);
+      if (attempt < 6) {
+        this._stateWatchdogTimer = setTimeout(tryRequestState, 1500);
       }
     };
 
-    // 1.2sn bekleyip ilk denemeyi yap (JOIN_LOBBY'nin işlenmesi için süre ver)
-    this._stateWatchdogTimer = setTimeout(tryRequestState, 1200);
+    // 800ms sonra ilk denemeyi yap
+    this._stateWatchdogTimer = setTimeout(tryRequestState, 800);
   }
 
   _startPing() {
@@ -1842,27 +1857,24 @@ export class ClientPeerService {
       this._onPing(rtt);
       this.sendAction(ACTION.UPDATE_PING, { ping: rtt });
     };
+
     this._pingInterval = setInterval(() => {
-      if (this._conn?.open) {
-        // WebRTC sessizlik tespiti (silent drop): 8 saniyedir Host'tan hiçbir mesaj veya pong gelmediyse
-        if (this._lastHostMessageTime && Date.now() - this._lastHostMessageTime > 8000) {
-          console.warn('[ClientPeerService] WebRTC 8 saniyedir sessiz (silent drop), otomatik Relay fallback devreye giriyor...');
-          this._fallbackToRelay();
-          return;
-        }
-        this._send(createPing(Date.now()));
-      } else if (this._relay?.isConnected) {
+      if (this._relay?.isConnected) {
         this._relay.ping((rtt) => handlePingResult(rtt));
+      }
+      if (this._conn?.open) {
+        try {
+          this._conn.send(createPing(Date.now()));
+        } catch (_) {}
       }
     }, 2500);
 
     setTimeout(() => {
+      if (this._relay?.isConnected) this._relay.ping((rtt) => handlePingResult(rtt));
       if (this._conn?.open) {
-        this._send(createPing(Date.now()));
-      } else if (this._relay?.isConnected) {
-        this._relay.ping((rtt) => handlePingResult(rtt));
+        try { this._conn.send(createPing(Date.now())); } catch (_) {}
       }
-    }, 400);
+    }, 300);
   }
 
   _stopPing() {
@@ -1874,41 +1886,62 @@ export class ClientPeerService {
 
   /**
    * Host'a eylem gönder.
+   * Çift kanal (Dual-Transport) mimarisi: Hem WebRTC DataChannel hem WebSocket Relay üzerinden
+   * actionId ile gönderilir; Host ilk ulaşanı işleyip diğerini tekilleştirir.
    * @param {string} action - ACTION sabitlerinden biri
    * @param {object} payload - Eyleme özgü veri
    */
   sendAction(action, payload = {}) {
-    const senderId = this.peerId || '';
+    const actionId = 'act_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
     const actionMsg = createAction(action, {
       ...payload,
       sessionToken: this._sessionToken || undefined,
       playerName: this._playerName || undefined
-    }, senderId);
+    }, this._myId, actionId);
 
+    let sent = false;
+
+    // 1. WebRTC DataChannel açıksa ultra hızlı gönder
     if (this._conn?.open) {
-      this._send(actionMsg);
-    } else if (this._relay?.isConnected) {
-      this._relay.send(actionMsg);
-    } else {
-      console.warn('[ClientPeerService] Bağlantı açık değil, derhal Relay fallback deneniyor:', action);
-      if (!this._destroyed) {
-        this._fallbackToRelay();
+      try {
+        this._conn.send(actionMsg);
+        sent = true;
+      } catch (e) {
+        console.warn('[ClientPeerService] WebRTC send hatası:', e);
       }
+    }
+
+    // 2. WebSocket Relay bağlıysa garantili sunucu kanalı üzerinden de gönder
+    if (this._relay?.isConnected) {
+      try {
+        this._relay.send(actionMsg);
+        sent = true;
+      } catch (e) {
+        console.warn('[ClientPeerService] Relay send hatası:', e);
+      }
+    }
+
+    if (!sent) {
+      console.warn('[ClientPeerService] Hiçbir kanal açık değil, mesaj Relay kuyruğuna alınıyor:', action);
+      this._relay?.send(actionMsg);
     }
   }
 
   _send(msg) {
-    try {
-      if (this._conn?.open) {
+    let sent = false;
+    if (this._conn?.open) {
+      try {
         this._conn.send(msg);
-      } else if (this._relay?.isConnected) {
-        this._relay.send(msg);
-      } else {
-        console.warn('[ClientPeerService] Bağlantı açık değil, mesaj gönderilemedi:', msg.action || msg.type);
-      }
-    } catch (e) {
-      console.error('[ClientPeerService] Gönderme hatası:', e);
+        sent = true;
+      } catch (_) {}
     }
+    if (this._relay?.isConnected) {
+      try {
+        this._relay.send(msg);
+        sent = true;
+      } catch (_) {}
+    }
+    return sent;
   }
 
   /**
@@ -1927,9 +1960,9 @@ export class ClientPeerService {
     this._onPing = () => {};
     this._onSpectator = () => {};
     this._stopPing();
-    if (this._fallbackTimeout) {
-      clearTimeout(this._fallbackTimeout);
-      this._fallbackTimeout = null;
+    if (this._initialConnectTimeout) {
+      clearTimeout(this._initialConnectTimeout);
+      this._initialConnectTimeout = null;
     }
     if (this._relayReconnectTimeout) {
       clearTimeout(this._relayReconnectTimeout);
@@ -1940,7 +1973,7 @@ export class ClientPeerService {
       this._stateWatchdogTimer = null;
     }
 
-    const leaveMsg = createAction(ACTION.LEAVE_ROOM, {}, this.peerId || '');
+    const leaveMsg = createAction(ACTION.LEAVE_ROOM, {}, this._myId);
     try {
       if (this._conn?.open) {
         this._conn.send(leaveMsg);
