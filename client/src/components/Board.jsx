@@ -437,12 +437,23 @@ const TileCell = React.memo(function TileCell({
         </div>
       )}
 
-      {/* İpotek Bandı */}
+      {/* İpotek Damgası (2 Satırlı: Üstte '🔒 İPOTEK', Altta Oyuncu Renginde İsim) */}
       {propState && propState.mortgaged && (
-        <div className="absolute inset-0 bg-rose-950/85 flex items-center justify-center z-20 backdrop-blur-[1px] p-0.5 pointer-events-none">
-          <span className="text-[7.5px] sm:text-[8.5px] md:text-[9.5px] font-space font-extrabold text-rose-200 uppercase tracking-wide -rotate-12 border border-rose-400 px-1 py-0.5 rounded bg-rose-900 shadow-md max-w-[96%] truncate text-center leading-tight">
-            {owner?.name ? `${owner.name} (İpotek)` : 'İpotek'}
-          </span>
+        <div className="absolute inset-0 bg-rose-950/75 flex flex-col items-center justify-center z-20 backdrop-blur-[1px] p-1 pointer-events-none select-none">
+          <div className="flex flex-col items-center gap-0.5 max-w-[96%]">
+            <span className="text-[7px] sm:text-[8px] md:text-[9px] font-space font-black text-rose-100 uppercase tracking-wider border border-rose-400/90 px-1.5 py-0.5 rounded-md bg-rose-900/95 shadow-md text-center leading-none">
+              🔒 İPOTEK
+            </span>
+            {owner?.name && (
+              <span
+                className="text-[6.5px] sm:text-[7.5px] md:text-[8px] font-space font-black tracking-tight truncate max-w-full text-center px-1 py-0.5 rounded bg-black/75 border border-white/15 drop-shadow leading-none mt-0.5"
+                style={{ color: owner.color || '#f43f5e' }}
+                title={`İpotek Sahibi: ${owner.name}`}
+              >
+                {owner.name}
+              </span>
+            )}
+          </div>
         </div>
       )}
 
@@ -521,7 +532,7 @@ const TileCell = React.memo(function TileCell({
                 style={{ color: owner.color }}
                 title={`Mülk Sahibi: ${owner.name}${propState?.mortgaged ? ' (İpotekli)' : ''}`}
               >
-                {owner.name}{propState?.mortgaged ? ' (İpotek)' : ''}
+                {owner.name}
               </span>
             </div>
           ) : null}
