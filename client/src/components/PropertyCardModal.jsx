@@ -352,11 +352,6 @@ export function PropertyCardModal({
             >
               Anladım (Kapat)
             </button>
-
-            {/* İnceleme İpucu */}
-            <div className="text-center pt-0.5 text-[9.5px] text-slate-500 italic">
-              Farenizi kart üzerinde gezdirerek 3D ışık yansımasını deneyimleyin
-            </div>
           </div>
         </div>
       </div>
@@ -687,11 +682,6 @@ export function PropertyCardModal({
               </div>
             </div>
           )}
-
-          {/* İnceleme İpucu */}
-          <div className="text-center pt-1 text-[9.5px] text-slate-500 italic">
-            Farenizi kart üzerinde gezdirerek 3D bükme ve ışık yansımasını deneyimleyin
-          </div>
         </div>
       </div>
     </div>

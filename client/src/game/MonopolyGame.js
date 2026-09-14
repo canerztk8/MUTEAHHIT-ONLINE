@@ -1224,7 +1224,7 @@ export class MonopolyGame {
               tileName: tile.name,
               timestamp: Date.now()
             };
-            this.addLog(`💡 ${player.name}, Şans Kartı gereği Tesis için özel zar attı (${roll1}+${roll2}=${specialSum}) ve sahibinin tek tesisi olsa dahi kart kuralı gereği 10 katı olan ${utilRent}₺ kirayı ${owner.name} oyuncusuna ödedi!`, 'rent');
+            this.addLog(`💡 ${player.name}, Şans Kartı ile ${owner.name} tesisine (${specialSum} zar x 10) ${utilRent}₺ kira ödedi.`, 'rent');
             this.checkBankruptcy(player, utilRent, owner.id);
             this.phase = 'TURN_ACTIONS';
             break;

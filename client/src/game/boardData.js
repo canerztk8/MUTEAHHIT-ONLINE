@@ -558,7 +558,7 @@ export const CHANCE_CARDS = [
   { id: "ch2", deckType: "chance", title: "Kızılay Meydanı'na İlerle", desc: "Kızılay projesine git. Merkez Şantiye'den geçersen 200₺ al.", action: { type: "advance_to", tileId: 24, collectGo: true } },
   { id: "ch3", deckType: "chance", title: "Altındağ'a İlerle", desc: "Altındağ projesine ilerle. Merkez Şantiye'den geçersen 200₺ al.", action: { type: "advance_to", tileId: 11, collectGo: true } },
   { id: "ch4", deckType: "chance", title: "En Yakın Gara İlerle", desc: "En yakın tren garına ilerle. Sahipsizse alabilirsin, birine aitse normal kiranın 2 katını öde.", action: { type: "advance_nearest_railroad" } },
-  { id: "ch5", deckType: "chance", title: "En Yakın Altyapı Kurumuna İlerle", desc: "En yakın enerji/su kurumuna git. Sahipsizse al, birine aitse özel zar at ve kart kuralı gereği (tek tesis olsa dahi) zarların 10 katı kira öde.", action: { type: "advance_nearest_utility" } },
+  { id: "ch5", deckType: "chance", title: "En Yakın Altyapı Kurumuna İlerle", desc: "En yakın enerji/su kurumuna git. Sahipsizse alabilirsin, birine aitse zar atıp 10 katı kira öde.", action: { type: "advance_nearest_utility" } },
   { id: "ch6", deckType: "chance", title: "Banka Temettü Geliri", desc: "Hisselerinden 50₺ kâr payı temettüsü aldın.", action: { type: "money", amount: 50 } },
   { id: "ch7", deckType: "chance", title: "Vergi Barışı & İmar Affı Belgesi", desc: "Bu resmi belge seni Maliye Denetimi'nden anında muaf tutar. Saklayabilir veya satabilirsin.", action: { type: "jail_free" } },
   { id: "ch8", deckType: "chance", title: "3 Kare Geri Git", desc: "Piyonunu 3 kare geriye çek.", action: { type: "move_relative", steps: -3 } },

@@ -120,17 +120,14 @@ function TitleDeedCardsBase({ gameState = {}, myPlayerId, onTileClick }) {
               <Landmark className="w-4 h-4 text-amber-600 dark:text-amber-400" />
               <span>
                 Tapu Senetleri ({allOwnedTiles.length})
-                {mortgagedCount > 0 ? (
-                  <span className="text-rose-600 dark:text-rose-400 ml-1.5 font-bold">
-                    • {mortgagedCount} İpotekli
+                {mortgagedCount > 0 && (
+                  <span className="text-rose-600 dark:text-rose-400 ml-1.5 font-bold font-jetbrains">
+                    • {mortgagedCount}
                   </span>
-                ) : null}
+                )}
               </span>
             </h2>
           </div>
-          <span className="text-[10px] sm:text-[10.5px] text-slate-500 dark:text-slate-400 font-medium">
-            {targetPlayer?.id !== effectiveMyId ? 'Teklif yapmak için tapuya tıkla' : 'Yönetmek için tapuya tıkla'}
-          </span>
         </div>
 
         {/* Oyuncu Seçici Hap Butonlar (Tabs) - Bizim oyuncunun ismi hep en solda */}
