@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, Suspense, lazy } from 'react';
-import { HostPeerService, ClientPeerService } from './network/PeerService.js';
+import { HostPeerService, ClientPeerService, getShareableInviteUrl } from './network/PeerService.js';
 import { ACTION } from './network/protocol.js';
 import { BOARD_TILES, CHEST_CARDS, CHANCE_CARDS } from './game/boardData.js';
 import { Lobby } from './components/Lobby.jsx';
@@ -1461,7 +1461,7 @@ export function App() {
 
   const copyRoomLink = () => {
     if (!gameState?.roomCode) return;
-    const url = `${window.location.origin}${window.location.pathname}?room=${gameState.roomCode}`;
+    const url = getShareableInviteUrl(gameState.roomCode);
     navigator.clipboard.writeText(url);
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2000);

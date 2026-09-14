@@ -4,6 +4,7 @@ import { PLAYER_TOKENS, PLAYER_COLORS } from '../game/boardData.js';
 import { TopDownPawnPreview } from './TopDownPawnPreview.jsx';
 import { TopDownPawnSvg } from './TopDownPawnSvg.jsx';
 import { ACTION } from '../network/protocol.js';
+import { getShareableInviteUrl } from '../network/PeerService.js';
 
 
 export function Lobby({
@@ -250,7 +251,7 @@ export function Lobby({
   };
 
   const copyRoomLink = () => {
-    const url = `${window.location.origin}${window.location.pathname}?room=${gameState.roomCode}`;
+    const url = getShareableInviteUrl(gameState.roomCode);
     navigator.clipboard.writeText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);

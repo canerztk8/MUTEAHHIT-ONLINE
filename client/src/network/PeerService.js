@@ -64,6 +64,23 @@ const ICE_SERVERS = [
 
 const DEFAULT_BACKEND_HOST = 'muteahhit-online-backend.onrender.com';
 
+/**
+ * Arkadaş davet linki oluşturur.
+ * Yerel ortamda veya Cloudflare pages.dev (Türkiye'de bazı ISS'lerde DNS engeli/çözümleme sorunu olan)
+ * üzerindeyken, tüm ISS'lerde doğrudan DNS çözülen Render domain'ini hedefler.
+ */
+export function getShareableInviteUrl(roomCode) {
+  if (typeof window === 'undefined' || !roomCode) return '';
+  const hostname = window.location.hostname;
+  const isLocal = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.');
+
+  if (isLocal || hostname.includes('pages.dev')) {
+    return `https://${DEFAULT_BACKEND_HOST}/?room=${encodeURIComponent(roomCode)}`;
+  }
+
+  return `${window.location.origin}${window.location.pathname}?room=${encodeURIComponent(roomCode)}`;
+}
+
 function resolveBackendHost() {
   const envHost = import.meta.env.VITE_PEER_HOST;
   if (envHost && envHost.trim()) return envHost.trim();
@@ -462,8 +479,27 @@ export class HostPeerService {
         if (!payload) return;
         // Sunucu tarafından iletilen oyuncu ayrıldı / soket kapandı bildirimi
         if (payload.type === 'relay:peer_left' && payload.playerId) {
-          console.warn(`[HostPeerService] Relay: oyuncu soketi kapandı bildirimi: ${payload.playerId}`);
-          this._handleClientDisconnect(payload.playerId);
+          const pid = payload.playerId;
+          console.warn(`[HostPeerService] Relay: oyuncu soketi kapandı bildirimi: ${pid}`);
+          // 1. Oyuncu WebRTC DataChannel üzerinden hala açıksa oyunu asla kesintiye uğratma
+          const mappedId = this._relayIdToPlayerId?.get(pid) || this._peerIdToPlayerId?.get(pid) || pid;
+          const p = this._game?.players?.find(x => x.id === pid || x.id === mappedId);
+          const hasOpenWebRTC = Array.from(this._connections.values()).some(c => c?.open && (c.peer === pid || c.peer === mappedId || (p && c.peer === p.id)));
+          if (hasOpenWebRTC) {
+            console.log(`[HostPeerService] ${p?.name || pid} WebRTC DataChannel üzerinden hala bağlı, kopma tetiklenmedi.`);
+            return;
+          }
+          // 2. İstemcinin Relay yeniden bağlanması (reconnect 800ms) için 6 saniyelik tolerans tanı
+          setTimeout(() => {
+            const lastAct = p ? Math.max(
+              this._playerLastActivity.get(p.id) || 0,
+              this._playerLastActivity.get(p.sessionToken) || 0,
+              this._playerLastActivity.get(p.name) || 0
+            ) : 0;
+            if (Date.now() - lastAct > 6000 && !this._disconnectTimers.has(p?.id || pid)) {
+              this._handleClientDisconnect(pid);
+            }
+          }, 6000);
           return;
         }
         if (fromRelayId && !payload.senderId) {
@@ -736,13 +772,36 @@ export class HostPeerService {
     });
 
     conn.on('close', () => {
-      console.warn(`[HostPeerService] ${peerId} DataChannel kapandı, 20sn yeniden bağlanma/relay süresi tanınıyor...`);
-      this._handleClientDisconnect(peerId);
+      console.warn(`[HostPeerService] ${peerId} WebRTC DataChannel kapandı. Relay ve canlılık durumu kontrol ediliyor...`);
+      this._connections.delete(peerId);
+      const mappedId = this._peerIdToPlayerId?.get(peerId) || peerId;
+      const p = this._game?.players?.find(x => x.id === peerId || x.id === mappedId);
+      const lastAct = p ? Math.max(
+        this._playerLastActivity.get(p.id) || 0,
+        this._playerLastActivity.get(p.sessionToken) || 0,
+        this._playerLastActivity.get(p.name) || 0
+      ) : 0;
+      // Eğer oyuncu WebSocket Relay üzerinden hala aktifse, oyunu asla kesintiye uğratma
+      if (this._relay?.isConnected && (Date.now() - lastAct < 20000)) {
+        console.log(`[HostPeerService] ${p?.name || peerId} WebSocket Relay üzerinden aktif kalmaya devam ediyor.`);
+        return;
+      }
+      // Hemen kesme, 8 saniyelik tolerans tanı (WebRTC yeniden bağlanma veya Relay fallback için)
+      setTimeout(() => {
+        const stillActive = p ? Math.max(
+          this._playerLastActivity.get(p.id) || 0,
+          this._playerLastActivity.get(p.sessionToken) || 0,
+          this._playerLastActivity.get(p.name) || 0
+        ) : 0;
+        if (Date.now() - stillActive > 15000 && !this._connections.has(peerId) && !this._disconnectTimers.has(p?.id || peerId)) {
+          this._handleClientDisconnect(peerId);
+        }
+      }, 8000);
     });
 
     conn.on('error', (err) => {
-      console.error('[HostPeerService] Bağlantı hatası:', peerId, err);
-      this._handleClientDisconnect(peerId);
+      console.warn('[HostPeerService] WebRTC DataChannel hatası (sessiz):', peerId, err?.message || err);
+      // conn.on('close') zaten tetiklenecektir, doğrudan kopma işlemi başlatma
     });
   }
 
@@ -1612,21 +1671,29 @@ export class HostPeerService {
         }
 
         // 2. Oyuncu Canlılık / Hareketsizlik Kontrolü (Inactivity Liveness Check)
-        // 8.5 saniye boyunca hiçbir kanaldan (WebRTC veya Relay) ping/aksiyon yollamayan aktif insan oyuncular
+        // WebRTC ve Relay üzerinden belirli süre ping/aksiyon yollamayan aktif insan oyuncular
         if (game.players && game.players.length > 0) {
           for (const p of game.players) {
             if (p.isBot || p.isBankrupt || p.isKicked || p.isHost || p.id === this._peer?.id) continue;
-            const lastActive = Math.max(
+            let lastActive = Math.max(
               this._playerLastActivity.get(p.id) || 0,
               this._playerLastActivity.get(p.sessionToken) || 0,
               this._playerLastActivity.get(p.name) || 0
             );
+            // Reverse mapping ile ilişkili tüm peer ve relay ID'lerini de tara
+            for (const [key, val] of this._playerLastActivity.entries()) {
+              if (this._peerIdToPlayerId?.get(key) === p.id || this._relayIdToPlayerId?.get(key) === p.id) {
+                if (val > lastActive) lastActive = val;
+              }
+            }
             if (!lastActive) {
               this._playerLastActivity.set(p.id, now);
               continue;
             }
-            if (now - lastActive > 8500 && !this._disconnectTimers.has(p.id)) {
-              console.warn(`[HostPeerService] ${p.name} 8.5 saniyedir sessiz, bağlantı kesildi işlemi başlatılıyor...`);
+            // 8.5 saniye çok hassastı (mobil gecikmelerinde / arka planda anında bildirim çıkmasına yol açıyordu).
+            // 25 saniye tolerans tanı (mobil / arka sekme / hücresel veri dalgalanmalarını tolere eder).
+            if (now - lastActive > 25000 && !this._disconnectTimers.has(p.id)) {
+              console.warn(`[HostPeerService] ${p.name} 25 saniyedir sessiz, bağlantı kesildi işlemi başlatılıyor...`);
               this._handleClientDisconnect(p.id);
             }
           }
@@ -1909,6 +1976,25 @@ export class ClientPeerService {
         this._onError({ type: 'peer-unavailable', message: 'Oda bulunamadı veya bağlantı kurulamadı.' });
       }
     }, 8000);
+
+    // 5. Sekme ön plana geldiğinde (mobil / arka plandan dönüş) canlılık tazele
+    this._onVisibilityChange = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible' && !this._destroyed) {
+        try {
+          if (this._conn?.open) {
+            this._conn.send(createPing(Date.now(), this._myId));
+          }
+          if (this._relay?.isConnected) {
+            this._relay.send(createPing(Date.now(), this._myId));
+            this.sendAction(ACTION.REQUEST_STATE, {});
+          }
+        } catch (_) {}
+      }
+    };
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', this._onVisibilityChange);
+      window.addEventListener('online', this._onVisibilityChange);
+    }
   }
 
   _initRelay() {
@@ -2163,6 +2249,11 @@ export class ClientPeerService {
         try {
           this._conn.send(createPing(Date.now(), this._myId));
         } catch (_) {}
+      } else if (this._relay?.isConnected) {
+        // WebRTC açık değilse doğrudan Relay üzerinden Host'a PING ilet
+        try {
+          this._relay.send(createPing(Date.now(), this._myId));
+        } catch (_) {}
       }
     }, 2500);
 
@@ -2170,6 +2261,8 @@ export class ClientPeerService {
       if (this._relay?.isConnected) this._relay.ping((rtt) => handlePingResult(rtt));
       if (this._conn?.open) {
         try { this._conn.send(createPing(Date.now(), this._myId)); } catch (_) {}
+      } else if (this._relay?.isConnected) {
+        try { this._relay.send(createPing(Date.now(), this._myId)); } catch (_) {}
       }
     }, 300);
   }
@@ -2258,6 +2351,10 @@ export class ClientPeerService {
     this._onPing = () => {};
     this._onSpectator = () => {};
     this._stopPing();
+    if (this._onVisibilityChange && typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', this._onVisibilityChange);
+      window.removeEventListener('online', this._onVisibilityChange);
+    }
     if (this._initialConnectTimeout) {
       clearTimeout(this._initialConnectTimeout);
       this._initialConnectTimeout = null;
