@@ -393,15 +393,8 @@ app.get('*', (req, res, next) => {
   }
   res.sendFile(path.join(distPath, 'index.html'), (err) => {
     if (err) {
-      res.send(`
-        <html>
-          <body style="font-family:sans-serif; background:#0f172a; color:#fff; text-align:center; padding:50px;">
-            <h2>🏗️ Müteahhit Online</h2>
-            <p>Frontend derlendikten sonra oyun burada görünecektir.</p>
-            <p style="color:#94a3b8; font-size:0.85em;">PeerJS Sinyal Sunucusu aktif: <code>/peerjs</code></p>
-          </body>
-        </html>
-      `);
+      const target = `https://muteahhit-online.pages.dev${req.originalUrl || req.url}`;
+      return res.redirect(302, target);
     }
   });
 });

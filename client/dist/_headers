@@ -1,0 +1,13 @@
+# Static Assets Long-term Immutable Cache (Cloudflare Pages)
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+/sounds/*
+  Cache-Control: public, max-age=31536000, immutable
+/images/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Security Headers
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Referrer-Policy: strict-origin-when-cross-origin
