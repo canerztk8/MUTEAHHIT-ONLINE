@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import { Zap, Dices } from 'lucide-react';
-import { NonDrawerCardAlert } from './controls/NonDrawerCardAlert.jsx';
 import { TurnStatusCapsule } from './controls/TurnStatusCapsule.jsx';
 import { DebtEmergencyControl } from './controls/DebtEmergencyControl.jsx';
 import { JailActionControl } from './controls/JailActionControl.jsx';
@@ -76,12 +75,6 @@ export function ActionControls({
 
   return (
     <div className="w-full flex flex-col items-center justify-center p-0.5 sm:p-1 text-center max-w-sm mx-auto select-none gap-2">
-      {/* Diğer Oyuncunun Çektiği İhale & Fırsat / Belediye & İmar Kartı Bildirimi (Opsiyonel) */}
-      <NonDrawerCardAlert
-        card={drawnCardForNonDrawer}
-        onDismiss={onDismissDrawnCard}
-      />
-
       {/* MİNİMALİST SIRA & SAYAÇ KAPSÜLÜ */}
       <div className="flex-shrink-0 flex items-center justify-center">
         <TurnStatusCapsule

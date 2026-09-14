@@ -5,6 +5,7 @@ import { Building2, Building, Train, Zap, AlertTriangle, Coins, Clock, Home, Lan
 import { Board3DOverlay } from './Board3DOverlay.jsx';
 import { RentImpactOverlay } from './RentImpactOverlay.jsx';
 import { DisconnectTimerText } from './DisconnectTimerText.jsx';
+import { NonDrawerCardAlert } from './controls/NonDrawerCardAlert.jsx';
 
 // 11x11 Grid konumlandırması
 function getGridPosition(id) {
@@ -1513,6 +1514,8 @@ export function Board({
     };
   }, []);
 
+  const drawnCardForNonDrawer = (!isCardDrawer && gameState.drawnCard && !(isDiceRolling || isMovingPawn || centerControlsSlot?.props?.isMovingPawn || Boolean(activePlayer && activeIntervalsRef.current[activePlayer.id])) && !dismissedCardKeysRef.current.has(String(gameState.drawnCard.instanceId || gameState.drawnCard.drawnAt || gameState.drawnCard.id)) && dismissedCardId !== (gameState.drawnCard.instanceId || gameState.drawnCard.id)) ? gameState.drawnCard : null;
+
   return (
     <div
       className="relative w-full aspect-square select-none mx-auto flex items-center justify-center p-2 sm:p-3 max-w-[min(98vw,calc(100dvh-105px))] max-h-[min(98vw,calc(100dvh-105px))] lg:max-w-[calc(100dvh-24px)] lg:max-h-[calc(100dvh-24px)]"
@@ -1680,33 +1683,12 @@ export function Board({
               </div>
 
               {/* MERKEZ İZLEYİCİ BİLGİ ROZETİ */}
-              {isSpectator && !gameState?.disconnectNotice && (
+              {isSpectator && (
                 <div className="relative z-30 w-full max-w-xs sm:max-w-sm mx-auto mb-1 animate-fadeIn">
                   <div className="bg-sky-950/90 text-sky-200 border border-sky-500/50 px-2.5 py-1.5 rounded-xl shadow-lg flex items-center justify-center gap-1.5 text-[9px] sm:text-[11px] font-bold backdrop-blur-md">
                     <span className="text-xs">👁️</span>
                     <span>Canlı Maç İzleniyor (İzleyici Modu)</span>
                   </div>
-                </div>
-              )}
-
-              {/* MERKEZ KOMPAKT KOPMA / ATILMA BİLDİRİMİ (Cardboard Ortası) */}
-              {gameState?.disconnectNotice && (
-                <div className="relative z-30 w-full max-w-xs sm:max-w-sm mx-auto mb-1 animate-fadeIn">
-                  {gameState.disconnectNotice.type === 'disconnecting' ? (
-                    <div className="bg-amber-500/95 text-slate-950 px-2.5 py-1.5 rounded-xl border-2 border-amber-300 shadow-xl flex items-center justify-center gap-1.5 text-[9px] sm:text-[11px] font-black backdrop-blur-md animate-pulse">
-                      <span className="text-xs">⚠️</span>
-                      <span className="truncate">
-                        <strong>{gameState.disconnectNotice.playerName}</strong> bağlantısı kesildi... (Yeniden bağlanması bekleniyor - <DisconnectTimerText expiresAt={gameState.disconnectNotice.expiresAt} fallbackSeconds={gameState.disconnectNotice.remainingSeconds} />)
-                      </span>
-                    </div>
-                  ) : gameState.disconnectNotice.type === 'kicked' ? (
-                    <div className="bg-rose-600/95 text-white px-2.5 py-1.5 rounded-xl border-2 border-rose-400 shadow-xl flex items-center justify-center gap-1.5 text-[9px] sm:text-[11px] font-black backdrop-blur-md animate-bounce">
-                      <span className="text-xs">❌</span>
-                      <span className="truncate">
-                        <strong>{gameState.disconnectNotice.playerName}</strong> 60sn içinde bağlanamadığı için oyundan atıldı.
-                      </span>
-                    </div>
-                  ) : null}
                 </div>
               )}
 
@@ -1881,73 +1863,105 @@ export function Board({
 
 
 
-              {/* Canlı Kira Ödeme Bildirimi Banner'ı (Tur/Ev/Otel/Tapu Barının Hemen Altında) */}
-              {rentNotification && myPlayerId && (rentNotification.payerId === myPlayerId || rentNotification.ownerId === myPlayerId) && (
-                <div className="relative z-30 w-full max-w-xs sm:max-w-sm mx-auto my-1 pointer-events-none animate-rent-banner-bounce">
-                  <div className="bg-gradient-to-r from-rose-950/95 via-slate-900/95 to-emerald-950/95 border-2 border-amber-400 rounded-2xl px-3 sm:px-4 py-2 shadow-[0_0_30px_rgba(251,191,36,0.6)] flex items-center gap-2.5 backdrop-blur-md">
-                    <div className="w-8 h-8 rounded-xl bg-amber-400/20 border border-amber-400/50 flex items-center justify-center text-lg flex-shrink-0">
-                      💸
-                    </div>
-                    <div className="min-w-0 flex-1 leading-tight text-left">
-                      <span className="text-[8.5px] font-black uppercase tracking-widest text-amber-400 block">
-                        KİRA ÖDEMESİ GERÇEKLEŞTİ!
-                      </span>
-                      <div className="text-[11px] sm:text-xs font-black text-white truncate flex items-center gap-1 mt-0.5">
-                        <span style={{ color: rentNotification.payerColor }}>{rentNotification.payerName}</span>
-                        <span className="text-slate-400">➔</span>
-                        <span style={{ color: rentNotification.ownerColor }}>{rentNotification.ownerName}</span>
-                        <span className="text-amber-400 font-mono text-xs sm:text-sm font-extrabold ml-1">
-                          {rentNotification.amount}₺
+              {/* Canlı Bildirimler Katmanı (Layout Shift Önleyici Sabit Overlay - Caner SENİN SIRAN barını ve eylemleri asla zıplatmaz) */}
+              <div className="absolute top-[48px] sm:top-[56px] inset-x-2 z-40 flex flex-col items-center pointer-events-none gap-1.5">
+                {/* 1. KOPMA / ATILMA BİLDİRİMİ */}
+                {gameState?.disconnectNotice && (
+                  <div className="w-full max-w-xs sm:max-w-sm mx-auto pointer-events-auto animate-fadeIn">
+                    {gameState.disconnectNotice.type === 'disconnecting' ? (
+                      <div className="bg-amber-500/95 text-slate-950 px-2.5 py-1.5 rounded-xl border-2 border-amber-300 shadow-xl flex items-center justify-center gap-1.5 text-[9px] sm:text-[11px] font-black backdrop-blur-md animate-pulse">
+                        <span className="text-xs">⚠️</span>
+                        <span className="truncate">
+                          <strong>{gameState.disconnectNotice.playerName}</strong> bağlantısı kesildi... (Yeniden bağlanması bekleniyor - <DisconnectTimerText expiresAt={gameState.disconnectNotice.expiresAt} fallbackSeconds={gameState.disconnectNotice.remainingSeconds} />)
                         </span>
                       </div>
-                      <span className="text-[8px] sm:text-[8.5px] text-slate-300 italic truncate block">
-                        {rentNotification.tileName} mülkü için
-                      </span>
+                    ) : gameState.disconnectNotice.type === 'kicked' ? (
+                      <div className="bg-rose-600/95 text-white px-2.5 py-1.5 rounded-xl border-2 border-rose-400 shadow-xl flex items-center justify-center gap-1.5 text-[9px] sm:text-[11px] font-black backdrop-blur-md animate-bounce">
+                        <span className="text-xs">❌</span>
+                        <span className="truncate">
+                          <strong>{gameState.disconnectNotice.playerName}</strong> 60sn içinde bağlanamadığı için oyundan atıldı.
+                        </span>
+                      </div>
+                    ) : null}
+                  </div>
+                )}
+
+                {/* 2. KİRA ÖDEME BİLDİRİMİ */}
+                {rentNotification && myPlayerId && (rentNotification.payerId === myPlayerId || rentNotification.ownerId === myPlayerId) && (
+                  <div className="w-full max-w-xs sm:max-w-sm mx-auto pointer-events-none animate-rent-banner-bounce">
+                    <div className="bg-gradient-to-r from-rose-950/95 via-slate-900/95 to-emerald-950/95 border-2 border-amber-400 rounded-2xl px-3 sm:px-4 py-2 shadow-[0_0_30px_rgba(251,191,36,0.6)] flex items-center gap-2.5 backdrop-blur-md">
+                      <div className="w-8 h-8 rounded-xl bg-amber-400/20 border border-amber-400/50 flex items-center justify-center text-lg flex-shrink-0">
+                        💸
+                      </div>
+                      <div className="min-w-0 flex-1 leading-tight text-left">
+                        <span className="text-[8.5px] font-black uppercase tracking-widest text-amber-400 block">
+                          KİRA ÖDEMESİ GERÇEKLEŞTİ!
+                        </span>
+                        <div className="text-[11px] sm:text-xs font-black text-white truncate flex items-center gap-1 mt-0.5">
+                          <span style={{ color: rentNotification.payerColor }}>{rentNotification.payerName}</span>
+                          <span className="text-slate-400">➔</span>
+                          <span style={{ color: rentNotification.ownerColor }}>{rentNotification.ownerName}</span>
+                          <span className="text-amber-400 font-mono text-xs sm:text-sm font-extrabold ml-1">
+                            {rentNotification.amount}₺
+                          </span>
+                        </div>
+                        <span className="text-[8px] sm:text-[8.5px] text-slate-300 italic truncate block">
+                          {rentNotification.tileName} mülkü için
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Canlı Tapu Satın Alma / İhale Kazanma Bildirimi (Tur/Ev/Otel/Tapu Barının Hemen Altında) */}
-              {propertyAcquiredNotification && (propertyAcquiredNotification.playerId === (myPlayer?.id || myPlayerId)) && (
-                <div className="relative z-30 w-full max-w-xs sm:max-w-sm mx-auto my-1 pointer-events-auto animate-fadeIn">
-                  <div className="bg-gradient-to-r from-emerald-950/95 via-slate-900/95 to-amber-950/90 border-2 border-amber-400 shadow-[0_0_30px_rgba(245,158,11,0.6)] rounded-2xl px-3 sm:px-4 py-2 flex items-center justify-between gap-2.5 backdrop-blur-md">
-                    <div className="w-8 h-8 rounded-xl bg-amber-400/20 border border-amber-400/50 flex items-center justify-center text-lg flex-shrink-0">
-                      🏛️
+                {/* 3. TAPU SATIN ALMA / İHALE KAZANMA BİLDİRİMİ (Yerel Oyuncu İçin) */}
+                {propertyAcquiredNotification && (propertyAcquiredNotification.playerId === (myPlayer?.id || myPlayerId)) && (
+                  <div className="w-full max-w-xs sm:max-w-sm mx-auto pointer-events-auto animate-fadeIn">
+                    <div className="bg-gradient-to-r from-emerald-950/95 via-slate-900/95 to-amber-950/90 border-2 border-amber-400 shadow-[0_0_30px_rgba(245,158,11,0.6)] rounded-2xl px-3 sm:px-4 py-2 flex items-center justify-between gap-2.5 backdrop-blur-md">
+                      <div className="w-8 h-8 rounded-xl bg-amber-400/20 border border-amber-400/50 flex items-center justify-center text-lg flex-shrink-0">
+                        🏛️
+                      </div>
+                      <div className="min-w-0 flex-1 text-left leading-tight">
+                        <span className="text-[8.5px] font-black uppercase tracking-widest text-amber-400 flex items-center gap-1">
+                          <Sparkles className="w-2.5 h-2.5 text-amber-400 animate-spin" />
+                          TEBRİKLER! YENİ TAPU KAZANDINIZ
+                        </span>
+                        <h4 className="text-xs sm:text-sm font-black text-white truncate">
+                          {propertyAcquiredNotification.tileName}
+                        </h4>
+                        <p className="text-[10px] sm:text-xs text-slate-300 mt-0.5">
+                          {propertyAcquiredNotification.cost}₺ karşılığı tapu kasanıza eklendi.
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => setPropertyAcquiredNotification(null)}
+                        className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition cursor-pointer flex-shrink-0"
+                        title="Kapat"
+                      >
+                        ✕
+                      </button>
                     </div>
-                    <div className="min-w-0 flex-1 text-left leading-tight">
-                      <span className="text-[8.5px] font-black uppercase tracking-widest text-amber-400 flex items-center gap-1">
-                        <Sparkles className="w-2.5 h-2.5 text-amber-400 animate-spin" />
-                        TEBRİKLER! YENİ TAPU KAZANDINIZ
-                      </span>
-                      <h4 className="text-xs sm:text-sm font-black text-white truncate">
-                        {propertyAcquiredNotification.tileName}
-                      </h4>
-                      <p className="text-[10px] sm:text-xs text-slate-300 mt-0.5">
-                        {propertyAcquiredNotification.cost}₺ karşılığı tapu kasanıza eklendi.
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => setPropertyAcquiredNotification(null)}
-                      className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition cursor-pointer flex-shrink-0"
-                    >
-                      ✕
-                    </button>
                   </div>
-                </div>
-              )}
+                )}
 
+                {/* 4. DİĞER OYUNCUNUN ÇEKTİĞİ KART BİLDİRİMİ */}
+                {drawnCardForNonDrawer && (
+                  <div className="w-full max-w-xs sm:max-w-sm mx-auto pointer-events-auto animate-fadeIn">
+                    <NonDrawerCardAlert
+                      card={drawnCardForNonDrawer}
+                      onDismiss={handleAcknowledgeDrawnCard}
+                    />
+                  </div>
+                )}
+              </div>
 
-
-
-          {/* Merkez Kontrol Alanı (Zar & Eylemler - Tahtanın Tam Ortasında) */}
+          {/* Merkez Kontrol Alanı (Zar & Eylemler - Tahtanın Tam Ortasında, Asla Zıplamaz) */}
           <div className="relative z-20 w-full flex-1 flex flex-col items-center justify-center my-0.5 sm:my-1 min-h-0 overflow-y-auto custom-scrollbar">
             {React.isValidElement(centerControlsSlot)
               ? React.cloneElement(centerControlsSlot, {
                   myPlayerId: effectiveMyPlayerId,
                   isRolling: isDiceRolling || centerControlsSlot.props?.isRolling,
                   isMovingPawn: isMovingPawn || centerControlsSlot.props?.isMovingPawn || Boolean(activePlayer && activeIntervalsRef.current[activePlayer.id]),
-                  drawnCardForNonDrawer: (!isCardDrawer && gameState.drawnCard && !(isDiceRolling || isMovingPawn || centerControlsSlot.props?.isMovingPawn || Boolean(activePlayer && activeIntervalsRef.current[activePlayer.id])) && !dismissedCardKeysRef.current.has(String(gameState.drawnCard.instanceId || gameState.drawnCard.drawnAt || gameState.drawnCard.id)) && dismissedCardId !== (gameState.drawnCard.instanceId || gameState.drawnCard.id)) ? gameState.drawnCard : null,
+                  drawnCardForNonDrawer: null,
                   onDismissDrawnCard: handleAcknowledgeDrawnCard,
                   onTimeoutTurn: onTimeoutTurn || centerControlsSlot.props?.onTimeoutTurn
                 })
