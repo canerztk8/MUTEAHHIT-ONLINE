@@ -948,6 +948,18 @@ export function App() {
     };
   }, []);
 
+  // ─── Sohbet Mesajlarını Güvenli ve Tekil Olarak Ekle ─────────────────────────
+  const handleIncomingChat = useCallback((msg) => {
+    if (!msg) return;
+    setChatMessages((prev) => {
+      const msgId = msg.id || `${msg.senderName}_${msg.timestamp}_${msg.text}`;
+      if (prev.some((m) => (m.id && m.id === msgId) || (m.timestamp === msg.timestamp && m.senderName === msg.senderName && m.text === msg.text))) {
+        return prev;
+      }
+      return [...prev, msg];
+    });
+  }, []);
+
   // ─── Oda Oluşturma (Host) ─────────────────────────────────────────────────────
   /**
    * Yeni bir P2P odası oluşturur. Çağrıyı yapan kişi Host olur.
@@ -987,7 +999,7 @@ export function App() {
         } catch (_) {}
       },
       onState: handleIncomingState,
-      onChat: (msg) => setChatMessages(prev => [...prev, msg]),
+      onChat: handleIncomingChat,
       onPing: (p) => setPing(p),
       onError: (err) => {
         console.error('[App] Host error:', err);
@@ -1002,7 +1014,7 @@ export function App() {
 
     setNetwork(host);
     networkRef.current = host;
-  }, [handleIncomingState]);
+  }, [handleIncomingState, handleIncomingChat]);
 
   // ─── Odaya Katılma (Client) ───────────────────────────────────────────────────
   /**
@@ -1037,7 +1049,7 @@ export function App() {
         setIsSpectatorMode(Boolean(isSpec));
       },
       onState: handleIncomingState,
-      onChat: (msg) => setChatMessages(prev => [...prev, msg]),
+      onChat: handleIncomingChat,
       onPing: (p) => setPing(p),
       onKicked: (reason) => {
         alert(reason || 'Oda kurucusu tarafından lobiden atıldınız.');
@@ -1075,7 +1087,7 @@ export function App() {
             },
             onReady: () => setConnected(true),
             onState: handleIncomingState,
-            onChat: (msg) => setChatMessages(prev => [...prev, msg]),
+            onChat: handleIncomingChat,
             onPing: (p) => setPing(p),
             onError: (err) => setPeerError(err.type || err.message || 'Bağlantı hatası'),
           });
@@ -1093,7 +1105,7 @@ export function App() {
             onMyId: (peerId) => { setMyPlayerId(peerId); myPlayerIdRef.current = peerId; },
             onConnected: () => setConnected(true),
             onState: handleIncomingState,
-            onChat: (msg) => setChatMessages(prev => [...prev, msg]),
+            onChat: handleIncomingChat,
             onPing: (p) => setPing(p),
             onKicked: (reason) => { alert(reason); setGameState(null); },
             onHostDropped: () => { setConnected(false); setPeerError('HOST_DROPPED'); },
@@ -1122,7 +1134,7 @@ export function App() {
 
     setNetwork(client);
     networkRef.current = client;
-  }, [handleIncomingState]);
+  }, [handleIncomingState, handleIncomingChat]);
 
   // ─── Host F5 Otomatik Kurtarma Kalkanı (2 Dakika Grace Period) ────────────────
   // Host sayfayı yenilediğinde (F5), 2 dakika (120sn) içinde dönülmüşse oturumu

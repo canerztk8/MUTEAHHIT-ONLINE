@@ -449,6 +449,9 @@ export class HostPeerService {
     /** Çift kanal aksiyon tekilleştirme: tekrarlanan eylemleri engelle */
     this._processedActionIds = new Set();
 
+    /** Çift kanal sohbet tekilleştirme: tekrarlanan sohbet mesajlarını engelle */
+    this._processedChatIds = new Set();
+
     /** PeerJS conn.peer -> Game Player ID eşleme haritası */
     this._peerIdToPlayerId = new Map();
 
@@ -1170,11 +1173,22 @@ export class HostPeerService {
 
         // ─ Oyun Mekaniği ─
         case ACTION.ROLL_DICE: {
-          if (game.phase === 'TURN_ACTIONS' && game.canRollAgain) {
-            game.endTurn(effectiveSenderId);
+          // Resmi kural & Güvenlik: Yalnızca WAITING_ROLL aşamasında veya canRollAgain ile zar atılabilir.
+          // TILE_ACTION (arsa kararı), CARD_DRAWN veya AUCTION aşamasında kesinlikle zar atılamaz.
+          if (game.phase !== 'WAITING_ROLL') {
+            if (game.phase === 'TURN_ACTIONS' && game.canRollAgain) {
+              game.endTurn(effectiveSenderId);
+            } else {
+              console.warn('[HostPeerService] ROLL_DICE reddedildi: Mevcut faz zar atmaya uygun değil:', game.phase);
+              break;
+            }
           }
           const allowCustom = Boolean(game.isDevMode);
-          game.rollDice(effectiveSenderId, allowCustom ? payload?.dice : undefined, allowCustom ? payload?.toss : undefined);
+          const rollRes = game.rollDice(effectiveSenderId, allowCustom ? payload?.dice : undefined, allowCustom ? payload?.toss : undefined);
+          if (!rollRes?.success) {
+            console.warn('[HostPeerService] rollDice başarısız:', rollRes?.error);
+            break;
+          }
           this._broadcastToAll({
             type: MSG.EVENT,
             event: 'DICE_ROLL',
@@ -1185,12 +1199,18 @@ export class HostPeerService {
         }
 
         case ACTION.ROLL_AGAIN: {
+          // Resmi kural & Güvenlik: Tekrar zar atma YALNIZCA TURN_ACTIONS aşamasında ve canRollAgain true ise yapılabilir!
+          // Oyuncu arsa üzerindeyken (TILE_ACTION), önce arsayı almalı veya pas (açık artırma) geçmelidir!
+          if (game.phase !== 'TURN_ACTIONS' || !game.canRollAgain) {
+            console.warn('[HostPeerService] ROLL_AGAIN reddedildi: Mevcut faz TURN_ACTIONS ve canRollAgain değil:', game.phase, game.canRollAgain);
+            break;
+          }
           const allowCustom2 = Boolean(game.isDevMode);
-          if (game.phase === 'TURN_ACTIONS' && game.canRollAgain) {
-            game.endTurn(effectiveSenderId);
-            game.rollDice(effectiveSenderId, allowCustom2 ? payload?.dice : undefined, allowCustom2 ? payload?.toss : undefined);
-          } else {
-            game.rollDice(effectiveSenderId, allowCustom2 ? payload?.dice : undefined, allowCustom2 ? payload?.toss : undefined);
+          game.endTurn(effectiveSenderId);
+          const rollAgainRes = game.rollDice(effectiveSenderId, allowCustom2 ? payload?.dice : undefined, allowCustom2 ? payload?.toss : undefined);
+          if (!rollAgainRes?.success) {
+            console.warn('[HostPeerService] rollDice (again) başarısız:', rollAgainRes?.error);
+            break;
           }
           this._broadcastToAll({
             type: MSG.EVENT,
@@ -1418,7 +1438,7 @@ export class HostPeerService {
 
           const gameTime = game.formatGameElapsed ? game.formatGameElapsed(now) : '00:00';
           const chatMsg = {
-            id: Math.random().toString(36).substring(2, 9),
+            id: 'chat_' + now + '_' + Math.random().toString(36).substring(2, 9),
             senderName: sender ? sender.name : (spectator?.name ? `👁️ ${spectator.name}` : 'İzleyici'),
             senderColor: sender ? sender.color : '#38bdf8',
             text: cleanText,
@@ -1630,6 +1650,14 @@ export class HostPeerService {
   }
 
   _broadcastChat(message) {
+    if (!message) return;
+    const msgId = String(message.id || `${message.senderName}_${message.timestamp}_${message.text}`);
+    if (this._processedChatIds.has(msgId)) return;
+    this._processedChatIds.add(msgId);
+    if (this._processedChatIds.size > 200) {
+      const first = this._processedChatIds.values().next().value;
+      this._processedChatIds.delete(first);
+    }
     this._onChat(message); // Host'un kendi sohbet listesini güncelle
     const msg = createChatMessage(message);
     for (const conn of this._connections.values()) {
@@ -1943,6 +1971,7 @@ export class ClientPeerService {
     this._relay = null;
     this._isConnected = false;
     this._destroyed = false;
+    this._processedChatIds = new Set();
     this._initialConnectTimeout = null;
     this._relayReconnectTimeout = null;
     this._hasReceivedState = false;
@@ -2177,9 +2206,19 @@ export class ClientPeerService {
         }
         break;
 
-      case MSG.CHAT:
-        this._onChat(msg.message);
+      case MSG.CHAT: {
+        const chatMsg = msg.message;
+        if (!chatMsg) break;
+        const msgId = String(chatMsg.id || `${chatMsg.senderName}_${chatMsg.timestamp}_${chatMsg.text}`);
+        if (this._processedChatIds.has(msgId)) break;
+        this._processedChatIds.add(msgId);
+        if (this._processedChatIds.size > 200) {
+          const first = this._processedChatIds.values().next().value;
+          this._processedChatIds.delete(first);
+        }
+        this._onChat(chatMsg);
         break;
+      }
 
       case MSG.KICKED:
         this._onKicked(msg.reason || 'Oda kurucusu tarafından atıldınız.');

@@ -82,17 +82,13 @@ export function CenterDiceRoll({
     if (isTriggeringRef.current) return;
     isTriggeringRef.current = true;
 
-    if (phase === 'TURN_ACTIONS' && canRollAgain) {
-      onRollAgain?.();
-    } else {
-      onRollDice?.();
-    }
+    onRollDice?.();
 
     setTimeout(() => {
       isTriggeringRef.current = false;
       setIsLocalShaking(false);
     }, 500);
-  }, [phase, canRollAgain, onRollAgain, onRollDice]);
+  }, [onRollDice]);
 
   const handleMobileShakeAndRoll = useCallback((e) => {
     if (e?.stopPropagation) e.stopPropagation();
@@ -228,14 +224,12 @@ export function CenterDiceRoll({
     );
   }
 
-  // 2. Durum: Sıra bende ve zar atılması bekleniyor (WAITING_ROLL veya canRollAgain)
-  const showRollButton = isMyTurn && !isPawnBusy && (
-    phase === 'WAITING_ROLL' || (phase === 'TURN_ACTIONS' && canRollAgain)
-  );
+  // 2. Durum: Sıra bende ve ilk zar atışı bekleniyor (Yalnızca WAITING_ROLL fazında)
+  // NOT: Çift zar atıldığında tekrar zar atma işlemi alt aksiyon yuvasındaki tekil TurnEndControl tarafından yönetilir.
+  const showRollButton = isMyTurn && !isPawnBusy && phase === 'WAITING_ROLL';
 
   if (showRollButton) {
     const isJailRoll = activePlayer?.inJail && phase === 'WAITING_ROLL';
-    const isAgain = phase === 'TURN_ACTIONS' && canRollAgain;
 
     return (
       <div className="w-full flex flex-col items-center gap-1.5 animate-fadeIn">
@@ -258,8 +252,6 @@ export function CenterDiceRoll({
             <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider">
               {isJailRoll
                 ? '🎲 ÇİFT ZAR DENE'
-                : isAgain
-                ? '🎲 TEKRAR ZAR AT!'
                 : '📱 TELEFONU SALLA VEYA DOKUN'}
             </span>
             <span className="text-[9px] text-amber-950/80 font-medium">
@@ -278,8 +270,6 @@ export function CenterDiceRoll({
           <span>
             {isJailRoll
               ? '🎲 ÇİFT ZAR DENE (KODES)'
-              : isAgain
-              ? '🎲 TEKRAR ZAR AT!'
               : '🎲 ZAR AT'}
           </span>
         </button>

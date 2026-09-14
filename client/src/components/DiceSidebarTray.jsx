@@ -48,7 +48,14 @@ export function DiceSidebarTray({
     gameState?.canRollAgain &&
     (activePlayer?.money >= 0)
   );
-  const canRollAny = Boolean((canRoll || isRollAgain) && !gameState?.isPaused);
+  const canRollAny = Boolean(
+    !gameState?.isPaused &&
+    !isRollingLocal &&
+    (
+      (canRoll && gameState?.phase === 'WAITING_ROLL') ||
+      isRollAgain
+    )
+  );
 
   // Ses Seviyesi Slider Menüsü State'i
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
@@ -546,7 +553,7 @@ export function DiceSidebarTray({
               <Sparkles className="w-4 h-4 text-slate-950 animate-spin-slow" />
               <span>ÇİFT ATTIN! TEKRAR ZAR AT</span>
             </button>
-          ) : canRoll ? (
+          ) : (canRoll && gameState?.phase === 'WAITING_ROLL') ? (
             <button
               onClick={handleManualRoll}
               className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-400 hover:brightness-110 active:scale-95 text-slate-950 font-space font-extrabold text-xs sm:text-sm tracking-wide border border-amber-300 ring-4 ring-amber-400/80 animate-dice-glow flex items-center justify-center gap-2 cursor-pointer transition-all uppercase"

@@ -2053,12 +2053,7 @@ export class MonopolyGame {
     }
 
     if (releasedProps.length > 0) {
-      this.addLog(`📢 ${player.name} oyuncusunun iflasıyla sahipsiz kalan ${releasedProps.length} tapu banka yerine açık artırmaya açıldı!`, 'buy');
-      if (!this.auction && this.phase !== 'AUCTION') {
-        // En değerli tapuyu derhal açık artırmaya çıkar
-        releasedProps.sort((a, b) => (b.cost || 0) - (a.cost || 0));
-        this.startAuction(releasedProps[0], 'bankruptcy', player);
-      }
+      this.addLog(`📢 ${player.name} oyuncusunun iflasıyla sahipsiz kalan ${releasedProps.length} tapu ipoteksiz olarak bankaya (hazineye) devredildi.`, 'info');
     }
 
     const winner = this.checkWinner();
@@ -2148,6 +2143,9 @@ export class MonopolyGame {
   }
 
   checkBankruptcy(player, debtAmount, creditorId) {
+    if (creditorId) {
+      player.lastCreditorId = creditorId;
+    }
     if (player.money >= 0) return false;
 
     let maxLiquidity = player.money;

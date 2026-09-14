@@ -7,6 +7,7 @@ import { JailActionControl } from './controls/JailActionControl.jsx';
 import { PropertyBuyActionControl } from './controls/PropertyBuyActionControl.jsx';
 import { TurnEndControl } from './controls/TurnEndControl.jsx';
 import { CenterDiceRoll } from './controls/CenterDiceRoll.jsx';
+import { BOARD_TILES } from '../game/boardData.js';
 
 export function ActionControls({
   gameState,
@@ -62,12 +63,14 @@ export function ActionControls({
 
 
 
+  const activeTile = currentTile || (activePlayer?.position !== undefined ? BOARD_TILES[activePlayer.position] : null);
+
   // Etkileşimli bir aksiyon gerekiyor mu? (Piyon yürürken veya zar atılırken aksiyon kutuları açılmaz)
   const hasInteractiveAction = isMyTurn && !isPawnBusy && (
     (phase === 'WAITING_ROLL') ||
     (canRollAgain && phase === 'TURN_ACTIONS') ||
     isDebt ||
-    (phase === 'TILE_ACTION' && currentTile) ||
+    (phase === 'TILE_ACTION' && activeTile) ||
     (phase === 'TURN_ACTIONS')
   );
 
@@ -131,9 +134,9 @@ export function ActionControls({
           )}
 
           {/* Mülk Satın Alma Aşaması */}
-          {phase === 'TILE_ACTION' && currentTile && !isPawnBusy && (
+          {phase === 'TILE_ACTION' && activeTile && !isPawnBusy && (
             <PropertyBuyActionControl
-              currentTile={currentTile}
+              currentTile={activeTile}
               activePlayer={activePlayer}
               players={players}
               onBuyProperty={onBuyProperty}
