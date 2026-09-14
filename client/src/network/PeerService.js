@@ -1807,11 +1807,12 @@ export class HostPeerService {
               this._triggerBotIfNeeded();
             }
           }
-          // Bot watchdog: 10 saniye takılı kalırsa zorla ilerlet
+          // Bot watchdog: Yalnızca bot gerçekten kilitlenirse / donarsa zorla ilerlet (en az 35s tolerans; normal animasyon ve çift zarları kesme)
           if (active?.isBot && game.phase !== 'AUCTION') {
+            const botTimeout = Math.max(35, Math.floor((game.turnTimeLimit || 75) / 2));
             const elapsed = (Date.now() - game.turnStartTime) / 1000;
-            if (elapsed > 10) {
-              console.warn(`[WATCHDOG] Bot ${active.name} ${elapsed.toFixed(0)}s takılı — kurtarılıyor`);
+            if (elapsed > botTimeout) {
+              console.warn(`[WATCHDOG] Bot ${active.name} ${elapsed.toFixed(0)}s takılı (limit: ${botTimeout}s) — kurtarılıyor`);
               game.fastForwardBotTurn();
               this._broadcastState();
               this._triggerBotIfNeeded();

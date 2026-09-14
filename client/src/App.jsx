@@ -451,9 +451,10 @@ export function App() {
   const pendingPlayerPositionsRef = useRef({});
 
   // Olay günlüğünün piyon kareye varmadan erken ifşa olmasını önleyen tamponlama
-  const [displayedLogs, setDisplayedLogs] = useState([]);
+  const [displayedLogs, setDisplayedLogs] = useState(null);
   const pendingLogsRef = useRef(null);
   const pendingLogsTimeoutRef = useRef(null);
+  const hasPawnMovedRef = useRef(false);
 
   // Mobil Çekmece / Modal Menüsü (null | 'deeds' | 'chat')
   const [mobileDrawer, setMobileDrawer] = useState(null);
@@ -557,11 +558,12 @@ export function App() {
     }
 
     // Bekleyen olay günlüklerini derhal serbest bırak
+    hasPawnMovedRef.current = false;
     if (pendingLogsTimeoutRef.current) {
       clearTimeout(pendingLogsTimeoutRef.current);
       pendingLogsTimeoutRef.current = null;
     }
-    const currentLogs = latestStateRef.current?.logs || pendingLogsRef.current;
+    const currentLogs = latestStateRef.current?.logs || pendingLogsRef.current || gameState?.logs;
     if (currentLogs) {
       setDisplayedLogs(currentLogs);
     }
@@ -614,6 +616,7 @@ export function App() {
         return oldP && oldP.position !== p.position;
       })
     );
+    hasPawnMovedRef.current = hasPawnMoved;
 
     // Yeni zar atışı tespiti (Bot veya uzak oyuncu attığında da isDiceRolling ve isPawnMoving derhal true yapılarak erken piyon yürüyüşü ve erken bakiye/kart açılması engellenir)
     const isNewDiceRoll = Boolean(
@@ -627,6 +630,16 @@ export function App() {
       setIsDiceRolling(false);
       isDiceRollingRef.current = false;
       diceRollActiveUntilRef.current = 0;
+      hasPawnMovedRef.current = false;
+      if (pendingLogsTimeoutRef.current) {
+        clearTimeout(pendingLogsTimeoutRef.current);
+        pendingLogsTimeoutRef.current = null;
+      }
+      const curLogs = latestStateRef.current?.logs || pendingLogsRef.current || gameState?.logs;
+      if (curLogs) {
+        setDisplayedLogs(curLogs);
+      }
+      pendingLogsRef.current = null;
       const curPlayers = latestStateRef.current?.players || [];
       if (curPlayers.length > 0) {
         setDisplayedBalances((prev) => {
@@ -709,7 +722,7 @@ export function App() {
       (state.lastRentPayment && state.lastRentPayment.id !== lastSeenRentIdRef.current)
     );
 
-    // Olay günlüğü tamponlama: Piyon yürürken varış/kira/kart spoilerlarını engelle
+    // Olay günlüğü tamponlama: Zarlar atılırken ve piyon adımlarken olayların erkenden sızmasını engelle
     if (isMovementTurnInProgress && state.logs && state.logs.length > 0) {
       let lastDiceIdx = -1;
       for (let i = state.logs.length - 1; i >= 0; i--) {
@@ -720,16 +733,35 @@ export function App() {
       }
       pendingLogsRef.current = state.logs;
       if (pendingLogsTimeoutRef.current) clearTimeout(pendingLogsTimeoutRef.current);
+      // Güvenlik zaman aşımı: Eğer piyon varış animasyonu herhangi bir sebeple tetiklenmezse (ör. sekme arka planda),
+      // 15 saniye sonra bekleyen günlükleri güvenle serbest bırak
       pendingLogsTimeoutRef.current = setTimeout(() => {
         const targetLogs = latestStateRef.current?.logs || pendingLogsRef.current;
         if (targetLogs) {
           setDisplayedLogs(targetLogs);
         }
         pendingLogsRef.current = null;
-      }, 2200);
+      }, 15000);
 
-      if (lastDiceIdx !== -1) {
-        setDisplayedLogs(state.logs.slice(0, lastDiceIdx + 1));
+      if (isDiceRollingRef.current || isNewDiceRoll) {
+        // Zarlar havada yuvarlanırken zar sonucunu veya sonrasını ASLA gösterme!
+        // Yalnızca bu zar atışından önceki geçmiş günlükleri göster:
+        if (lastDiceIdx !== -1) {
+          setDisplayedLogs(state.logs.slice(0, lastDiceIdx));
+        }
+      } else if (isPawnMovingRef.current) {
+        // Zarlar durdu ama piyon henüz adımlıyor: Zar atışını (ve varsa peşindeki çift zar kaydını) göster,
+        // ancak varış, kira, vergi, mülk alımı gibi sonraki günlükleri piyon hedefe inene dek tamponda tut!
+        if (lastDiceIdx !== -1) {
+          let revealUpTo = lastDiceIdx;
+          if (lastDiceIdx + 1 < state.logs.length) {
+            const nextLog = state.logs[lastDiceIdx + 1];
+            if (nextLog?.text && nextLog.text.includes('çift attı')) {
+              revealUpTo = lastDiceIdx + 1;
+            }
+          }
+          setDisplayedLogs(state.logs.slice(0, revealUpTo + 1));
+        }
       }
     } else {
       if (pendingLogsTimeoutRef.current) {
@@ -1374,6 +1406,7 @@ export function App() {
       setNetwork(null);
       setConnected(false);
       setGameState(null);
+      setDisplayedLogs(null);
       setPeerError(null);
       setPing(null);
       setIsSpectatorMode(false);
@@ -1406,6 +1439,7 @@ export function App() {
     setIsSpectatorMode(false);
     setPeerError(null);
     setGameState(null);
+    setDisplayedLogs(null);
     setRoomNotFound(null);
 
     // Davet linki (?room=...) ile açıldıysa doğrudan temiz URL'e yönlendirerek kesin iptal sağla
@@ -1847,15 +1881,46 @@ export function App() {
                   isPawnMovingRef.current = true;
                 }}
                 onRollSettled={() => {
-                  const remaining = Math.max(0, (diceRollActiveUntilRef.current || 0) - Date.now());
-                  if (remaining > 0) {
-                    setTimeout(() => {
-                      setIsDiceRolling(false);
-                      isDiceRollingRef.current = false;
-                    }, remaining);
+                  setIsDiceRolling(false);
+                  isDiceRollingRef.current = false;
+                  diceRollActiveUntilRef.current = 0;
+                  if (diceRollingFallbackTimeoutRef.current) {
+                    clearTimeout(diceRollingFallbackTimeoutRef.current);
+                    diceRollingFallbackTimeoutRef.current = null;
+                  }
+
+                  const currentLogs = latestStateRef.current?.logs || pendingLogsRef.current || gameState?.logs || [];
+                  let lastDiceIdx = -1;
+                  for (let i = currentLogs.length - 1; i >= 0; i--) {
+                    if (currentLogs[i].type === 'dice') {
+                      lastDiceIdx = i;
+                      break;
+                    }
+                  }
+
+                  // Eğer piyonun konumu değişmediyse (örneğin kodes içinde kalındı veya hareket yoksa):
+                  if (!hasPawnMovedRef.current) {
+                    setIsPawnMoving(false);
+                    isPawnMovingRef.current = false;
+                    if (pendingLogsTimeoutRef.current) {
+                      clearTimeout(pendingLogsTimeoutRef.current);
+                      pendingLogsTimeoutRef.current = null;
+                    }
+                    setDisplayedLogs(currentLogs);
+                    pendingLogsRef.current = null;
                   } else {
-                    setIsDiceRolling(false);
-                    isDiceRollingRef.current = false;
+                    // Piyon adımlamaya başlayacak: Şimdi zar atışı günlüğünü (ve varsa hemen ardındaki çift zar kaydını) aç,
+                    // ancak varış, kira, vergi, mülk alımı gibi sonraki günlükleri piyon hedefe varana dek tamponda tut!
+                    if (lastDiceIdx !== -1) {
+                      let revealUpTo = lastDiceIdx;
+                      if (lastDiceIdx + 1 < currentLogs.length) {
+                        const nextLog = currentLogs[lastDiceIdx + 1];
+                        if (nextLog?.text && nextLog.text.includes('çift attı')) {
+                          revealUpTo = lastDiceIdx + 1;
+                        }
+                      }
+                      setDisplayedLogs(currentLogs.slice(0, revealUpTo + 1));
+                    }
                   }
                 }}
               />
@@ -1866,7 +1931,7 @@ export function App() {
           <div className="flex-[3] h-[30%] min-h-[140px] flex-1 min-h-0 flex flex-col overflow-hidden">
             <ErrorBoundary name="Olaylar ve Canlı Sohbet">
               <ChatAndLog
-                logs={displayedLogs.length > 0 ? displayedLogs : (gameState?.logs || [])}
+                logs={displayedLogs !== null ? displayedLogs : (gameState?.logs || [])}
                 messages={chatMessages}
                 players={gameState?.players}
                 onSendMessage={handleSendMessage}
@@ -1961,7 +2026,7 @@ export function App() {
             <div className="flex-1 min-h-0 overflow-hidden">
               <ErrorBoundary name="Mobil Sohbet ve Olaylar">
                 <ChatAndLog
-                  logs={displayedLogs.length > 0 ? displayedLogs : (gameState?.logs || [])}
+                  logs={displayedLogs !== null ? displayedLogs : (gameState?.logs || [])}
                   messages={chatMessages}
                   players={gameState?.players}
                   onSendMessage={handleSendMessage}

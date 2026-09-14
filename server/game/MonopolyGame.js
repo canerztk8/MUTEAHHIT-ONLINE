@@ -597,6 +597,7 @@ export class MonopolyGame {
     this.addLog(`${active.name} zar attı: [ ${d1} - ${d2} ] (${sum})`, 'dice');
 
     if (isDoubles) {
+      this.turnStartTime = Date.now();
       this.stats.doublesRolled[active.id] = (this.stats.doublesRolled[active.id] || 0) + 1;
     }
 
