@@ -1953,6 +1953,7 @@ export function App() {
                   players={gameState?.players}
                   onSendMessage={handleSendMessage}
                   embedded={true}
+                  initialTab="chat"
                   gameStartTime={gameState?.gameStartTime}
                   totalPausedDuration={gameState?.totalPausedDuration}
                   roomCode={gameState?.roomCode || localStorage.getItem('muteahhit_room_code') || ''}

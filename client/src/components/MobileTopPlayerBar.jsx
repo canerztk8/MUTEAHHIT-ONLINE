@@ -88,13 +88,17 @@ export function MobileTopPlayerBar({
           <button
             type="button"
             onClick={onOpenChat}
-            className="relative flex items-center gap-1 px-2 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[10px] font-bold font-jetbrains cursor-pointer active:scale-95 transition"
+            className={`relative flex items-center gap-1 px-2 py-1 rounded-xl text-[10px] font-bold font-jetbrains cursor-pointer active:scale-95 transition shadow-xs ${
+              unreadChatCount > 0
+                ? 'bg-blue-600 hover:bg-blue-500 text-white border-2 border-blue-400 shadow-[0_0_14px_rgba(59,130,246,0.7)] animate-pulse'
+                : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
+            }`}
             title="Sohbet ve Oyun Günlüğü"
           >
-            <MessageSquare className="w-3 h-3 text-amber-400" />
+            <MessageSquare className={`w-3 h-3 ${unreadChatCount > 0 ? 'text-white' : 'text-amber-400'}`} />
             <span className="hidden sm:inline">Sohbet</span>
             {unreadChatCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full animate-ping" />
+              <span className="w-2 h-2 bg-white rounded-full animate-ping ml-0.5" />
             )}
           </button>
         </div>

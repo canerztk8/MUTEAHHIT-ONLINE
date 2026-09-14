@@ -89,15 +89,26 @@ function ChatAndLogBase({
   roomCode = '',
   myPlayerId = '',
   myPlayerName = '',
-  isDarkMode = false
+  isDarkMode = false,
+  initialTab = 'log'
 }) {
   // Varsayılan olarak minimize (kapalı/kompakt) başlar
   const [isExpanded, setIsExpanded] = useState(false);
-  const [activeTab, setActiveTab] = useState('log'); // 'log' | 'chat'
+  const [activeTab, setActiveTab] = useState(initialTab || 'log'); // 'log' | 'chat'
   const [selectedPlayerFilter, setSelectedPlayerFilter] = useState('ALL');
   const [inputMsg, setInputMsg] = useState('');
+  const [lastReadMessageCount, setLastReadMessageCount] = useState(messages.length);
   const logEndRef = useRef(null);
   const chatEndRef = useRef(null);
+
+  // Eğer kullanıcı 'chat' sekmesindeyse veya modal açıksa okundu sayısını güncelle
+  useEffect(() => {
+    if (activeTab === 'chat' || isExpanded) {
+      setLastReadMessageCount(messages.length);
+    }
+  }, [activeTab, isExpanded, messages.length]);
+
+  const hasUnreadChat = activeTab !== 'chat' && messages.length > lastReadMessageCount;
 
   // Son 3 olay ve tersine çevrilmiş günlükler (useMemo ile bellek & GC optimizasyonu)
   const reversedLogs = useMemo(() => [...logs].reverse(), [logs]);
@@ -156,19 +167,27 @@ function ChatAndLogBase({
                 }`}
               >
                 <ScrollText className="w-3 h-3" />
-                <span>Olaylar ({logs.length})</span>
+                <span>Olaylar</span>
               </button>
               <button
                 type="button"
-                onClick={() => setActiveTab('chat')}
+                onClick={() => {
+                  setActiveTab('chat');
+                  setLastReadMessageCount(messages.length);
+                }}
                 className={`py-1 px-2.5 rounded-lg text-[11px] font-bold transition flex items-center gap-1 cursor-pointer ${
                   activeTab === 'chat'
                     ? 'bg-amber-400 text-slate-950 font-black shadow-xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-200/60 dark:hover:bg-slate-800'
+                    : hasUnreadChat
+                      ? 'bg-blue-600 hover:bg-blue-500 text-white border border-blue-400 shadow-[0_0_12px_rgba(59,130,246,0.6)] animate-pulse'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-200/60 dark:hover:bg-slate-800'
                 }`}
               >
-                <MessageSquare className="w-3 h-3" />
-                <span>Sohbet ({messages.length})</span>
+                <MessageSquare className={`w-3 h-3 ${hasUnreadChat && activeTab !== 'chat' ? 'text-white' : ''}`} />
+                <span>Sohbet</span>
+                {hasUnreadChat && activeTab !== 'chat' && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping ml-0.5" />
+                )}
               </button>
             </div>
 
@@ -347,18 +366,26 @@ function ChatAndLogBase({
                     }`}
                   >
                     <ScrollText className="w-3.5 h-3.5" />
-                    <span>Tüm Olaylar ({logs.length})</span>
+                    <span>Tüm Olaylar</span>
                   </button>
                   <button
-                    onClick={() => setActiveTab('chat')}
+                    onClick={() => {
+                      setActiveTab('chat');
+                      setLastReadMessageCount(messages.length);
+                    }}
                     className={`py-1.5 px-3 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                       activeTab === 'chat'
                         ? 'bg-amber-400 text-slate-950 font-black shadow-xs'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800'
+                        : hasUnreadChat
+                          ? 'bg-blue-600 hover:bg-blue-500 text-white border border-blue-400 shadow-[0_0_12px_rgba(59,130,246,0.6)] animate-pulse'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800'
                     }`}
                   >
-                    <MessageSquare className="w-3.5 h-3.5" />
-                    <span>Canlı Sohbet ({messages.length})</span>
+                    <MessageSquare className={`w-3.5 h-3.5 ${hasUnreadChat && activeTab !== 'chat' ? 'text-white' : ''}`} />
+                    <span>Canlı Sohbet</span>
+                    {hasUnreadChat && activeTab !== 'chat' && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping ml-0.5" />
+                    )}
                   </button>
                 </div>
 
@@ -377,7 +404,6 @@ function ChatAndLogBase({
                   <div>
                     <div className="text-[11px] text-slate-500 dark:text-slate-400 pb-2 mb-2 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between font-bold">
                       <span>Olay Geçmişi (En yeni olaylar en üsttedir)</span>
-                      <span className="font-jetbrains">Toplam {logs.length} olay</span>
                     </div>
 
                     {/* Oyuncu Filtreleme Çipleri */}
@@ -391,7 +417,7 @@ function ChatAndLogBase({
                               : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
                           }`}
                         >
-                          Tümü ({logs.length})
+                          Tümü
                         </button>
                         {players.map((p) => {
                           const count = reversedLogs.filter(l => l.text.includes(p.name)).length;
@@ -539,8 +565,12 @@ function ChatAndLogBase({
               <span>Olaylar & Sohbet</span>
             </h3>
             {messages.length > 0 && (
-              <span className="text-[10px] bg-indigo-50 text-indigo-800 border border-indigo-200 px-1.5 py-0.2 rounded-full font-bold flex items-center gap-0.5 font-jetbrains">
-                <MessageSquare className="w-2.5 h-2.5 text-indigo-600" />
+              <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold flex items-center gap-0.5 font-jetbrains ${
+                hasUnreadChat
+                  ? 'bg-blue-600 text-white border border-blue-400 animate-pulse'
+                  : 'bg-indigo-50 text-indigo-800 border border-indigo-200'
+              }`}>
+                <MessageSquare className={`w-2.5 h-2.5 ${hasUnreadChat ? 'text-white' : 'text-indigo-600'}`} />
                 <span>{messages.length}</span>
               </span>
             )}
@@ -551,7 +581,7 @@ function ChatAndLogBase({
               </span>
             )}
           </div>
-          <div className="flex items-center gap-1 text-[11px] font-bold text-indigo-600 group-hover:text-indigo-800 font-space">
+          <div className={`flex items-center gap-1 text-[11px] font-bold font-space ${hasUnreadChat ? 'text-blue-600 dark:text-blue-400 animate-pulse font-black' : 'text-indigo-600 group-hover:text-indigo-800'}`}>
             <span>Aç & Sohbet Et</span>
             <Maximize2 className="w-3.5 h-3.5 transition-transform group-hover:scale-110" />
           </div>
@@ -616,18 +646,26 @@ function ChatAndLogBase({
                   }`}
                 >
                   <ScrollText className="w-3.5 h-3.5" />
-                  <span>Tüm Olaylar ({logs.length})</span>
+                  <span>Tüm Olaylar</span>
                 </button>
                 <button
-                  onClick={() => setActiveTab('chat')}
+                  onClick={() => {
+                    setActiveTab('chat');
+                    setLastReadMessageCount(messages.length);
+                  }}
                   className={`py-1.5 px-3 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                     activeTab === 'chat'
                       ? 'bg-amber-400 text-slate-950 font-black shadow-xs'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800'
+                      : hasUnreadChat
+                        ? 'bg-blue-600 hover:bg-blue-500 text-white border border-blue-400 shadow-[0_0_12px_rgba(59,130,246,0.6)] animate-pulse'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
                 >
-                  <MessageSquare className="w-3.5 h-3.5" />
-                  <span>Canlı Sohbet ({messages.length})</span>
+                  <MessageSquare className={`w-3.5 h-3.5 ${hasUnreadChat && activeTab !== 'chat' ? 'text-white' : ''}`} />
+                  <span>Canlı Sohbet</span>
+                  {hasUnreadChat && activeTab !== 'chat' && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping ml-0.5" />
+                  )}
                 </button>
               </div>
 
@@ -646,7 +684,6 @@ function ChatAndLogBase({
                 <div>
                   <div className="text-[11px] text-slate-500 dark:text-slate-400 pb-2 mb-2 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between font-bold">
                     <span>Olay Geçmişi (En yeni olaylar en üsttedir)</span>
-                    <span className="font-jetbrains">Toplam {logs.length} olay</span>
                   </div>
 
                   {/* Oyuncu Filtreleme Çipleri */}
@@ -660,7 +697,7 @@ function ChatAndLogBase({
                             : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
                         }`}
                       >
-                        Tümü ({logs.length})
+                        Tümü
                       </button>
                       {players.map((p) => {
                         const count = reversedLogs.filter(l => l.text.includes(p.name)).length;
