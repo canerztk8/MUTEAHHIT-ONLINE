@@ -437,23 +437,18 @@ const TileCell = React.memo(function TileCell({
         </div>
       )}
 
-      {/* İpotek Damgası (2 Satırlı: Üstte '🔒 İPOTEK', Altta Oyuncu Renginde İsim) */}
+      {/* İpotek Damgası (45 Derece Eğimli, Kırmızı Harflerle 'İPOTEK') */}
       {propState && propState.mortgaged && (
-        <div className="absolute inset-0 bg-rose-950/75 flex flex-col items-center justify-center z-20 backdrop-blur-[1px] p-1 pointer-events-none select-none">
-          <div className="flex flex-col items-center gap-0.5 max-w-[96%]">
-            <span className="text-[7px] sm:text-[8px] md:text-[9px] font-space font-black text-rose-100 uppercase tracking-wider border border-rose-400/90 px-1.5 py-0.5 rounded-md bg-rose-900/95 shadow-md text-center leading-none">
-              🔒 İPOTEK
-            </span>
-            {owner?.name && (
-              <span
-                className="text-[6.5px] sm:text-[7.5px] md:text-[8px] font-space font-black tracking-tight truncate max-w-full text-center px-1 py-0.5 rounded bg-black/75 border border-white/15 drop-shadow leading-none mt-0.5"
-                style={{ color: owner.color || '#f43f5e' }}
-                title={`İpotek Sahibi: ${owner.name}`}
-              >
-                {owner.name}
-              </span>
-            )}
-          </div>
+        <div
+          className={`absolute inset-x-0 top-0 ${
+            canBeOwned
+              ? (isSideTile ? 'bottom-[12px] sm:bottom-[14px]' : 'bottom-[14px] sm:bottom-[16px]')
+              : 'bottom-0'
+          } bg-rose-950/65 flex items-center justify-center z-20 backdrop-blur-[0.5px] pointer-events-none select-none overflow-hidden`}
+        >
+          <span className="text-[8px] sm:text-[9px] md:text-[10px] font-space font-black text-red-500 uppercase tracking-widest -rotate-45 border border-red-500/90 px-1.5 py-0.5 rounded bg-black/80 shadow-md text-center leading-none select-none">
+            İPOTEK
+          </span>
         </div>
       )}
 
@@ -515,7 +510,7 @@ const TileCell = React.memo(function TileCell({
             isSideTile ? 'h-[12px] sm:h-[14px]' : 'h-[14px] sm:h-[16px]'
           } border-t ${
             isDarkMode ? 'border-slate-800' : 'border-slate-300/80'
-          } flex items-center justify-center px-0.5 flex-shrink-0 z-10 overflow-hidden relative`}
+          } flex items-center justify-center px-0.5 flex-shrink-0 z-30 overflow-hidden relative`}
           style={{
             backgroundColor: owner ? `${owner.color}${isDarkMode ? '26' : '18'}` : (isDarkMode ? '#080d1a' : '#F1F5F9'),
             borderBottom: owner ? `2px solid ${owner.color}` : 'none'
