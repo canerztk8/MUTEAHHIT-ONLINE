@@ -1937,6 +1937,7 @@ export function App() {
               tile={selectedTileModal}
               gameState={gameState}
               myPlayerId={effectiveMyPlayerId}
+              isDarkMode={isDarkMode}
               onClose={() => setSelectedTileModal(null)}
               onBuildHouse={handleBuildHouse}
               onSellHouse={handleSellHouse}

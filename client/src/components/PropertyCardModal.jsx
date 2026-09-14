@@ -113,6 +113,7 @@ export function PropertyCardModal({
   tile,
   gameState,
   myPlayerId,
+  isDarkMode,
   onClose,
   onBuildHouse,
   onSellHouse,
@@ -235,7 +236,7 @@ export function PropertyCardModal({
     const info = getSpecialTileInfo(tile);
     return (
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/80 backdrop-blur-md animate-fadeIn [perspective:1200px]"
+        className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-slate-900/60 dark:bg-black/80 backdrop-blur-sm animate-fadeIn [perspective:1200px]"
         onClick={(e) => {
           if (e.target === e.currentTarget) onClose();
         }}
@@ -248,7 +249,7 @@ export function PropertyCardModal({
             transform: `perspective(1000px) rotateX(${tilt.rotateX}deg) rotateY(${tilt.rotateY}deg) scale3d(${tilt.isHovering ? 1.008 : 1}, ${tilt.isHovering ? 1.008 : 1}, 1)`,
             transition: tilt.isHovering ? 'transform 0.12s ease-out' : 'transform 0.5s cubic-bezier(0.23, 1, 0.32, 1)'
           }}
-          className="relative w-full max-w-sm bg-slate-900 border-2 border-slate-700/80 rounded-3xl shadow-[0_25px_60px_rgba(0,0,0,0.85)] overflow-hidden flex flex-col will-change-transform select-none max-h-[90vh] overflow-y-auto custom-scrollbar"
+          className="relative w-full max-w-sm bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700/80 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.2)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.85)] overflow-hidden flex flex-col will-change-transform select-none max-h-[90vh] overflow-y-auto custom-scrollbar"
         >
           {/* Specular Radial Gradient */}
           <div
@@ -264,7 +265,7 @@ export function PropertyCardModal({
           {/* Kapat Butonu */}
           <button
             onClick={onClose}
-            className="absolute top-3 right-3 z-40 w-8 h-8 rounded-full bg-slate-950/80 hover:bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center transition border border-white/20 shadow-md cursor-pointer"
+            className="absolute top-3 right-3 z-40 w-8 h-8 rounded-full bg-slate-900/60 hover:bg-slate-900 text-white dark:bg-slate-950/80 dark:hover:bg-slate-800 dark:text-slate-300 dark:hover:text-white flex items-center justify-center transition border border-white/20 shadow-md cursor-pointer"
             title="Kapat"
           >
             <X className="w-4 h-4" />
@@ -290,7 +291,7 @@ export function PropertyCardModal({
           </div>
 
           {/* Fotoğraf / Görsel */}
-          <div className="relative w-full h-32 sm:h-36 bg-slate-950 flex-shrink-0 overflow-hidden border-b border-slate-800 flex items-center justify-center">
+          <div className="relative w-full h-32 sm:h-36 bg-slate-100 dark:bg-slate-950 flex-shrink-0 overflow-hidden border-b border-slate-200 dark:border-slate-800 flex items-center justify-center">
             {tile.image ? (
               <img
                 src={tile.image}
@@ -303,7 +304,7 @@ export function PropertyCardModal({
                 {info.icon || tile.icon || '📍'}
               </div>
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
             <div className="absolute bottom-2 left-3 right-3 flex items-center justify-between pointer-events-none">
               <span className="text-[10px] font-black text-white px-2 py-0.5 rounded-md bg-black/60 border border-white/20 backdrop-blur-sm font-space">
                 {info.category}
@@ -321,24 +322,24 @@ export function PropertyCardModal({
           </div>
 
           {/* İçerik */}
-          <div className="p-4 sm:p-5 space-y-3 text-xs flex-1">
+          <div className="p-4 sm:p-5 space-y-3 text-xs flex-1 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">
             {/* Özet Kutusu */}
-            <div className="p-3 rounded-2xl bg-slate-800/80 border border-slate-700/80 flex items-start gap-2.5">
+            <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 flex items-start gap-2.5">
               <span className="text-xl flex-shrink-0">{info.icon}</span>
-              <p className="text-slate-200 text-xs leading-relaxed font-medium">
+              <p className="text-slate-700 dark:text-slate-200 text-xs leading-relaxed font-medium">
                 {info.summary}
               </p>
             </div>
 
             {/* Kurallar & İşleyiş */}
-            <div className="space-y-2 border border-slate-800 rounded-2xl p-3 bg-slate-950/60">
-              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block font-space">
+            <div className="space-y-2 border border-slate-200 dark:border-slate-800 rounded-2xl p-3 bg-slate-50/80 dark:bg-slate-950/60">
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 block font-space">
                 📋 KURAL VE İŞLEYİŞ
               </span>
-              <ul className="space-y-1.5 text-slate-300 text-[11px] leading-snug">
+              <ul className="space-y-1.5 text-slate-700 dark:text-slate-300 text-[11px] leading-snug">
                 {info.rules.map((rule, idx) => (
                   <li key={idx} className="flex items-start gap-2">
-                    <span className="text-amber-400 font-bold flex-shrink-0 mt-0.5">▸</span>
+                    <span className="text-amber-500 dark:text-amber-400 font-bold flex-shrink-0 mt-0.5">▸</span>
                     <span>{rule}</span>
                   </li>
                 ))}
@@ -360,7 +361,7 @@ export function PropertyCardModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/80 backdrop-blur-md animate-fadeIn [perspective:1200px]"
+      className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-slate-900/60 dark:bg-black/80 backdrop-blur-sm animate-fadeIn [perspective:1200px]"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -374,7 +375,7 @@ export function PropertyCardModal({
           transform: `perspective(1000px) rotateX(${tilt.rotateX}deg) rotateY(${tilt.rotateY}deg) scale3d(${tilt.isHovering ? 1.008 : 1}, ${tilt.isHovering ? 1.008 : 1}, 1)`,
           transition: tilt.isHovering ? 'transform 0.12s ease-out' : 'transform 0.5s cubic-bezier(0.23, 1, 0.32, 1)'
         }}
-        className="relative w-full max-w-sm bg-slate-900 border-2 border-slate-700/80 rounded-3xl shadow-[0_25px_60px_rgba(0,0,0,0.85)] overflow-hidden flex flex-col will-change-transform select-none max-h-[90vh] overflow-y-auto custom-scrollbar"
+        className="relative w-full max-w-sm bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700/80 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.2)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.85)] overflow-hidden flex flex-col will-change-transform select-none max-h-[90vh] overflow-y-auto custom-scrollbar"
       >
         {/* Güçsüzleştirilmiş & Yumuşatılmış Specular Radial Gradient Işık Yansıması */}
         <div
@@ -391,7 +392,7 @@ export function PropertyCardModal({
         {/* Kapat Butonu */}
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 z-40 w-8 h-8 rounded-full bg-slate-950/80 hover:bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center transition border border-white/20 shadow-md cursor-pointer"
+          className="absolute top-3 right-3 z-40 w-8 h-8 rounded-full bg-slate-900/60 hover:bg-slate-900 text-white dark:bg-slate-950/80 dark:hover:bg-slate-800 dark:text-slate-300 dark:hover:text-white flex items-center justify-center transition border border-white/20 shadow-md cursor-pointer"
           title="Kapat"
         >
           <X className="w-4 h-4" />
@@ -417,7 +418,7 @@ export function PropertyCardModal({
         </div>
 
         {/* Kartın Küçük Resim / Fotoğraf Bölümü (ASLA BOŞ DURMAZ) */}
-        <div className="relative w-full h-32 sm:h-36 bg-slate-950 flex-shrink-0 overflow-hidden border-b border-slate-800 flex items-center justify-center">
+        <div className="relative w-full h-32 sm:h-36 bg-slate-100 dark:bg-slate-950 flex-shrink-0 overflow-hidden border-b border-slate-200 dark:border-slate-800 flex items-center justify-center">
           {tile.image ? (
             <img
               src={tile.image}
@@ -430,7 +431,7 @@ export function PropertyCardModal({
               {tile.icon || '🏛️'}
             </div>
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
           <div className="absolute bottom-2 left-3 right-3 flex items-center justify-between pointer-events-none">
             <span className="text-[10px] font-black text-white px-2 py-0.5 rounded-md bg-black/60 border border-white/20 backdrop-blur-sm">
               {tile.type === 'property' ? 'Konut / Arsa' : tile.type === 'railroad' ? 'Tren İstasyonu' : 'Kamu Tesisi'}
@@ -442,27 +443,31 @@ export function PropertyCardModal({
             )}
           </div>
           {propState?.mortgaged && (
-            <div className="absolute inset-0 bg-rose-950/50 backdrop-blur-[1px] flex items-center justify-center pointer-events-none z-20">
-              <span className="text-xs sm:text-sm font-black text-rose-200 uppercase tracking-widest -rotate-12 border-2 border-rose-400 px-3 py-1 rounded-xl bg-rose-900 shadow-2xl font-space">
-                {owner?.name ? `${owner.name} (İpotek)` : 'İpotekli'}
-              </span>
+            <div className="absolute inset-0 bg-rose-900/10 dark:bg-rose-950/30 backdrop-grayscale-[0.3] backdrop-contrast-[0.95] flex items-center justify-center pointer-events-none select-none z-20 overflow-hidden">
+              <div className="transform -rotate-12 p-[2px] rounded-md border-2 border-red-600 dark:border-red-500/90 bg-red-50/95 dark:bg-black/80 shadow-xl flex items-center justify-center">
+                <div className="border border-red-500/70 dark:border-red-500/60 rounded-[3px] px-3 py-0.5 flex items-center justify-center">
+                  <span className="text-xs sm:text-sm font-space font-black uppercase tracking-widest text-red-700 dark:text-red-400 leading-none drop-shadow-xs">
+                    İPOTEK
+                  </span>
+                </div>
+              </div>
             </div>
           )}
         </div>
 
         {/* Kart İçeriği & Kira Listesi */}
-        <div className="p-4 sm:p-5 space-y-3.5 text-xs flex-1">
+        <div className="p-4 sm:p-5 space-y-3.5 text-xs flex-1 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">
           {/* Sahip Bilgisi */}
-          <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-800/70 border border-slate-700">
-            <span className="text-slate-400 font-semibold">Mülk Sahibi:</span>
+          <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200">
+            <span className="text-slate-500 dark:text-slate-400 font-semibold">Mülk Sahibi:</span>
             {owner ? (
               <span className="font-bold flex items-center gap-1.5" style={{ color: owner.color }}>
                 <span>{typeof owner.token === 'object' ? (owner.token?.icon || '👷') : (owner.token || '👷')}</span>
                 <span>{owner.name} {isOwner && '(Sen)'}</span>
               </span>
             ) : (
-              <span className="text-emerald-400 font-bold flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse" />
                 Sahipsiz (Satılık)
               </span>
             )}
@@ -470,12 +475,12 @@ export function PropertyCardModal({
 
           {/* İpotek Durumu ve Sahibi */}
           {propState?.mortgaged && (
-            <div className="flex items-center justify-between p-2.5 rounded-xl bg-rose-950/80 border border-rose-600 text-rose-200 font-bold text-xs font-space">
+            <div className="flex items-center justify-between p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/80 border border-rose-200 dark:border-rose-600 text-rose-800 dark:text-rose-200 font-bold text-xs font-space">
               <span className="flex items-center gap-1.5">
-                <ShieldAlert className="w-4 h-4 text-rose-400" />
+                <ShieldAlert className="w-4 h-4 text-rose-600 dark:text-rose-400" />
                 <span>İpotek Durumu:</span>
               </span>
-              <span className="px-2 py-0.5 rounded-lg bg-rose-900 border border-rose-500 text-rose-100 font-black">
+              <span className="px-2 py-0.5 rounded-lg bg-rose-100 dark:bg-rose-900 border border-rose-300 dark:border-rose-500 text-rose-700 dark:text-rose-100 font-black">
                 {owner?.name ? `${owner.name} (İpotek)` : 'İpotekli'}
               </span>
             </div>
@@ -483,32 +488,32 @@ export function PropertyCardModal({
 
           {/* Arsa Kira Tablosu */}
           {isProperty && (
-            <div className="space-y-1.5 border border-slate-800 rounded-2xl p-3 bg-slate-950/60">
-              <div className="flex justify-between py-0.5 border-b border-slate-800/80 font-semibold text-slate-300">
+            <div className="space-y-1.5 border border-slate-200 dark:border-slate-800 rounded-2xl p-3 bg-slate-50/80 dark:bg-slate-950/60 text-slate-700 dark:text-slate-300">
+              <div className="flex justify-between py-0.5 border-b border-slate-200 dark:border-slate-800/80 font-semibold text-slate-800 dark:text-slate-200">
                 <span>Yalın Arsa Kirası:</span>
-                <span className="text-amber-400 font-bold font-mono">{tile.rent[0]}₺</span>
+                <span className="text-amber-600 dark:text-amber-400 font-bold font-mono">{tile.rent[0]}₺</span>
               </div>
-              <div className="flex justify-between py-0.5 text-slate-400">
+              <div className="flex justify-between py-0.5 text-slate-600 dark:text-slate-400">
                 <span>Tüm Renk Setiyle (2x):</span>
-                <span className="text-amber-300 font-semibold font-mono">{tile.rent[0] * 2}₺</span>
+                <span className="text-amber-600 dark:text-amber-300 font-semibold font-mono">{tile.rent[0] * 2}₺</span>
               </div>
-              <div className="flex justify-between py-0.5 text-slate-400">
+              <div className="flex justify-between py-0.5 text-slate-600 dark:text-slate-400">
                 <span>1 Ev ile:</span>
-                <span className="text-white font-mono">{tile.rent[1]}₺</span>
+                <span className="text-slate-900 dark:text-white font-mono font-medium">{tile.rent[1]}₺</span>
               </div>
-              <div className="flex justify-between py-0.5 text-slate-400">
+              <div className="flex justify-between py-0.5 text-slate-600 dark:text-slate-400">
                 <span>2 Ev ile:</span>
-                <span className="text-white font-mono">{tile.rent[2]}₺</span>
+                <span className="text-slate-900 dark:text-white font-mono font-medium">{tile.rent[2]}₺</span>
               </div>
-              <div className="flex justify-between py-0.5 text-slate-400">
+              <div className="flex justify-between py-0.5 text-slate-600 dark:text-slate-400">
                 <span>3 Ev ile:</span>
-                <span className="text-white font-mono">{tile.rent[3]}₺</span>
+                <span className="text-slate-900 dark:text-white font-mono font-medium">{tile.rent[3]}₺</span>
               </div>
-              <div className="flex justify-between py-0.5 text-slate-400">
+              <div className="flex justify-between py-0.5 text-slate-600 dark:text-slate-400">
                 <span>4 Ev ile:</span>
-                <span className="text-white font-mono">{tile.rent[4]}₺</span>
+                <span className="text-slate-900 dark:text-white font-mono font-medium">{tile.rent[4]}₺</span>
               </div>
-              <div className="flex justify-between py-0.5 font-bold text-rose-400 pt-1 border-t border-slate-800/80">
+              <div className="flex justify-between py-0.5 font-bold text-rose-600 dark:text-rose-400 pt-1 border-t border-slate-200 dark:border-slate-800/80">
                 <span>🏨 Otel ile:</span>
                 <span className="font-mono">{tile.rent[5]}₺</span>
               </div>
@@ -522,11 +527,11 @@ export function PropertyCardModal({
             const r2 = tile.rent?.[2] || 100;
             const r3 = tile.rent?.[3] || 200;
             return (
-              <div className="space-y-1.5 border border-slate-800 rounded-2xl p-3 bg-slate-950/60 text-slate-300">
-                <div className="flex justify-between"><span>1 İstasyon Sahibi:</span><span className="font-bold text-amber-400 font-mono">{r0}₺</span></div>
-                <div className="flex justify-between"><span>2 İstasyon Sahibi:</span><span className="font-bold text-amber-400 font-mono">{r1}₺</span></div>
-                <div className="flex justify-between"><span>3 İstasyon Sahibi:</span><span className="font-bold text-amber-400 font-mono">{r2}₺</span></div>
-                <div className="flex justify-between font-bold text-emerald-400">
+              <div className="space-y-1.5 border border-slate-200 dark:border-slate-800 rounded-2xl p-3 bg-slate-50/80 dark:bg-slate-950/60 text-slate-700 dark:text-slate-300">
+                <div className="flex justify-between text-slate-600 dark:text-slate-300"><span>1 İstasyon Sahibi:</span><span className="font-bold text-amber-600 dark:text-amber-400 font-mono">{r0}₺</span></div>
+                <div className="flex justify-between text-slate-600 dark:text-slate-300"><span>2 İstasyon Sahibi:</span><span className="font-bold text-amber-600 dark:text-amber-400 font-mono">{r1}₺</span></div>
+                <div className="flex justify-between text-slate-600 dark:text-slate-300"><span>3 İstasyon Sahibi:</span><span className="font-bold text-amber-600 dark:text-amber-400 font-mono">{r2}₺</span></div>
+                <div className="flex justify-between font-bold text-emerald-600 dark:text-emerald-400">
                   <span>4 İstasyon Sahibi:</span>
                   <span className="font-mono">{r3}₺</span>
                 </div>
@@ -536,18 +541,18 @@ export function PropertyCardModal({
 
           {/* Hizmet / Kamu Kuruluşu Bilgisi */}
           {isUtility && (
-            <div className="space-y-2 border border-slate-800 rounded-2xl p-3 bg-slate-950/60 text-slate-300 text-xs">
-              <div className="flex justify-between font-bold text-slate-400 border-b border-slate-800 pb-1 text-[11px]">
+            <div className="space-y-2 border border-slate-200 dark:border-slate-800 rounded-2xl p-3 bg-slate-50/80 dark:bg-slate-950/60 text-slate-700 dark:text-slate-300 text-xs">
+              <div className="flex justify-between font-bold text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800 pb-1 text-[11px]">
                 <span>Mülkiyet Durumu</span>
                 <span>Kira Formülü</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-slate-300">1 Tesis Sahibi:</span>
-                <span className="font-jetbrains font-bold text-amber-400">Zar Toplamının 4 Katı</span>
+                <span className="text-slate-700 dark:text-slate-300">1 Tesis Sahibi:</span>
+                <span className="font-jetbrains font-bold text-amber-600 dark:text-amber-400">Zar Toplamının 4 Katı</span>
               </div>
-              <div className="flex justify-between items-center text-emerald-300">
+              <div className="flex justify-between items-center text-emerald-600 dark:text-emerald-300 font-medium">
                 <span>2 Tesis Sahibi (İkisi de):</span>
-                <span className="font-jetbrains font-bold text-emerald-400">Zar Toplamının 10 Katı</span>
+                <span className="font-jetbrains font-bold text-emerald-600 dark:text-emerald-400">Zar Toplamının 10 Katı</span>
               </div>
             </div>
           )}
@@ -555,34 +560,34 @@ export function PropertyCardModal({
           {/* Maliyet ve İpotek Değerleri */}
           <div className="grid grid-cols-2 gap-2 text-center">
             {tile.cost && (
-              <div className="p-2 rounded-xl bg-slate-800/50 border border-slate-700/60">
-                <span className="text-[10px] text-slate-400 block">Satın Alma</span>
-                <span className="font-black text-amber-400 text-sm font-mono">{tile.cost}₺</span>
+              <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60">
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">Satın Alma</span>
+                <span className="font-black text-amber-600 dark:text-amber-400 text-sm font-mono">{tile.cost}₺</span>
               </div>
             )}
             {tile.houseCost && (
-              <div className="p-2 rounded-xl bg-slate-800/50 border border-slate-700/60">
-                <span className="text-[10px] text-slate-400 block">Ev Maliyeti</span>
-                <span className="font-black text-emerald-400 text-sm font-mono">{tile.houseCost}₺</span>
+              <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60">
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">Ev Maliyeti</span>
+                <span className="font-black text-emerald-600 dark:text-emerald-400 text-sm font-mono">{tile.houseCost}₺</span>
               </div>
             )}
             {tile.mortgage && (
-              <div className="p-2 rounded-xl bg-slate-800/50 border border-slate-700/60 col-span-2">
-                <span className="text-[10px] text-slate-400 block">İpotek Bedeli</span>
-                <span className="font-bold text-slate-300 font-mono">{tile.mortgage}₺</span>
+              <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 col-span-2">
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">İpotek Bedeli</span>
+                <span className="font-bold text-slate-700 dark:text-slate-300 font-mono">{tile.mortgage}₺</span>
               </div>
             )}
           </div>
 
           {/* Sahip Eylemleri (Ev İnşa Et / İpotek) */}
           {isOwner && (
-            <div className="pt-2 border-t border-slate-800 space-y-2">
+            <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-2">
               {isProperty && ownsWholeGroup && (
                 <div className="space-y-1">
                   <button
                     onClick={() => onBuildHouse(tile.id)}
                     disabled={!canBuild}
-                    className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 disabled:text-slate-500 disabled:border disabled:border-slate-700 disabled:cursor-not-allowed text-white rounded-xl font-bold flex items-center justify-center gap-2 transition active:scale-95 shadow-md cursor-pointer"
+                    className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-100 disabled:text-slate-400 disabled:border disabled:border-slate-200 dark:disabled:bg-slate-800 dark:disabled:text-slate-500 dark:disabled:border-slate-700 disabled:cursor-not-allowed text-white rounded-xl font-bold flex items-center justify-center gap-2 transition active:scale-95 shadow-md cursor-pointer"
                     title={buildDisabledReason || 'Ev / Otel İnşa Et'}
                   >
                     <Home className="w-4 h-4" />
@@ -593,7 +598,7 @@ export function PropertyCardModal({
                     </span>
                   </button>
                   {buildDisabledReason && (
-                    <p className="text-[10px] text-amber-400/90 text-center font-medium px-1">
+                    <p className="text-[10px] text-amber-600 dark:text-amber-400/90 text-center font-medium px-1">
                       ⚠️ {buildDisabledReason}
                     </p>
                   )}
@@ -606,14 +611,14 @@ export function PropertyCardModal({
                   <button
                     onClick={() => onSellHouse(tile.id)}
                     disabled={!canSell}
-                    className="w-full py-2.5 bg-amber-600 hover:bg-amber-500 disabled:bg-slate-800 disabled:text-slate-500 disabled:border disabled:border-slate-700 disabled:cursor-not-allowed text-white rounded-xl font-bold flex items-center justify-center gap-2 transition active:scale-95 shadow-md cursor-pointer"
+                    className="w-full py-2.5 bg-amber-600 hover:bg-amber-500 disabled:bg-slate-100 disabled:text-slate-400 disabled:border disabled:border-slate-200 dark:disabled:bg-slate-800 dark:disabled:text-slate-500 dark:disabled:border-slate-700 disabled:cursor-not-allowed text-white rounded-xl font-bold flex items-center justify-center gap-2 transition active:scale-95 shadow-md cursor-pointer"
                     title={sellDisabledReason || '1 Ev/Otel Sat'}
                   >
                     <DollarSign className="w-4 h-4" />
                     <span>1 Ev/Otel Sat (+{Math.round(tile.houseCost * 0.5)}₺)</span>
                   </button>
                   {sellDisabledReason && (
-                    <p className="text-[10px] text-amber-400/90 text-center font-medium px-1">
+                    <p className="text-[10px] text-amber-600 dark:text-amber-400/90 text-center font-medium px-1">
                       ⚠️ {sellDisabledReason}
                     </p>
                   )}
@@ -635,10 +640,10 @@ export function PropertyCardModal({
                 <button
                   onClick={() => onMortgage(tile.id)}
                   disabled={propState.houses > 0}
-                  className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-rose-300 border border-rose-500/30 rounded-xl font-semibold flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer"
+                  className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-rose-700 border border-rose-300 dark:bg-slate-800 dark:hover:bg-slate-700 disabled:opacity-40 dark:text-rose-300 dark:border-rose-500/30 rounded-xl font-semibold flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer"
                   title={propState.houses > 0 ? 'İpotek etmeden önce bu gruptaki tüm evler satılmalıdır' : 'Mülkü ipotek et'}
                 >
-                  <ShieldAlert className="w-4 h-4 text-rose-400" />
+                  <ShieldAlert className="w-4 h-4 text-rose-500 dark:text-rose-400" />
                   <span>Mülkü İpotek Et (+{tile.mortgage}₺)</span>
                 </button>
               )}
@@ -647,17 +652,17 @@ export function PropertyCardModal({
 
           {/* Başkasına Aitse Satın Alma / Takas Teklifi Butonu */}
           {!isOwner && owner && !owner.isBankrupt && (
-            <div className="pt-2 border-t border-slate-800 space-y-2">
-              <div className="p-3 rounded-2xl bg-gradient-to-r from-indigo-950/60 via-slate-900/80 to-amber-950/40 border border-indigo-500/40 flex items-center justify-between gap-2.5 shadow-lg">
+            <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-2">
+              <div className="p-3 rounded-2xl bg-gradient-to-r from-indigo-50 dark:from-indigo-950/60 via-slate-50 dark:via-slate-900/80 to-amber-50 dark:to-amber-950/40 border border-indigo-200 dark:border-indigo-500/40 flex items-center justify-between gap-2.5 shadow-md">
                 <div className="text-left min-w-0 flex-1">
-                  <span className="text-[10px] text-indigo-300 font-bold uppercase tracking-wider block">
+                  <span className="text-[10px] text-indigo-600 dark:text-indigo-300 font-bold uppercase tracking-wider block">
                     Satın Alma / Takas Teklifi
                   </span>
-                  <span className="text-xs text-slate-200 truncate block font-medium">
+                  <span className="text-xs text-slate-700 dark:text-slate-200 truncate block font-medium">
                     Sahibi: <strong style={{ color: owner.color }}>{owner.name}</strong>
                   </span>
                   {propState?.houses > 0 && (
-                    <span className="text-[10px] text-amber-400 font-medium block mt-0.5">
+                    <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium block mt-0.5">
                       ⚠️ Binalı mülk takas edilemez (Önce binalar satılmalıdır).
                     </span>
                   )}
@@ -671,7 +676,7 @@ export function PropertyCardModal({
                   disabled={propState?.houses > 0}
                   className={`px-4 py-2.5 rounded-xl font-black text-xs flex items-center gap-1.5 transition active:scale-95 shadow-md flex-shrink-0 ${
                     propState?.houses > 0
-                      ? 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed'
+                      ? 'bg-slate-200 text-slate-400 border border-slate-300 dark:bg-slate-800 dark:text-slate-500 dark:border-slate-700 cursor-not-allowed'
                       : 'bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-400 hover:brightness-110 text-slate-950 shadow-amber-500/30 cursor-pointer'
                   }`}
                   title={propState?.houses > 0 ? 'Binalı mülk takas edilemez' : 'Bu mülkü almak için teklif ver'}
