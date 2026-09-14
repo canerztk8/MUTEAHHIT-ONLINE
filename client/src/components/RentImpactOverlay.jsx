@@ -1,5 +1,5 @@
 import React from 'react';
-import { Skull, TrendingDown, Sparkles, Trophy } from 'lucide-react';
+import { Skull, TrendingDown, Coins, Trophy } from 'lucide-react';
 
 export function RentImpactOverlay({ rentNotification, myPlayerId }) {
   if (!rentNotification) return null;
@@ -129,15 +129,15 @@ export function RentImpactOverlay({ rentNotification, myPlayerId }) {
                 isTier2 ? 'bg-rose-600/40 text-rose-300 animate-pulse' : 'bg-red-600/30 text-red-300'
               }`}
             >
-              {isTier2 ? <Skull className="w-5 h-5 sm:w-6 sm:h-6 text-rose-300 animate-bounce" /> : <TrendingDown className="w-5 h-5 sm:w-6 sm:h-6 text-red-300" />}
+              {isTier2 ? <Skull className="w-5 h-5 sm:w-6 sm:h-6 text-rose-300" /> : <TrendingDown className="w-5 h-5 sm:w-6 sm:h-6 text-red-300" />}
             </div>
             <div className="text-left leading-tight">
               <span
-                className={`text-[9px] sm:text-[10.5px] font-black uppercase tracking-widest block font-space ${
+                className={`text-[9px] sm:text-[10px] font-bold uppercase tracking-wider block ${
                   isTier2 ? 'text-rose-400' : 'text-red-400'
                 }`}
               >
-                {isTier2 ? '⚠️ KRİTİK DARBE & AĞIR KİRA' : 'AĞIR KİRA ÖDENDİ'}
+                {isTier2 ? 'Kritik Gider • Yüksek Kira' : 'Kira Ödendi'}
               </span>
               <div className="flex items-center gap-1.5 mt-0.5">
                 <span className="text-lg sm:text-2xl font-black font-jetbrains tracking-tight text-white drop-shadow-md">
@@ -162,15 +162,15 @@ export function RentImpactOverlay({ rentNotification, myPlayerId }) {
                 isTier2 ? 'bg-amber-400/30 text-amber-300 animate-pulse' : 'bg-emerald-600/30 text-emerald-300'
               }`}
             >
-              {isTier2 ? <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-amber-300 animate-bounce" /> : <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-300" />}
+              {isTier2 ? <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-amber-300" /> : <Coins className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-300" />}
             </div>
             <div className="text-left leading-tight">
               <span
-                className={`text-[9px] sm:text-[10.5px] font-black uppercase tracking-widest block font-space ${
+                className={`text-[9px] sm:text-[10px] font-bold uppercase tracking-wider block ${
                   isTier2 ? 'text-amber-300' : 'text-emerald-400'
                 }`}
               >
-                {isTier2 ? '💎 BÜYÜK VURGUN & DEV KİRA' : 'KİRA TAHSİL EDİLDİ'}
+                {isTier2 ? 'Yüksek Gelir • Kira Tahsilatı' : 'Kira Tahsil Edildi'}
               </span>
               <div className="flex items-center gap-1.5 mt-0.5">
                 <span className="text-lg sm:text-2xl font-black font-jetbrains tracking-tight text-white drop-shadow-md">

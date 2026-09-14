@@ -62,65 +62,18 @@ const ICE_SERVERS = [
   },
 ];
 
-const DEFAULT_BACKEND_HOST = 'muteahhit-online-backend.onrender.com';
+import { ENV } from '../config/env.js';
 
-/**
- * Arkadaş davet linki oluşturur.
- * Yerel ortamda veya Cloudflare pages.dev (Türkiye'de bazı ISS'lerde DNS engeli/çözümleme sorunu olan)
- * üzerindeyken, tüm ISS'lerde doğrudan DNS çözülen Render domain'ini hedefler.
- */
 export function getShareableInviteUrl(roomCode) {
-  if (typeof window === 'undefined' || !roomCode) return '';
-  const hostname = window.location.hostname;
-  const isLocal = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.');
-
-  if (isLocal || hostname.includes('pages.dev')) {
-    return `https://${DEFAULT_BACKEND_HOST}/?room=${encodeURIComponent(roomCode)}`;
-  }
-
-  return `${window.location.origin}${window.location.pathname}?room=${encodeURIComponent(roomCode)}`;
-}
-
-function resolveBackendHost() {
-  const envHost = import.meta.env.VITE_PEER_HOST;
-  if (envHost && envHost.trim()) return envHost.trim();
-
-  const hostname = window.location.hostname;
-  const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.');
-  if (isLocalhost) {
-    return 'localhost';
-  }
-
-  // Eğer doğrudan Render domain'indeyse o domain, Cloudflare Pages (*.pages.dev)
-  // veya başka bir statik CDN üzerindeyse Render backend'ini hedefle!
-  if (hostname.includes('onrender.com')) {
-    return hostname;
-  }
-  return DEFAULT_BACKEND_HOST;
-}
-
-function resolveBackendPort() {
-  const envPort = import.meta.env.VITE_PEER_PORT;
-  if (envPort) return Number(envPort);
-
-  const hostname = window.location.hostname;
-  const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.');
-  if (isLocalhost) {
-    return 3000;
-  }
-  return 443;
+  return ENV.getShareableInviteUrl(roomCode);
 }
 
 export function getPeerConfig() {
-  const host = resolveBackendHost();
-  const port = resolveBackendPort();
-  const isLocalhost = host === 'localhost';
-
   return {
-    host,
-    port,
-    path: import.meta.env.VITE_PEER_PATH || '/peerjs',
-    secure: !isLocalhost,
+    host: ENV.PEER_HOST,
+    port: ENV.PEER_PORT,
+    path: ENV.PEER_PATH,
+    secure: ENV.PEER_SECURE,
     debug: 0,
     config: { iceServers: ICE_SERVERS, iceCandidatePoolSize: 2 },
   };
@@ -135,15 +88,7 @@ export function getPeerConfig() {
 // Client ACTION'ı relay:msg ile gönderir (sadece diğerlerine iletilir).
 
 function getRelayUrl() {
-  const host = resolveBackendHost();
-  const port = resolveBackendPort();
-  const isLocalhost = host === 'localhost';
-
-  if (isLocalhost) {
-    return `ws://localhost:${port}/wsrelay`;
-  }
-  const protocol = (import.meta.env.VITE_PEER_SECURE === 'false') ? 'ws:' : 'wss:';
-  return `${protocol}//${host}/wsrelay`;
+  return ENV.RELAY_URL;
 }
 
 class RelayConnection {
@@ -851,26 +796,40 @@ export class HostPeerService {
     }
 
     // Gönderici oyuncuyu kesin ve güvenli olarak tespit et
-    let effectiveSenderId = senderId || conn?.peer || fromRelayId;
-    let senderPlayer = game.players?.find(p => p.id === effectiveSenderId);
-    if (!senderPlayer) {
-      const token = payload?.sessionToken || msg?.sessionToken;
-      if (token) {
-        senderPlayer = game.players?.find(p => p.sessionToken === token);
+    // Ağ üzerinden gelen mesajlarda (WebRTC veya Relay), istemcinin iddia ettiği `senderId`'ye körü körüne GÜVENİLMEZ.
+    // Fiziksel bağlantı kimliği (conn.peer veya fromRelayId) esas alınır.
+    const transportId = conn?.peer || fromRelayId;
+    let effectiveSenderId = null;
+
+    if (transportId) {
+      // 1. Bu transport kimliğiyle önceden eşleştirilmiş oyuncu var mı?
+      const mappedId = this._peerIdToPlayerId.get(transportId) || this._relayIdToPlayerId.get(transportId);
+      if (mappedId) {
+        effectiveSenderId = mappedId;
+      } else {
+        const directPlayer = game.players?.find(p => p.id === transportId);
+        if (directPlayer) effectiveSenderId = directPlayer.id;
       }
-      if (!senderPlayer && conn?.peer) {
-        senderPlayer = game.players?.find(p => p.id === conn.peer);
+
+      // 2. Bulunamadıysa sessionToken ile eşleştir
+      if (!effectiveSenderId) {
+        const token = payload?.sessionToken || msg?.sessionToken;
+        if (token) {
+          const tokenPlayer = game.players?.find(p => p.sessionToken === token);
+          if (tokenPlayer) effectiveSenderId = tokenPlayer.id;
+        }
       }
-      if (!senderPlayer && fromRelayId) {
-        senderPlayer = game.players?.find(p => p.id === fromRelayId);
+
+      // 3. İlk kez katılıyorsa transportId esas alınır
+      if (!effectiveSenderId) {
+        effectiveSenderId = transportId;
       }
-      if (!senderPlayer && payload?.playerName) {
-        senderPlayer = game.players?.find(p => !p.isBot && p.name === payload.playerName);
-      }
-      if (senderPlayer) {
-        effectiveSenderId = senderPlayer.id;
-      }
+    } else {
+      // Yerel Host arayüzü doğrudan çağrısı
+      effectiveSenderId = senderId || this._myId;
     }
+
+    let senderPlayer = game.players?.find(p => p.id === effectiveSenderId);
 
     if (senderPlayer) {
       effectiveSenderId = senderPlayer.id;
@@ -891,6 +850,7 @@ export class HostPeerService {
       if (effectiveSenderId) this._connections.set(effectiveSenderId, conn);
       if (conn.peer && effectiveSenderId) this._peerIdToPlayerId.set(conn.peer, effectiveSenderId);
     }
+
 
     // Oyuncu yeni bir bağlantı/transport ID'si ile gelmişse (reconnect / relay fallback),
     // motor üzerindeki ID'yi, mülk sahipliklerini ve aktif bağlantıyı derhal senkronize et:
@@ -1458,6 +1418,14 @@ export class HostPeerService {
 
         // ─ Dev Tools ─
         case ACTION.DEV_COMMAND: {
+          // GÜVENLİK KORUMASI: Dev komutları ASLA uzak bir ağ bağlantısından (WebRTC veya Relay) kabul edilemez!
+          // Yalnızca Host'un kendi yerel tarayıcısından çalıştırılabilir.
+          const isRemote = Boolean(conn || fromRelayId);
+          if (isRemote || !this._isHost || this._myId !== effectiveSenderId) {
+            console.warn('[HostPeerService] ACTION.DEV_COMMAND uzaktan veya yetkisiz çağrıldı, reddedildi');
+            broadcastNeeded = false;
+            break;
+          }
           const player = game.players.find(p => p.id === effectiveSenderId);
           if (!player?.isHost) { broadcastNeeded = false; break; }
           game.executeDevCommand(payload.command, payload.payload);
@@ -2226,6 +2194,11 @@ export class ClientPeerService {
 
       case MSG.EVENT:
         if (msg.event === 'SESSION_TOKEN' && msg.payload?.sessionToken) {
+          const target = msg.targetId || msg.payload?.targetId;
+          if (target) {
+            const isForMe = target === this._myId || target === this._assignedPeerId || target === this._peer?.id;
+            if (!isForMe) break;
+          }
           this._sessionToken = msg.payload.sessionToken;
           try {
             localStorage.setItem('muteahhit_session_token', msg.payload.sessionToken);

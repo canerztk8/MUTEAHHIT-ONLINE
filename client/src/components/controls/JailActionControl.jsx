@@ -11,7 +11,7 @@ export function JailActionControl({
     <div className="flex flex-col gap-1.5 p-2 rounded-xl bg-rose-950/40 border border-rose-800/60 text-left">
       <div className="flex items-center justify-between">
         <span className="text-[10.5px] text-rose-300 font-bold">
-          🚨 Maliye Denetimi (Kodes)
+          Maliye Denetimi (Kodes)
         </span>
         <span className="text-[9px] font-mono px-1.5 py-0.5 rounded font-black bg-emerald-900 text-emerald-200" title="Resmi kurallara göre denetimdeyken mülklerinizden tam kira toplamaya devam edersiniz">
           Kira: %100 (Tam)

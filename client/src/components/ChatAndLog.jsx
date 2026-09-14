@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { MessageSquare, ScrollText, Send, Maximize2, Minimize2, X, Sparkles, ChevronRight } from 'lucide-react';
+import { MessageSquare, ScrollText, Send, Maximize2, Minimize2, X, ChevronRight } from 'lucide-react';
 
 /**
  * Olayın gerçekleştiği dakikayı ve saniyesini (MM:SS veya HH:MM:SS) hesaplar.

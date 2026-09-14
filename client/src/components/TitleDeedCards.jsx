@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { BOARD_TILES } from '../game/boardData.js';
-import { Building2, Home, Landmark, Train, Zap, ChevronRight, Layers, ArrowUpDown } from 'lucide-react';
+import { Building2, Home, Landmark, Train, Zap, ChevronRight, Layers, ArrowUpDown, Palette, DollarSign, Clock, FileText, Gavel, Handshake } from 'lucide-react';
 
 function TitleDeedCardsBase({ gameState = {}, myPlayerId, onTileClick }) {
   const { players = [], properties = {} } = gameState || {};
@@ -176,40 +176,40 @@ function TitleDeedCardsBase({ gameState = {}, myPlayerId, onTileClick }) {
               <button
                 type="button"
                 onClick={() => setSortBy('color')}
-                className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition cursor-pointer flex items-center gap-1 font-space ${
+                className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition cursor-pointer flex items-center gap-1 ${
                   sortBy === 'color'
-                    ? 'bg-amber-400 text-slate-950 shadow-xs font-black'
+                    ? 'bg-amber-400 text-slate-950 shadow-xs'
                     : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-700'
                 }`}
                 title="En çok arsanız olan renk grubu başta olacak şekilde sırala"
               >
-                <span>🎨</span>
+                <Palette className="w-3 h-3" />
                 <span>Renk</span>
               </button>
               <button
                 type="button"
                 onClick={() => setSortBy('price')}
-                className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition cursor-pointer flex items-center gap-1 font-space ${
+                className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition cursor-pointer flex items-center gap-1 ${
                   sortBy === 'price'
-                    ? 'bg-amber-400 text-slate-950 shadow-xs font-black'
+                    ? 'bg-amber-400 text-slate-950 shadow-xs'
                     : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-700'
                 }`}
                 title="Fiyata göre (En pahalıdan en ucuza) sırala"
               >
-                <span>💰</span>
+                <DollarSign className="w-3 h-3" />
                 <span>Fiyat</span>
               </button>
               <button
                 type="button"
                 onClick={() => setSortBy('time')}
-                className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition cursor-pointer flex items-center gap-1 font-space ${
+                className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition cursor-pointer flex items-center gap-1 ${
                   sortBy === 'time'
-                    ? 'bg-amber-400 text-slate-950 shadow-xs font-black'
+                    ? 'bg-amber-400 text-slate-950 shadow-xs'
                     : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-700'
                 }`}
                 title="Satın alma sırasına göre sırala"
               >
-                <span>⏱️</span>
+                <Clock className="w-3 h-3" />
                 <span>Zaman</span>
               </button>
             </div>
@@ -219,14 +219,14 @@ function TitleDeedCardsBase({ gameState = {}, myPlayerId, onTileClick }) {
           <button
             type="button"
             onClick={() => setMortgageFilter(prev => prev === 'mortgaged' ? 'all' : 'mortgaged')}
-            className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition cursor-pointer flex items-center gap-1 border font-space ${
+            className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition cursor-pointer flex items-center gap-1 border ${
               mortgageFilter === 'mortgaged'
-                ? 'bg-rose-600 text-white border-rose-500 shadow-xs font-black ring-1 ring-rose-400'
+                ? 'bg-rose-600 text-white border-rose-500 shadow-xs ring-1 ring-rose-400'
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:border-rose-400 hover:text-rose-600 dark:hover:text-rose-400'
             }`}
             title={mortgageFilter === 'mortgaged' ? 'Tüm tapuları göster' : 'Yalnızca ipotekli tapuları filtrele'}
           >
-            <span>🏦</span>
+            <Landmark className="w-3 h-3" />
             <span>İpotekli ({mortgagedCount})</span>
           </button>
         </div>
@@ -237,9 +237,9 @@ function TitleDeedCardsBase({ gameState = {}, myPlayerId, onTileClick }) {
         {!targetPlayer || allOwnedTiles.length === 0 ? (
           <div className="py-8 min-h-[140px] flex-1 flex flex-col items-center justify-center text-center p-4 rounded-2xl bg-white dark:bg-slate-900 border border-dashed border-slate-300 dark:border-slate-700">
             <div className="w-10 h-10 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/50 flex items-center justify-center text-xl mb-2 text-amber-600 dark:text-amber-400">
-              📜
+              <FileText className="w-5 h-5 text-amber-500" />
             </div>
-            <p className="text-xs font-black text-slate-800 dark:text-slate-100 font-space">
+            <p className="text-xs font-bold text-slate-800 dark:text-slate-100">
               {targetPlayer?.id === myPlayerId ? 'Henüz hiçbir tapunuz yok' : `${targetPlayer?.name || 'Seçili oyuncunun'} tapusu yok`}
             </p>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 max-w-xs font-medium">
@@ -249,9 +249,9 @@ function TitleDeedCardsBase({ gameState = {}, myPlayerId, onTileClick }) {
         ) : displayedTiles.length === 0 ? (
           <div className="py-8 min-h-[140px] flex-1 flex flex-col items-center justify-center text-center p-4 rounded-2xl bg-white dark:bg-slate-900 border border-dashed border-rose-300 dark:border-rose-800">
             <div className="w-10 h-10 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/50 flex items-center justify-center text-xl mb-2 text-rose-600 dark:text-rose-400">
-              🏦
+              <Landmark className="w-5 h-5 text-rose-500" />
             </div>
-            <p className="text-xs font-black text-slate-800 dark:text-slate-100 font-space">
+            <p className="text-xs font-bold text-slate-800 dark:text-slate-100">
               İpotekli tapu bulunmuyor (0/{allOwnedTiles.length})
             </p>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 max-w-xs font-medium">
@@ -330,9 +330,9 @@ function TitleDeedCardsBase({ gameState = {}, myPlayerId, onTileClick }) {
 
                     {/* Açık Artırma veya Takas Rozeti */}
                     {isDemandHighlighted && (
-                      <div className="mt-1 flex items-center justify-center gap-1 bg-black/80 px-2 py-0.5 rounded-full border border-white/80 shadow-md animate-bounce">
-                        <span className="text-[8.5px] font-black text-white flex items-center gap-1 font-space">
-                          <span>{isAuctionTile ? '🔨' : '🤝'}</span>
+                      <div className="mt-1 flex items-center justify-center gap-1 bg-black/80 px-2 py-0.5 rounded-full border border-white/80 shadow-md">
+                        <span className="text-[8.5px] font-bold text-white flex items-center gap-1">
+                          {isAuctionTile ? <Gavel className="w-3 h-3" /> : <Handshake className="w-3 h-3" />}
                           <span>
                             {isAuctionTile
                               ? 'AÇIK ARTIRMA'
@@ -350,13 +350,12 @@ function TitleDeedCardsBase({ gameState = {}, myPlayerId, onTileClick }) {
                     {houses > 0 && (
                       <div className="mt-1 flex items-center justify-center gap-1 bg-black/60 px-1.5 py-0.5 rounded-full border border-white/20">
                         {houses === 5 ? (
-                          <span className="text-[9px] font-black text-rose-300 flex items-center gap-1 font-jetbrains">
-                            🏨 OTEL
+                          <span className="text-[9px] font-bold text-rose-300 flex items-center gap-1 font-jetbrains">
+                            OTEL
                           </span>
                         ) : (
                           <div className="flex items-center gap-1 text-[9px] font-bold text-emerald-300 font-jetbrains">
-                            <span className="font-mono text-white">x{houses}</span>
-                            <span>🏠</span>
+                            <span className="font-mono text-white">{houses} EV</span>
                           </div>
                         )}
                       </div>
@@ -373,7 +372,9 @@ function TitleDeedCardsBase({ gameState = {}, myPlayerId, onTileClick }) {
                         onError={(e) => { e.currentTarget.style.display = 'none'; }}
                       />
                     )}
-                    <span className="text-2xl absolute inset-0 flex items-center justify-center z-0">{tile.icon || '🏛️'}</span>
+                    <span className="text-2xl absolute inset-0 flex items-center justify-center z-0">
+                      <Building2 className="w-6 h-6 text-slate-300 dark:text-slate-700" />
+                    </span>
                   </div>
 
                   {/* Kart Gövdesi: Kira & Değer Bilgileri */}

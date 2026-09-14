@@ -2,77 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Users, Handshake, ShieldAlert, Bot, Landmark, Trash2, Minimize2, Maximize2, X, TrendingUp, TrendingDown } from 'lucide-react';
 import { BOARD_TILES } from '../game/boardData.js';
 
-// Para geçmişi modalı
-function MoneyHistoryModal({ player, history, onClose }) {
-  const balance = player.money;
-  return (
-    <div
-      className="fixed inset-0 z-[999] flex items-center justify-center p-3 sm:p-4"
-      onClick={onClose}
-    >
-      {/* backdrop */}
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-      <div
-        className="relative z-10 w-[92vw] max-w-sm max-h-[75vh] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 flex flex-col overflow-hidden"
-        onClick={e => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60">
-          <div className="flex items-center gap-2">
-            <span className="text-xl leading-none">{player.token?.icon || '●'}</span>
-            <div>
-              <div className="font-black text-sm text-slate-900 dark:text-slate-100 font-space">{player.name}</div>
-              <div className="text-xs font-black text-amber-600 dark:text-amber-400 font-jetbrains">{balance.toLocaleString('tr-TR')}₺</div>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer"
-          >
-            <X className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-          </button>
-        </div>
-        {/* Body */}
-        <div className="overflow-y-auto flex-1 p-3 space-y-1.5">
-          {history.length === 0 ? (
-            <p className="text-center text-xs text-slate-400 dark:text-slate-500 py-6">Henüz işlem yok</p>
-          ) : (
-            [...history].reverse().map((entry, i) => (
-              <div
-                key={i}
-                className={`flex flex-col gap-1 px-3 py-2 rounded-xl text-xs ${
-                  entry.delta > 0
-                    ? 'bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50'
-                    : 'bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/50'
-                }`}
-              >
-                {/* Üst satır: İkon + Sebep metni (tam görünsün) */}
-                <div className="flex items-start gap-1.5">
-                  {entry.delta > 0
-                    ? <TrendingUp className="w-3 h-3 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
-                    : <TrendingDown className="w-3 h-3 text-rose-600 dark:text-rose-400 flex-shrink-0 mt-0.5" />
-                  }
-                  <span className="text-slate-700 dark:text-slate-300 font-medium leading-snug break-words">{entry.reason}</span>
-                </div>
-                {/* Alt satır: Tutar + Saat */}
-                <div className="flex items-center justify-between pl-4">
-                  <span className="text-[9px] text-slate-400 dark:text-slate-500 font-jetbrains">{entry.time}</span>
-                  <span className={`font-black font-jetbrains text-sm ${entry.delta > 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-700 dark:text-rose-300'}`}>
-                    {entry.delta > 0 ? '+' : ''}{entry.delta.toLocaleString('tr-TR')}₺
-                  </span>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-        <div className="px-4 py-2 border-t border-slate-200 dark:border-slate-700 text-center text-[10px] text-slate-400 dark:text-slate-500 font-jetbrains">
-          Son {history.length} işlem
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function PlayerPanelBase({ gameState, myPlayerId, onOpenTrade, onTileClick, onRemoveBot, onSetBotDifficulty, onKickPlayer }) {
   const { players, currentTurnIndex, properties, logs = [] } = gameState;
   const activePlayer = players[currentTurnIndex];
@@ -247,11 +176,11 @@ function PlayerPanelBase({ gameState, myPlayerId, onOpenTrade, onTileClick, onRe
                   ) : null}
                   {player.inJail && player.position === 10 && !player.isBankrupt && !player.isKicked ? (
                     <span className="text-[7.5px] bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-200 border border-rose-300 dark:border-rose-700 px-1 rounded font-bold flex items-center flex-shrink-0" title="Kodeste (Tam Kira Toplar)">
-                      🚨
+                      Kodes
                     </span>
                   ) : BOARD_TILES[player.position] ? (
                     <span className="text-[8.5px] text-slate-500 dark:text-slate-400 font-medium truncate max-w-[80px] hidden sm:inline" title={BOARD_TILES[player.position].name}>
-                      📍{BOARD_TILES[player.position].name}
+                      {BOARD_TILES[player.position].name}
                     </span>
                   ) : null}
                 </div>
@@ -482,14 +411,14 @@ function PlayerPanelBase({ gameState, myPlayerId, onOpenTrade, onTileClick, onRe
                         style={{ backgroundColor: tile.groupColor || '#475569' }}
                         title={`${tile.name} ${prop.mortgaged ? `(${player.name} (İpotek))` : `(${prop.houses === 5 ? 'Otel' : `${prop.houses} Ev`})`}`}
                       >
-                        <span className="font-space">{tile.name}</span>
+                        <span>{tile.name}</span>
                         {prop.mortgaged ? (
                           <span className="text-[7.5px] bg-rose-950/90 text-rose-200 px-1 rounded font-jetbrains">
-                            {player.name} (İpotek)
+                            İpotek
                           </span>
                         ) : prop.houses > 0 ? (
-                          <span className="text-[8px] bg-black/40 px-1 rounded font-jetbrains">
-                            {prop.houses === 5 ? '🏨' : `🏠${prop.houses}`}
+                          <span className="text-[8px] bg-black/40 px-1 rounded font-jetbrains font-bold">
+                            {prop.houses === 5 ? 'OTEL' : `${prop.houses} EV`}
                           </span>
                         ) : null}
                       </button>

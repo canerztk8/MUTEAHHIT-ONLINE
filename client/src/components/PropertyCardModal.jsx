@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { X, Home, Building, DollarSign, ShieldAlert, ShieldCheck, Sparkles, Handshake } from 'lucide-react';
+import { X, Home, Building, DollarSign, ShieldAlert, ShieldCheck, Handshake } from 'lucide-react';
 import { COLOR_GROUPS } from '../game/boardData.js';
 
 // Özel etkinlik ve aksiyon kareleri için resmi kural sözlüğü
@@ -403,10 +403,10 @@ export function PropertyCardModal({
           className="p-4 sm:p-5 text-center relative border-b border-black/30 flex-shrink-0"
           style={{ backgroundColor: tile.groupColor || '#334155' }}
         >
-          <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-black/30 border border-white/20 mb-1">
-            <Sparkles className="w-3 h-3 text-amber-300" />
-            <span className="text-[9px] font-black tracking-widest text-amber-200 uppercase">
-              TAPU SENEDİ İNCELEME
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-black/30 border border-white/20 mb-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-300" />
+            <span className="text-[9px] font-bold tracking-widest text-amber-200 uppercase">
+              Mülk & Tapu Senedi
             </span>
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-white tracking-wide drop-shadow-md">

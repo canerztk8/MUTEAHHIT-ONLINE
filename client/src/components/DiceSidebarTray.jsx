@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Dices, Zap, Clock, Sparkles, Volume2, VolumeX, LogOut, Sun, Moon, Eye } from 'lucide-react';
+import { Dices, Zap, Clock, Volume2, VolumeX, LogOut, Sun, Moon, Eye } from 'lucide-react';
 import { Dice3DTrayManager } from '../three/Dice3DTrayManager.js';
 import { GameElapsedTimer } from './GameElapsedTimer.jsx';
 
@@ -529,9 +529,9 @@ export function DiceSidebarTray({
                 </div>
 
                 {isDouble && (
-                  <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/25 border border-amber-400/90 text-amber-300 text-[8.5px] font-space font-black uppercase tracking-wide shadow-md animate-pulse backdrop-blur-md">
-                    <Sparkles className="w-2.5 h-2.5 text-amber-400" />
-                    <span>ÇİFT ZAR! TEKRAR ZAR AT</span>
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/20 border border-amber-400/60 text-amber-400 text-[9px] font-bold uppercase tracking-wider shadow-sm backdrop-blur-md">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                    <span>ÇİFT ZAR • TEKRAR AT</span>
                   </div>
                 )}
               </>
@@ -540,27 +540,26 @@ export function DiceSidebarTray({
 
           {/* Zar Atma Butonu */}
           {isRollingLocal ? (
-            <div className="w-full py-2.5 px-3 rounded-xl bg-amber-500/30 border border-amber-400/60 text-amber-300 font-space font-extrabold text-xs sm:text-sm tracking-wide text-center animate-pulse flex items-center justify-center gap-2">
+            <div className="w-full py-2.5 px-3 rounded-xl bg-amber-500/20 border border-amber-400/50 text-amber-400 font-bold text-xs sm:text-sm tracking-wide text-center animate-pulse flex items-center justify-center gap-2">
               <Dices className="w-4 h-4 animate-spin text-amber-400" />
               <span>ZARLAR YUVARLANIYOR...</span>
             </div>
           ) : isRollAgain ? (
             <button
               onClick={handleManualRoll}
-              className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-400 hover:brightness-110 active:scale-95 text-slate-950 font-space font-black text-xs sm:text-sm tracking-wide border border-emerald-300 ring-4 ring-emerald-400/80 animate-dice-glow flex items-center justify-center gap-2 cursor-pointer transition-all uppercase shadow-lg shadow-emerald-500/30"
+              className="w-full py-2.5 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-bold text-xs sm:text-sm tracking-wide border border-emerald-400/50 flex items-center justify-center gap-2 cursor-pointer transition-all uppercase shadow-md"
               title="Çift attın! Tekrar zar atmak için tıkla veya Space tuşuna bas"
             >
-              <Dices className="w-4 h-4 text-slate-950 animate-bounce-short" />
-              <Sparkles className="w-4 h-4 text-slate-950 animate-spin-slow" />
+              <Dices className="w-4 h-4 text-slate-950" />
               <span>ÇİFT ATTIN! TEKRAR ZAR AT</span>
             </button>
           ) : (canRoll && gameState?.phase === 'WAITING_ROLL') ? (
             <button
               onClick={handleManualRoll}
-              className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-400 hover:brightness-110 active:scale-95 text-slate-950 font-space font-extrabold text-xs sm:text-sm tracking-wide border border-amber-300 ring-4 ring-amber-400/80 animate-dice-glow flex items-center justify-center gap-2 cursor-pointer transition-all uppercase"
+              className="w-full py-2.5 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 font-bold text-xs sm:text-sm tracking-wide border border-amber-400/50 flex items-center justify-center gap-2 cursor-pointer transition-all uppercase shadow-md"
               title="Zar atmak için tıkla veya Space tuşuna bas"
             >
-              <Dices className="w-4 h-4 text-slate-950 animate-bounce-short" />
+              <Dices className="w-4 h-4 text-slate-950" />
               <span>ZAR AT</span>
             </button>
           ) : activePlayer?.isBot && onFastForwardBot ? (

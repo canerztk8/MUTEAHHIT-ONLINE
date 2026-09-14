@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Dices, Sparkles } from 'lucide-react';
+import { Dices } from 'lucide-react';
 import { sounds } from '../../sound/soundEffects.js';
 
 /**
@@ -292,8 +292,8 @@ export function CenterDiceRoll({
               Toplam {diceTotal}
             </span>
             {isDouble && (
-              <span className="text-[9px] bg-emerald-500 text-white font-black px-1.5 py-0.5 rounded-md uppercase tracking-wider animate-pulse flex items-center gap-0.5">
-                <Sparkles className="w-2.5 h-2.5" /> ÇİFT
+              <span className="text-[9px] bg-emerald-500 text-white font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
+                ÇİFT
               </span>
             )}
           </div>

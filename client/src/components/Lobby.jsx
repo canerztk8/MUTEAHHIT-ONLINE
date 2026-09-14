@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Play, Bot, Copy, Check, Sparkles, LogIn, PlusCircle, LogOut, Trash2, Cpu, Sun, Moon } from 'lucide-react';
+import { Users, Play, Bot, Copy, Check, LogIn, PlusCircle, LogOut, Trash2, Sun, Moon, HardHat, ShieldCheck, Sliders, Link2 } from 'lucide-react';
 import { PLAYER_TOKENS, PLAYER_COLORS } from '../game/boardData.js';
 import { TopDownPawnPreview } from './TopDownPawnPreview.jsx';
 import { TopDownPawnSvg } from './TopDownPawnSvg.jsx';
 import { ACTION } from '../network/protocol.js';
 import { getShareableInviteUrl } from '../network/PeerService.js';
 import { DisconnectTimerText } from './DisconnectTimerText.jsx';
+import { LegalModal } from './LegalModal.jsx';
+import { ENV } from '../config/env.js';
 
 
 export function Lobby({
@@ -34,6 +36,7 @@ export function Lobby({
   const [optimisticTokenId, setOptimisticTokenId] = useState(null);
   const [optimisticColor, setOptimisticColor] = useState(null);
   const [isJoining, setIsJoining] = useState(false);
+  const [legalModalType, setLegalModalType] = useState(null);
 
   useEffect(() => {
     if (!network) {
@@ -125,13 +128,7 @@ export function Lobby({
       }
     }
 
-    // Backend URL'ini belirle (PeerService ile aynı mantık)
-    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    const backendHost = isLocal
-      ? `${window.location.hostname}:${window.location.port || 3000}`
-      : (import.meta.env.VITE_PEER_HOST || 'muteahhit-online-backend.onrender.com');
-    const protocol = isLocal ? 'http' : 'https';
-    const checkUrl = `${protocol}://${backendHost}/api/room-check?code=${encodeURIComponent(code)}`;
+    const checkUrl = ENV.getRoomCheckUrl(code);
 
     const doAutoJoin = () => {
       if (savedName && savedName.trim()) {
@@ -268,10 +265,7 @@ export function Lobby({
 
     return (
       <div className="flex flex-col items-center justify-center min-h-[90vh] px-4">
-        <div className={`w-full max-w-2xl ${isDarkMode ? 'bg-slate-900/85 border-slate-700/60 text-white shadow-[0_20px_60px_rgba(0,0,0,0.6)] ring-1 ring-white/10' : 'bg-white/90 border-white/80 text-slate-900 shadow-[0_20px_60px_rgba(15,23,42,0.12)] ring-1 ring-slate-900/5'} border backdrop-blur-2xl rounded-3xl p-6 sm:p-10 shadow-2xl relative overflow-hidden transition-all duration-300`}>
-          {/* Header Glow */}
-          <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-
+        <div className={`w-full max-w-2xl ${isDarkMode ? 'bg-slate-900/85 border-slate-700/60 text-white shadow-xl ring-1 ring-white/10' : 'bg-white/90 border-slate-200 text-slate-900 shadow-xl ring-1 ring-slate-900/5'} border rounded-3xl p-6 sm:p-10 relative overflow-hidden transition-all duration-300`}>
           {/* Lobi Üst Bar: Ayrıl / Odayı Kapat Butonu & Karanlık Mod */}
           <div className={`flex items-center justify-between pb-3 mb-4 border-b ${isDarkMode ? 'border-slate-800' : 'border-slate-200'} relative z-10`}>
             <button
@@ -287,8 +281,15 @@ export function Lobby({
               <span>{isHost ? 'Odayı Kapat & İptal Et' : 'Lobiden Ayrıl'}</span>
             </button>
             <div className="flex items-center gap-2">
-              <span className={`text-[11px] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'} font-medium`}>
-                {isHost ? '👑 Oda Kurucususunuz' : '👤 Oyuncu'}
+              <span className={`text-[11px] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'} font-medium flex items-center gap-1`}>
+                {isHost ? (
+                  <>
+                    <ShieldCheck className="w-3.5 h-3.5 text-amber-500" />
+                    <span>Oda Yöneticisi</span>
+                  </>
+                ) : (
+                  <span>Oyuncu</span>
+                )}
               </span>
               {onToggleDarkMode && (
                 <button
@@ -307,10 +308,10 @@ export function Lobby({
           </div>
 
           <div className="text-center mb-8 relative">
-            <span className="px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-xs font-bold tracking-widest uppercase mb-3 inline-block">
+            <span className="px-3.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-xs font-bold tracking-wider uppercase mb-3 inline-block">
               Ankara • Oyun Lobisi
             </span>
-            <h1 className={`text-3xl sm:text-4xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'} flex items-center justify-center gap-3`}>
+            <h1 className={`text-3xl sm:text-4xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'} flex items-center justify-center gap-2.5`}>
               <span>MÜTEAHHİT</span>
               <span className="text-amber-500 dark:text-amber-400">ONLINE</span>
             </h1>
@@ -351,8 +352,9 @@ export function Lobby({
               {/* İsim Değiştirme, Piyon ve Renk Seçimi Kutusu */}
               <div className={`p-4 rounded-2xl border ${isDarkMode ? 'bg-slate-800/70 border-slate-700/70' : 'bg-slate-50 border-slate-200'} space-y-3.5 shadow-sm`}>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-amber-500 dark:text-amber-400">
-                    🎨 Profilini Özelleştir
+                  <span className="text-xs font-bold uppercase tracking-wider text-amber-500 dark:text-amber-400 flex items-center gap-1.5">
+                    <Sliders className="w-3.5 h-3.5" />
+                    Profil Tercihleri
                   </span>
                   <span className="text-[10.5px] text-slate-500 dark:text-slate-400">
                     Aynı piyon veya rengi iki oyuncu alamaz
@@ -643,14 +645,14 @@ export function Lobby({
               <button
                 onClick={onStartGame}
                 disabled={!canStart}
-                className={`w-full py-4 rounded-2xl font-bold text-base flex items-center justify-center gap-2.5 shadow-xl transition-all ${
+                className={`w-full py-3.5 rounded-2xl font-semibold text-base flex items-center justify-center gap-2 shadow-md transition-all ${
                   canStart
-                    ? 'bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 text-slate-950 hover:brightness-110 active:scale-98 shadow-amber-500/30 cursor-pointer'
+                    ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 active:scale-[0.99] shadow-amber-500/20 cursor-pointer'
                     : `${isDarkMode ? 'bg-slate-800 text-slate-500 border-slate-700' : 'bg-slate-200 text-slate-400 border-slate-300'} cursor-not-allowed border`
                 }`}
               >
                 <Play className="w-5 h-5 fill-current" />
-                <span>{canStart ? 'Oyunu Başlat!' : 'Başlamak için en az 2 oyuncu gerekli'}</span>
+                <span>{canStart ? 'Oyunu Başlat' : 'Başlamak için en az 2 oyuncu gerekli'}</span>
               </button>
             ) : (
               <div className={`w-full py-4 text-center text-sm font-medium ${isDarkMode ? 'text-slate-400 bg-slate-800/60 border-slate-700/60' : 'text-slate-600 bg-slate-100 border-slate-200'} rounded-2xl border`}>
@@ -680,11 +682,7 @@ export function Lobby({
   // Henüz bir odaya katılmamış giriş ekranı
   return (
     <div className="flex flex-col items-center justify-center min-h-[90vh] px-4 py-8">
-      <div className={`w-full max-w-lg ${isDarkMode ? 'bg-slate-900/85 border-slate-700/60 text-white shadow-[0_20px_60px_rgba(0,0,0,0.6)] ring-1 ring-white/10' : 'bg-white/90 border-white/80 text-slate-900 shadow-[0_20px_60px_rgba(15,23,42,0.12)] ring-1 ring-slate-900/5'} border backdrop-blur-2xl rounded-3xl p-6 sm:p-10 relative overflow-hidden transition-all duration-300`}>
-        {/* Glow */}
-        <div className="absolute -top-20 -right-20 w-60 h-60 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-20 -left-20 w-60 h-60 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-
+      <div className={`w-full max-w-lg ${isDarkMode ? 'bg-slate-900/90 border-slate-700/60 text-white shadow-xl ring-1 ring-white/10' : 'bg-white/95 border-slate-200 text-slate-900 shadow-xl ring-1 ring-slate-900/5'} border rounded-3xl p-6 sm:p-10 relative overflow-hidden transition-all duration-300`}>
         {/* Sağ Üst Karanlık Mod Butonu */}
         {onToggleDarkMode && (
           <div className="absolute top-4 right-4 z-20">
@@ -703,13 +701,13 @@ export function Lobby({
         )}
 
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-3xl bg-gradient-to-tr from-amber-500 to-amber-300 text-3xl shadow-lg shadow-amber-500/20 mb-4 transform -rotate-6">
-            👷
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-amber-500 shadow-sm mb-4">
+            <HardHat className="w-7 h-7" />
           </div>
           <h1 className={`text-3xl sm:text-4xl font-black ${isDarkMode ? 'text-white' : 'text-slate-900'} tracking-tight`}>
             MÜTEAHHİT <span className="text-amber-500 dark:text-amber-400">ONLINE</span>
           </h1>
-          <p className={`${isDarkMode ? 'text-slate-400' : 'text-slate-600'} text-sm mt-1`}>Arkadaşlarınla canlı veya yapay zekaya karşı oyna • <strong className="text-amber-500 dark:text-amber-400 font-semibold">Ankara</strong></p>
+          <p className={`${isDarkMode ? 'text-slate-400' : 'text-slate-600'} text-xs sm:text-sm mt-1`}>Çok oyunculu canlı emlak ve strateji oyunu • <strong className="text-amber-500 dark:text-amber-400 font-semibold">Ankara Edisyonu</strong></p>
         </div>
 
         {errorMsg && (
@@ -803,13 +801,13 @@ export function Lobby({
           {invitedRoomCode && (
             <div className="p-3 rounded-xl bg-amber-500/15 border-2 border-amber-400/80 text-amber-900 dark:text-amber-300 text-xs font-bold flex items-center justify-between gap-2 shadow-md animate-fadeIn">
               <div className="flex items-center gap-2 min-w-0">
-                <span className="text-base flex-shrink-0">🔗</span>
+                <Link2 className="w-4 h-4 text-amber-500 flex-shrink-0" />
                 <div className="min-w-0">
-                  <p className="font-space font-black uppercase text-[9.5px] tracking-wider leading-none text-amber-600 dark:text-amber-400">Davet Bağlantısı Alındı</p>
+                  <p className="font-bold uppercase text-[9.5px] tracking-wider leading-none text-amber-600 dark:text-amber-400">Davet Bağlantısı Alındı</p>
                   <p className="font-jetbrains text-[11px] mt-0.5 truncate">Oda Kodu: <strong className="font-mono text-amber-500 dark:text-amber-300">{invitedRoomCode}</strong></p>
                 </div>
               </div>
-              <span className="text-[9.5px] bg-amber-500 text-slate-950 font-black px-2 py-1 rounded-lg flex-shrink-0 font-space">DAVETLİSİNİZ</span>
+              <span className="text-[9.5px] bg-amber-500 text-slate-950 font-black px-2 py-1 rounded-lg flex-shrink-0">DAVETLİSİNİZ</span>
             </div>
           )}
 
@@ -818,7 +816,7 @@ export function Lobby({
             <button
               data-testid="create-room-btn"
               onClick={handleCreateRoom}
-              className="w-full py-3.5 rounded-xl font-bold text-sm bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 text-slate-950 hover:brightness-110 active:scale-98 shadow-lg shadow-amber-500/20 transition flex items-center justify-center gap-2 cursor-pointer font-space"
+              className="w-full py-3.5 rounded-xl font-bold text-sm bg-amber-500 hover:bg-amber-400 text-slate-950 active:scale-98 shadow-sm transition flex items-center justify-center gap-2 cursor-pointer"
             >
               <PlusCircle className="w-4 h-4 stroke-[2.5]" />
               <span>Yeni Oyun Odası Aç</span>
@@ -850,7 +848,7 @@ export function Lobby({
                     : isDarkMode
                     ? 'bg-slate-800 hover:bg-slate-700 text-white border-slate-700 cursor-pointer active:scale-98'
                     : 'bg-slate-900 hover:bg-slate-800 text-white border-slate-900 cursor-pointer active:scale-98'
-                } border transition flex items-center gap-2 font-space`}
+                } border transition flex items-center gap-2`}
               >
                 {isJoining || Boolean(network) ? (
                   <>
@@ -868,6 +866,31 @@ export function Lobby({
           </div>
         </div>
       </div>
+
+      {/* Footer Legal & Transparency */}
+      <footer className="mt-8 mb-4 text-center text-xs text-slate-500 flex items-center justify-center gap-4">
+        <span>© {new Date().getFullYear()} Müteahhit Online</span>
+        <span>•</span>
+        <button
+          type="button"
+          onClick={() => setLegalModalType('terms')}
+          className="hover:text-amber-400 underline underline-offset-2 transition cursor-pointer"
+        >
+          Kullanım Koşulları
+        </button>
+        <span>•</span>
+        <button
+          type="button"
+          onClick={() => setLegalModalType('privacy')}
+          className="hover:text-amber-400 underline underline-offset-2 transition cursor-pointer"
+        >
+          Gizlilik & KVKK
+        </button>
+      </footer>
+
+      {legalModalType && (
+        <LegalModal type={legalModalType} onClose={() => setLegalModalType(null)} />
+      )}
     </div>
   );
 }

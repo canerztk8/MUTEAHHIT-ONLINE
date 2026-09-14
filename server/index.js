@@ -49,11 +49,48 @@ function safeSend(ws, data) {
   }
 }
 
+const ALLOWED_ORIGIN_PATTERNS = [
+  /^https?:\/\/localhost(:\d+)?$/,
+  /^https?:\/\/127\.0\.0\.1(:\d+)?$/,
+  /^https:\/\/muteahhit-online\.pages\.dev$/,
+  /^https:\/\/[a-z0-9-]+\.muteahhit-online\.pages\.dev$/,
+  /^https:\/\/muteahhit-online-backend\.onrender\.com$/,
+];
+
+function isOriginAllowed(origin) {
+  if (!origin) return true; // Same-origin, direct browser nav or local scripts
+  if (process.env.ALLOWED_ORIGINS) {
+    const list = process.env.ALLOWED_ORIGINS.split(',').map(s => s.trim());
+    if (list.includes(origin) || list.includes('*')) return true;
+  }
+  return ALLOWED_ORIGIN_PATTERNS.some(rx => rx.test(origin));
+}
+
 const app = express();
 const httpServer = createServer(app);
 
-app.use(cors());
-app.use(express.json());
+// ─── Güvenlik Başlıkları (Security Headers) ──────────────────────────────────
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  next();
+});
+
+// ─── Kısıtlayıcı CORS Politikası ─────────────────────────────────────────────
+app.use(cors({
+  origin: (origin, callback) => {
+    if (isOriginAllowed(origin)) {
+      callback(null, true);
+    } else {
+      callback(null, false);
+    }
+  },
+  credentials: true
+}));
+
+app.use(express.json({ limit: '100kb' }));
 
 // ─── PeerJS Sinyal Sunucusu ───────────────────────────────────────────────────
 // Tüm WebRTC handshake sinyalleşmesi burada gerçekleşir.
@@ -68,6 +105,7 @@ const peerServer = ExpressPeerServer(httpServer, {
   createWebSocketServer: (options) => {
     peerWss = new WebSocketServer({
       ...options,
+      maxPayload: 64 * 1024,      // 64 KB yük sınırı (DoS önleme)
       perMessageDeflate: {
         zlibDeflateOptions: { level: 3 },
         threshold: 1024,
@@ -80,6 +118,7 @@ const peerServer = ExpressPeerServer(httpServer, {
 });
 
 app.use('/peerjs', peerServer);
+
 
 // ─── Bağlı Peer Takibi ───────────────────────────────────────────────────────
 // Bağlı peer'ların listesi; /api/room-check endpoint'i için kullanılır.
@@ -120,6 +159,7 @@ peerServer.on('disconnect', (client) => {
 
 const relayWss = new WebSocketServer({
   noServer: true,
+  maxPayload: 64 * 1024, // 64 KB yük sınırı (DoS bellek tüketimini önleme)
   perMessageDeflate: {
     zlibDeflateOptions: { level: 3 },
     threshold: 1024, // 1 KB altındaki minik ping/pong paketleri sıkıştırma masrafı olmadan ham akar
@@ -165,14 +205,32 @@ relayWss.on('connection', (ws) => {
 
   ws.isAlive = true;
   ws.lastActive = Date.now();
+  ws.msgWindowStart = Date.now();
+  ws.msgCount = 0;
+
   ws.on('pong', () => {
     ws.isAlive = true;
     ws.lastActive = Date.now();
   });
 
   ws.on('message', (raw) => {
-    ws.lastActive = Date.now();
+    const now = Date.now();
+    ws.lastActive = now;
     ws.isAlive = true;
+
+    // Bağlantı başına mesaj hız sınırı (DoS & Spam Koruması: saniyede maks. 40 mesaj)
+    if (now - ws.msgWindowStart > 1000) {
+      ws.msgWindowStart = now;
+      ws.msgCount = 1;
+    } else {
+      ws.msgCount++;
+      if (ws.msgCount > 40) {
+        console.warn(`[Relay] Rate limit aşıldı, soket kapatılıyor: ${playerId || 'anonim'}`);
+        ws.close(1008, 'Mesaj hızı aşıldı');
+        return;
+      }
+    }
+
     // Tüm mesaj işleme try/catch içinde — bu throw atarsa sadece bu mesaj atlanır, sunucu çalışmaya devam eder
     try {
       const msg = JSON.parse(raw.toString());
@@ -184,8 +242,17 @@ relayWss.on('connection', (ws) => {
 
       if (msg.type === 'relay:join') {
         const newRoomCode = String(msg.roomCode || '').toUpperCase().trim();
-        const newPlayerId = String(msg.playerId || '');
-        if (!newRoomCode) { ws.close(); return; }
+        const newPlayerId = String(msg.playerId || '').trim();
+        
+        // Girdi Doğrulama: Oda kodu ve oyuncu kimliği
+        if (!newRoomCode || !/^[A-Z0-9]{4,8}$/.test(newRoomCode)) {
+          ws.close(1008, 'Geçersiz oda kodu formatı');
+          return;
+        }
+        if (!newPlayerId || newPlayerId.length > 64) {
+          ws.close(1008, 'Geçersiz oyuncu kimliği');
+          return;
+        }
 
         // Bu oda için bekleyen bir grace timer varsa iptal et (oyuncu/host odaya geri döndü)
         if (roomGraceTimers.has(newRoomCode)) {
@@ -222,30 +289,20 @@ relayWss.on('connection', (ws) => {
         const targetId = msg.targetId || msg.payload?.targetId;
         const outgoing = JSON.stringify({ type: 'relay:msg', payload: msg.payload, from: playerId, targetId });
 
-        let delivered = false;
         room.forEach((pid, client) => {
           if (client !== ws && client.readyState === 1 /* OPEN */) {
             if (targetId) {
               if (pid === targetId) {
                 safeSend(client, outgoing);
-                delivered = true;
               }
             } else {
               safeSend(client, outgoing);
-              delivered = true;
             }
           }
         });
+        // GÜVENLİK DÜZELTMESİ: targetId eşleşmediğinde mesaj odadaki herkese ASLA broadcast edilmez!
+        // Bu sayede SESSION_TOKEN veya hedefe özel verilerin üçüncü şahıslara sızması kesin olarak engellenir.
 
-        // Hedefe özel mesajda targetId eşleşmediyse (örneğin reconnect esnasında ID değişimi),
-        // paketin kaybolmaması için odadaki diğer açık istemcilere güvenle ilet (istemci filtreler)
-        if (targetId && !delivered) {
-          room.forEach((pid, client) => {
-            if (client !== ws && client.readyState === 1) {
-              safeSend(client, outgoing);
-            }
-          });
-        }
 
       } else if (msg.type === 'relay:broadcast') {
         // Host → tüm client'lara (SYNC_STATE gibi)
@@ -353,6 +410,14 @@ httpServer.removeAllListeners('upgrade');
 
 httpServer.on('upgrade', (req, socket, head) => {
   try {
+    const origin = req.headers.origin;
+    if (origin && !isOriginAllowed(origin)) {
+      console.warn('[HTTP Upgrade] Yetkisiz Origin engellendi (CSWSH Koruması):', origin);
+      socket.write('HTTP/1.1 403 Forbidden\r\n\r\n');
+      socket.destroy();
+      return;
+    }
+
     if (req.url && req.url.startsWith('/wsrelay')) {
       relayWss.handleUpgrade(req, socket, head, (ws) => {
         relayWss.emit('connection', ws, req);
@@ -387,11 +452,34 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// ─── IP Bazlı İstek Sınırlayıcı (Rate Limiter: dakikada maks. 60 istek) ──────
+const roomCheckBuckets = new Map();
+function rateLimitRoomCheck(req, res, next) {
+  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket.remoteAddress || 'unknown';
+  const now = Date.now();
+  let bucket = roomCheckBuckets.get(ip);
+  if (!bucket || now - bucket.resetTime > 60000) {
+    bucket = { count: 1, resetTime: now };
+    roomCheckBuckets.set(ip, bucket);
+  } else {
+    bucket.count++;
+  }
+  if (roomCheckBuckets.size > 2000) {
+    for (const [k, v] of roomCheckBuckets.entries()) {
+      if (now - v.resetTime > 120000) roomCheckBuckets.delete(k);
+    }
+  }
+  if (bucket.count > 60) {
+    return res.status(429).json({ error: 'Çok fazla istek gönderildi. Lütfen biraz bekleyin.' });
+  }
+  next();
+}
+
 // ─── Oda Varlık Kontrolü ─────────────────────────────────────────────────────
-app.get('/api/room-check', (req, res) => {
+app.get('/api/room-check', rateLimitRoomCheck, (req, res) => {
   const code = String(req.query.code || '').toUpperCase().trim();
-  if (!code) {
-    return res.status(400).json({ error: 'code parametresi gerekli' });
+  if (!code || !/^[A-Z0-9]{4,8}$/.test(code)) {
+    return res.status(400).json({ error: 'Geçersiz oda kodu formatı.' });
   }
   const hasPeers = connectedPeers.has(code);
   const hasRelay = relayRooms.has(code) && (relayRooms.get(code).size > 0 || roomGraceTimers.has(code));
@@ -415,6 +503,12 @@ app.get('*', (req, res, next) => {
   });
 });
 
+// ─── Güvenli Express Hata Yakalayıcı (Stack Trace Sızıntısını Önleme) ────────
+app.use((err, req, res, next) => {
+  console.error('[Express Hatası]:', err.message);
+  res.status(500).json({ error: 'İç sunucu hatası oluştu.' });
+});
+
 // ─── Sunucuyu Başlat ─────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, () => {
@@ -422,5 +516,6 @@ httpServer.listen(PORT, () => {
   console.log(`📡 PeerJS Sinyal Sunucusu: http://localhost:${PORT}/peerjs`);
   console.log(`🔄 WebSocket Relay Sunucusu: ws://localhost:${PORT}/wsrelay`);
   console.log(`🎮 Oyun mantığı: Tarayıcı tabanlı P2P (WebRTC DataChannel + Relay Fallback)`);
-  console.log(`🛡️  Global hata yakalayıcıları aktif — crash koruması açık`);
+  console.log(`🛡️  Global hata yakalayıcıları ve güvenlik kalkanı aktif`);
 });
+

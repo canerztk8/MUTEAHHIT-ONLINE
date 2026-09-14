@@ -1,8 +1,10 @@
-import { randomUUID } from 'crypto';
+
 import { BOARD_TILES, COLOR_GROUPS, CHANCE_CARDS, CHEST_CARDS, PLAYER_TOKENS, PLAYER_COLORS } from './boardData.js';
 import { BotAI } from './BotAI.js';
 import { rollPhysicalDice } from './physicsDice.js';
 import { TradeManager } from './managers/TradeManager.js';
+// Browser-compatible: Web Crypto API (replaces Node.js crypto)
+const randomUUID = () => globalThis.crypto.randomUUID();
 
 export const TURN_TIMEOUT_SECONDS = 75;
 export const AUCTION_FEE = 50; // Her açık artırma başlatıldığında satıcıdan kesilen harç
@@ -310,6 +312,79 @@ export class MonopolyGame {
 
     this.addLog(`${player.name} oyuna yeniden bağlandı!`, 'info');
     return { success: true, player };
+  }
+
+  /**
+   * Host F5 Yenilemesi ve Host Migration için tam oyun durumunu geri yükler.
+   * @param {object} savedState - getPublicState() çıktısı
+   * @returns {boolean}
+   */
+  loadState(savedState) {
+    if (!savedState) return false;
+    try {
+      this.status = savedState.status || this.status;
+      this.roundNumber = savedState.roundNumber || this.roundNumber;
+      this.currentTurnIndex = savedState.currentTurnIndex !== undefined ? savedState.currentTurnIndex : this.currentTurnIndex;
+      this.phase = savedState.phase || this.phase;
+      this.canRollAgain = Boolean(savedState.canRollAgain);
+      this.dice = Array.isArray(savedState.dice) ? savedState.dice : this.dice;
+      this.diceToss = savedState.diceToss || this.diceToss;
+      this.lastDiceRollId = savedState.lastDiceRollId || this.lastDiceRollId;
+      this.currentTile = savedState.currentTile !== undefined ? savedState.currentTile : this.currentTile;
+      this.freeParkingPool = savedState.freeParkingPool ?? this.freeParkingPool;
+      this.gameStartTime = savedState.gameStartTime || this.gameStartTime;
+      this.totalPausedDuration = savedState.totalPausedDuration || 0;
+      this.isPaused = Boolean(savedState.isPaused);
+      this.logs = Array.isArray(savedState.logs) ? [...savedState.logs] : this.logs;
+      this.stats = savedState.stats || this.stats;
+      this.bankHouses = savedState.bankHouses ?? this.bankHouses;
+      this.bankHotels = savedState.bankHotels ?? this.bankHotels;
+      this.bankMoney = savedState.bankMoney ?? this.bankMoney;
+
+      if (savedState.properties) {
+        for (const [tileId, prop] of Object.entries(savedState.properties)) {
+          if (this.properties[tileId]) {
+            this.properties[tileId].ownerId = prop.ownerId;
+            this.properties[tileId].houses = prop.houses || 0;
+            this.properties[tileId].mortgaged = Boolean(prop.mortgaged);
+            this.properties[tileId].acquiredAt = prop.acquiredAt || 0;
+          }
+        }
+      }
+
+      if (Array.isArray(savedState.players) && savedState.players.length > 0) {
+        this.players = savedState.players.map(p => {
+          const restoredP = {
+            ...p,
+            lapsCompleted: p.lapsCompleted !== undefined ? p.lapsCompleted : (p.laps || 0),
+            get laps() { return this.lapsCompleted; },
+            set laps(v) { this.lapsCompleted = v; },
+            moneyHistory: Array.isArray(p.moneyHistory) ? [...p.moneyHistory] : []
+          };
+          return restoredP;
+        });
+      }
+
+      this.auction = savedState.auction || null;
+      this.lastAuctionResult = savedState.lastAuctionResult || null;
+      this.pendingTrade = savedState.pendingTrade || null;
+      this.pendingLoan = savedState.pendingLoan || null;
+      this.lastPropertyAcquired = savedState.lastPropertyAcquired || null;
+      this.lastPropertyLoss = savedState.lastPropertyLoss || null;
+      this.lastJailEvent = savedState.lastJailEvent || null;
+      this.lastMovement = savedState.lastMovement || null;
+      this.drawnCard = savedState.drawnCard || null;
+      this.lastRentPayment = savedState.lastRentPayment || null;
+      this.winner = savedState.winner || null;
+      this.eliminations = savedState.eliminations || [];
+      this.lastElimination = savedState.lastElimination || null;
+      this.disconnectNotice = savedState.disconnectNotice || null;
+      this.spectatorCount = savedState.spectatorCount || 0;
+      return true;
+    } catch (e) {
+      console.error('[MonopolyGame] loadState hatası:', e);
+      return false;
+    }
   }
 
   removePlayer(playerId) {
@@ -965,9 +1040,9 @@ export class MonopolyGame {
 
     const ownerId = propState.ownerId;
     let baseRent = 0;
+    const houses = propState.houses || 0;
 
     if (tile.type === 'property') {
-      const houses = propState.houses || 0;
       if (houses > 0) {
         baseRent = tile.rent[houses];
       } else {
@@ -1150,7 +1225,7 @@ export class MonopolyGame {
               tileName: tile.name,
               timestamp: Date.now()
             };
-            this.addLog(`💡 ${player.name}, Şans Kartı gereği Tesis için özel zar attı (${roll1}+${roll2}=${specialSum}) ve sahibinin tek tesisi olsa dahi kart kuralı gereği 10 katı olan ${utilRent}₺ kirayı ${owner.name} oyuncusuna ödedi!`, 'rent');
+            this.addLog(`💡 ${player.name}, Şans Kartı ile ${owner.name} tesisine (${specialSum} zar x 10) ${utilRent}₺ kira ödedi.`, 'rent');
             this.checkBankruptcy(player, utilRent, owner.id);
             this.phase = 'TURN_ACTIONS';
             break;
@@ -1630,6 +1705,7 @@ export class MonopolyGame {
     if (player.money < houseCost) {
       return { success: false, error: `Yetersiz bakiye! İnşaat maliyeti: ${houseCost}₺.` };
     }
+
     if (willBeHotel) {
       this.bankHotels = (this.bankHotels ?? 12) - 1;
       this.bankHouses = (this.bankHouses ?? 0) + 4; // 4 ev bankaya geri döner
@@ -1978,12 +2054,7 @@ export class MonopolyGame {
     }
 
     if (releasedProps.length > 0) {
-      this.addLog(`📢 ${player.name} oyuncusunun iflasıyla sahipsiz kalan ${releasedProps.length} tapu banka yerine açık artırmaya açıldı!`, 'buy');
-      if (!this.auction && this.phase !== 'AUCTION') {
-        // En değerli tapuyu derhal açık artırmaya çıkar
-        releasedProps.sort((a, b) => (b.cost || 0) - (a.cost || 0));
-        this.startAuction(releasedProps[0], 'bankruptcy', player);
-      }
+      this.addLog(`📢 ${player.name} oyuncusunun iflasıyla sahipsiz kalan ${releasedProps.length} tapu ipoteksiz olarak bankaya (hazineye) devredildi.`, 'info');
     }
 
     const winner = this.checkWinner();
@@ -2073,6 +2144,9 @@ export class MonopolyGame {
   }
 
   checkBankruptcy(player, debtAmount, creditorId) {
+    if (creditorId) {
+      player.lastCreditorId = creditorId;
+    }
     if (player.money >= 0) return false;
 
     let maxLiquidity = player.money;
@@ -2852,9 +2926,9 @@ export class MonopolyGame {
         this.winner = winner;
         this.status = 'ended';
         this.phase = 'GAME_OVER';
-        this.computeStandings(this.winner);
+        this.computeStandings(winner);
         this.addLog(`🏆 [DEV] ${winner.name} şampiyon ilan edildi!`, 'winner');
-        return { success: true };
+        return { success: true, winner: winner.name };
       }
 
       case 'reset_game': {

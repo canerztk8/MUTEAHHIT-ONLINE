@@ -14,14 +14,18 @@ import { MobileBottomActionBar } from './components/MobileBottomActionBar.jsx';
 import { ErrorBoundary } from './components/ErrorBoundary.jsx';
 import { DisconnectTimerText } from './components/DisconnectTimerText.jsx';
 
-// 🚀 Modallar — Dinamik code-splitting ile ana bundle yükü hafifletilir
+// Modallar — Dinamik code-splitting ile ana bundle yükü hafifletilir
 const PropertyCardModal = lazy(() => import('./components/PropertyCardModal.jsx').then(m => ({ default: m.PropertyCardModal })));
 const TradeModal = lazy(() => import('./components/TradeModal.jsx').then(m => ({ default: m.TradeModal })));
 const WinnerModal = lazy(() => import('./components/WinnerModal.jsx').then(m => ({ default: m.WinnerModal })));
 const EliminationModal = lazy(() => import('./components/EliminationModal.jsx').then(m => ({ default: m.EliminationModal })));
-const DevToolsModal = lazy(() => import('./components/DevToolsModal.jsx').then(m => ({ default: m.DevToolsModal })));
+const DevToolsModal = import.meta.env.DEV
+  ? lazy(() => import('./components/DevToolsModal.jsx').then(m => ({ default: m.DevToolsModal })))
+  : () => null;
+import { MoneyHistoryModal } from './components/MoneyHistoryModal.jsx';
+import { ENV } from './config/env.js';
 import { sounds } from './sound/soundEffects.js';
-import { Volume2, VolumeX, Copy, Check, Users, Sparkles, LogOut, Wrench, Sun, Moon, X, Wifi, Landmark, MessageSquare } from 'lucide-react';
+import { X, Wrench, WifiOff, Eye, AlertTriangle, XCircle, MapPin, TrendingUp, TrendingDown, HardHat } from 'lucide-react';
 
 // 🃏 Son 3 Çekilen Kart Geçmişi Modalı (Deste kartına tıklanınca açılır)
 function CardHistoryModal({ deckType, logs, onClose }) {
@@ -198,7 +202,7 @@ function AnitkabirBackground({ isDarkMode }) {
   return (
     <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden select-none">
       <img
-        src="/images/francesca-minto-NdsCWVfkUu0-unsplash.webp"
+        src="/images/ankara-backdrop.webp"
         alt="Ankara Anıtkabir Arka Planı"
         className={`w-full h-full object-cover object-[center_32%] transition-all duration-700 ease-out scale-105 ${
           isDarkMode
@@ -276,16 +280,13 @@ export function App() {
   // Sayfa açıldığı anda backend'e arka planda sessizce bir GET isteği atarak
   // Render uyku modundaysa oyuncu lobideyken uyanmasını sağlar.
   useEffect(() => {
-    const backendHost = import.meta.env.VITE_PEER_HOST || 'muteahhit-online-backend.onrender.com';
-    const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-    if (!isLocal && backendHost) {
-      const url = `https://${backendHost}/api/health`;
-      fetch(url, { mode: 'cors', cache: 'no-store' })
+    if (!ENV.IS_LOCAL && ENV.HEALTH_CHECK_URL) {
+      fetch(ENV.HEALTH_CHECK_URL, { mode: 'cors', cache: 'no-store' })
         .then(res => res.json())
         .then(() => console.log('[Network] Backend erken uyandırma sinyali başarılı (Pre-warm OK).'))
         .catch(() => {
           setTimeout(() => {
-            fetch(url, { mode: 'cors', cache: 'no-store' }).catch(() => {});
+            fetch(ENV.HEALTH_CHECK_URL, { mode: 'cors', cache: 'no-store' }).catch(() => {});
           }, 3500);
         });
     }
@@ -1473,35 +1474,14 @@ export function App() {
   };
 
   const handleSendMessage = (text) => {
-    const clean = (text || '').trim().toLowerCase();
-    if (clean === '/20032002caner.' || clean === '/20032002caner') {
-      setShowDevTools(true);
-      setDevToolsUnlocked(true);
-      try {
-        localStorage.setItem('vechiron_devtools_unlocked', '1');
-      } catch {}
-      const now = Date.now();
-      const devElapsedMs = gameState?.gameStartTime
-        ? Math.max(0, now - gameState.gameStartTime - (gameState.totalPausedDuration || 0))
-        : 0;
-      const totalSecs = Math.floor(devElapsedMs / 1000);
-      const mins = Math.floor(totalSecs / 60);
-      const secs = totalSecs % 60;
-      const devTime = mins >= 60
-        ? `${Math.floor(mins / 60)}:${(mins % 60).toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
-        : `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-      setChatMessages(prev => [
-        ...prev,
-        {
-          id: `dev_${now}`,
-          senderName: '🛠️ SİSTEM',
-          senderColor: '#f59e0b',
-          text: '🛠️ Geliştirici & Test Paneli (DevTools) Aktif Edildi! Tur sarma, bakiye, piyon ışınlama, zar sabitleme ve tüm bildirimleri test edebilirsiniz.',
-          time: devTime,
-          timestamp: now
-        }
-      ]);
-      return;
+    // Yalnızca yerel geliştirme (DEV) ortamında test için /devtools açılabilir
+    if (import.meta.env.DEV) {
+      const clean = (text || '').trim().toLowerCase();
+      if (clean === '/devtools') {
+        setShowDevTools(true);
+        setDevToolsUnlocked(true);
+        return;
+      }
     }
     networkRef.current?.sendAction(ACTION.SEND_CHAT, { message: text });
   };
@@ -1553,7 +1533,7 @@ export function App() {
               }}
               className="flex-1 px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold rounded-xl transition cursor-pointer shadow-md text-sm"
             >
-              🏗️ Yeni Oda Aç
+              Yeni Oda Aç
             </button>
           </div>
         </div>
@@ -1569,7 +1549,7 @@ export function App() {
         <div className={`relative z-10 flex flex-col items-center gap-4 p-8 rounded-3xl border backdrop-blur-2xl shadow-2xl ${
           isDarkMode ? 'bg-slate-900/85 border-slate-700/60 text-white shadow-black/60' : 'bg-white/85 border-white/80 text-slate-900 shadow-slate-900/10 ring-1 ring-slate-900/5'
         }`}>
-          <span className="text-4xl">🔌</span>
+          <WifiOff className="w-12 h-12 text-rose-500" />
           <h2 className="text-xl font-black text-rose-500">Host Bağlantısı Koptu</h2>
           <p className={`text-sm text-center max-w-xs ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
             Oda kurucusunun bağlantısı kesildi. Oyun sona erdi.
@@ -1663,7 +1643,7 @@ export function App() {
               ? 'bg-slate-900/75 border-slate-700/60 text-slate-300 shadow-black/40'
               : 'bg-white/80 border-white/80 text-slate-700 shadow-slate-900/5'
           }`}>
-            <span className="text-amber-500 font-bold">🏛️ Ankara</span>
+            <span className="text-amber-500 font-bold">Ankara</span>
             <span className={isDarkMode ? 'text-slate-600' : 'text-slate-300'}>•</span>
             <span>Anıtkabir</span>
           </div>
@@ -1696,17 +1676,21 @@ export function App() {
   // Oyun Sahnesi
   return (
     <div className="h-screen max-h-[100dvh] overflow-hidden bg-transparent text-slate-900 dark:text-slate-100 flex flex-col selection:bg-amber-400 selection:text-black">
-      {/* ⚠️ Kopma / Yeniden Bağlanma Bildirimi (Global Floating Banner) */}
+      {/* Kopma / Yeniden Bağlanma Bildirimi (Global Floating Banner) */}
       {effectiveGameState?.disconnectNotice && (
-        <div className={`fixed top-3 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 pointer-events-auto px-4 py-2 rounded-2xl shadow-2xl backdrop-blur-md transition-all duration-300 ${
+        <div className={`fixed top-3 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 pointer-events-auto px-4 py-2 rounded-2xl shadow-xl backdrop-blur-md transition-all duration-300 ${
           effectiveGameState.disconnectNotice.type === 'disconnecting'
-            ? 'bg-amber-500/95 text-slate-950 border-2 border-amber-300 shadow-amber-500/25 animate-pulse'
-            : 'bg-rose-600/95 text-white border-2 border-rose-400 shadow-rose-600/30 animate-bounce'
+            ? 'bg-amber-500 text-slate-950 border border-amber-300 shadow-amber-500/20'
+            : 'bg-rose-600 text-white border border-rose-400 shadow-rose-600/20'
         }`}>
-          <span className="text-base sm:text-lg">
-            {effectiveGameState.disconnectNotice.type === 'disconnecting' ? '⚠️' : '❌'}
+          <span className="flex-shrink-0">
+            {effectiveGameState.disconnectNotice.type === 'disconnecting' ? (
+              <AlertTriangle className="w-4 h-4 text-slate-950" />
+            ) : (
+              <XCircle className="w-4 h-4 text-white" />
+            )}
           </span>
-          <span className="text-xs sm:text-sm font-black font-space tracking-wide">
+          <span className="text-xs sm:text-sm font-bold tracking-wide">
             {effectiveGameState.disconnectNotice.type === 'disconnecting' ? (
               <>
                 <strong>{effectiveGameState.disconnectNotice.playerName}</strong> bağlantısı kesildi... (Yeniden bağlanması bekleniyor - <DisconnectTimerText expiresAt={effectiveGameState.disconnectNotice.expiresAt} fallbackSeconds={effectiveGameState.disconnectNotice.remainingSeconds} />)
@@ -1720,15 +1704,16 @@ export function App() {
         </div>
       )}
 
-      {/* 👁️ Canlı Yayın / İzleyici Modu Üst Barı */}
+      {/* Canlı Yayın / İzleyici Modu Üst Barı */}
       {isSpectator && (
         <div className={`fixed ${effectiveGameState?.disconnectNotice ? 'top-16' : 'top-2.5'} left-1/2 -translate-x-1/2 z-40 flex items-center gap-2.5 pointer-events-auto bg-slate-950/90 dark:bg-slate-900/95 backdrop-blur-md border border-sky-500/60 px-3.5 py-1.5 rounded-2xl shadow-xl shadow-sky-500/15 animate-fadeIn transition-all duration-300`}>
-          <span className="flex h-2.5 w-2.5 relative">
+          <span className="flex h-2 w-2 relative">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-sky-500"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-sky-500"></span>
           </span>
-          <span className="text-xs font-bold text-sky-400 font-space uppercase tracking-wider flex items-center gap-1.5">
-            <span>👁️ CANLI MAÇ YAYINI</span>
+          <span className="text-xs font-bold text-sky-400 uppercase tracking-wider flex items-center gap-1.5">
+            <Eye className="w-3.5 h-3.5 text-sky-400" />
+            <span>CANLI MAÇ YAYINI</span>
             <span className="text-slate-500">•</span>
             <span className="text-slate-200 font-medium normal-case text-[11px]">İzleyicisiniz</span>
           </span>
@@ -2143,14 +2128,18 @@ export function App() {
                   : 'bg-rose-950/95 border-rose-500 text-rose-100 shadow-[0_0_25px_rgba(244,63,94,0.5)]'
               }`}
             >
-              <span className="text-xl sm:text-2xl animate-bounce">
-                {moneyToast.type === 'in' ? '💰' : '💸'}
+              <span className="p-1 rounded-lg bg-black/20 flex items-center justify-center flex-shrink-0">
+                {moneyToast.type === 'in' ? (
+                  <TrendingUp className="w-5 h-5 text-emerald-400" />
+                ) : (
+                  <TrendingDown className="w-5 h-5 text-rose-400" />
+                )}
               </span>
               <div className="leading-tight">
-                <span className="text-[10px] font-black uppercase tracking-wider block opacity-90 font-space">
+                <span className="text-[10px] font-bold uppercase tracking-wider block opacity-90">
                   {moneyToast.type === 'in' ? 'Para Girişi' : 'Para Çıkışı'}
                 </span>
-                <span className="text-base sm:text-lg font-black font-jetbrains tracking-wide">
+                <span className="text-base sm:text-lg font-bold font-jetbrains tracking-wide">
                   {moneyToast.type === 'in' ? `+${moneyToast.amount.toLocaleString('tr-TR')} ₺` : `-${moneyToast.amount.toLocaleString('tr-TR')} ₺`}
                 </span>
               </div>
@@ -2163,11 +2152,11 @@ export function App() {
             role="button"
             tabIndex={0}
             onKeyDown={(e) => e.key === 'Enter' && setShowMyMoneyHistory(true)}
-            className="cardstock-panel hover:bg-white dark:hover:bg-slate-850 border-2 border-amber-500 rounded-2xl p-2.5 sm:p-3 shadow-[0_12px_32px_rgba(0,0,0,0.35)] flex items-center gap-3 transition text-slate-900 dark:text-slate-100 tile-paper-press cursor-pointer active:scale-95 text-left relative"
+            className="cardstock-panel hover:bg-white dark:hover:bg-slate-850 border border-amber-500/60 rounded-2xl p-2.5 sm:p-3 shadow-xl flex items-center gap-3 transition text-slate-900 dark:text-slate-100 tile-paper-press cursor-pointer active:scale-95 text-left relative"
             title="Para giriş/çıkış geçmişini gör"
           >
-            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-tr from-amber-500 to-amber-300 flex items-center justify-center text-xl sm:text-2xl shadow-md border border-white/60 flex-shrink-0">
-              {myPlayer.avatar || '👷'}
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-amber-500 flex items-center justify-center text-xl sm:text-2xl shadow-md border border-white/60 flex-shrink-0">
+              {myPlayer.avatar || <HardHat className="w-6 h-6 text-slate-950" />}
             </div>
             <div className="flex flex-col min-w-0 pr-1 flex-1">
               <div className="flex items-center gap-1.5">
@@ -2323,91 +2312,32 @@ export function App() {
                   {myPlayer.money?.toLocaleString('tr-TR')} ₺
                 </span>
                 {currentTile && (
-                  <span className="text-[9.5px] text-slate-600 dark:text-slate-400 font-bold truncate max-w-[110px]" title={currentTile.name}>
-                    📍 {currentTile.name}
+                  <span className="text-[9.5px] text-slate-600 dark:text-slate-400 font-bold truncate max-w-[110px] flex items-center gap-1" title={currentTile.name}>
+                    <MapPin className="w-2.5 h-2.5 text-amber-500 flex-shrink-0" />
+                    <span>{currentTile.name}</span>
                   </span>
                 )}
               </div>
-              <span className="text-[8px] text-amber-600 dark:text-amber-400 font-bold mt-0.5 opacity-80">📊 Geçmişi gör →</span>
+              <span className="text-[8.5px] text-amber-600 dark:text-amber-400 font-bold mt-0.5 opacity-80">Hesap Geçmişi →</span>
             </div>
           </div>
         </div>
       )}
 
       {/* Sol Alt Para Geçmişi Modalı */}
-      {showMyMoneyHistory && myPlayer && (() => {
-        const history = (myPlayer.moneyHistory && myPlayer.moneyHistory.length > 0)
-          ? myPlayer.moneyHistory
-          : myMoneyHistoryRef.current;
-        return (
-          <div
-            className="fixed inset-0 z-[999] flex items-center justify-center p-3"
-            onClick={() => setShowMyMoneyHistory(false)}
-          >
-            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-            <div
-              className="relative z-10 w-full max-w-sm max-h-[80vh] bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-700 flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
-              onClick={e => e.stopPropagation()}
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between px-4 py-3.5 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-850">
-                <div className="flex items-center gap-2.5">
-                  <span className="text-2xl leading-none">{myPlayer.avatar || myPlayer.token?.icon || '👷'}</span>
-                  <div>
-                    <div className="font-black text-sm text-slate-900 dark:text-slate-100 font-space">{myPlayer.name} — Bakiye Geçmişim</div>
-                    <div className="text-xs font-black text-emerald-600 dark:text-emerald-400 font-jetbrains">{myPlayer.money?.toLocaleString('tr-TR')} ₺ güncel bakiye</div>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setShowMyMoneyHistory(false)}
-                  className="p-1.5 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer text-slate-500 dark:text-slate-400"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-              {/* Body */}
-              <div className="overflow-y-auto flex-1 p-3 space-y-2 custom-scrollbar">
-                {history.length === 0 ? (
-                  <p className="text-center text-xs text-slate-400 dark:text-slate-500 py-8 font-medium">Henüz kayıtlı para hareketi yok.</p>
-                ) : (
-                  [...history].reverse().map((entry, i) => (
-                    <div
-                      key={i}
-                      className={`flex flex-col gap-1 px-3 py-2 rounded-2xl text-xs border ${
-                        entry.delta > 0
-                          ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/50'
-                          : 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800/50'
-                      }`}
-                    >
-                      <div className="flex items-start gap-1.5">
-                        <span className={`flex-shrink-0 font-bold mt-0.5 ${entry.delta > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                          {entry.delta > 0 ? '↑' : '↓'}
-                        </span>
-                        <span className="text-slate-800 dark:text-slate-200 font-semibold leading-snug break-words">{entry.reason}</span>
-                      </div>
-                      <div className="flex items-center justify-between pl-4">
-                        <span className="text-[10px] text-slate-400 dark:text-slate-500 font-jetbrains">{entry.time}</span>
-                        <span className={`font-black font-jetbrains text-xs ${entry.delta > 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-700 dark:text-rose-300'}`}>
-                          {entry.delta > 0 ? '+' : ''}{entry.delta.toLocaleString('tr-TR')} ₺
-                        </span>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-              <div className="px-4 py-2.5 border-t border-slate-200 dark:border-slate-800 text-center text-[10px] text-slate-400 dark:text-slate-500 font-jetbrains bg-slate-50/50 dark:bg-slate-850/50">
-                Son {history.length} işlem kaydı
-              </div>
-            </div>
-          </div>
-        );
-      })()}
+      {showMyMoneyHistory && myPlayer && (
+        <MoneyHistoryModal
+          player={myPlayer}
+          history={(myPlayer.moneyHistory && myPlayer.moneyHistory.length > 0) ? myPlayer.moneyHistory : myMoneyHistoryRef.current}
+          onClose={() => setShowMyMoneyHistory(false)}
+        />
+      )}
 
-      {/* 🛠️ DevTools Kalıcı Tetikleyici Butonu (Ekranın En Sağ Altı - Saydam & Erişilebilir) */}
-      {devToolsUnlocked && (
+      {/* DevTools Tetikleyici Butonu (Yalnızca Geliştirme Ortamında) */}
+      {import.meta.env.DEV && devToolsUnlocked && (
         <button
           onClick={() => setShowDevTools(prev => !prev)}
-          className="fixed bottom-3 right-3 z-50 p-2.5 rounded-2xl bg-slate-900/60 hover:bg-slate-900/95 text-amber-400 border border-amber-500/40 hover:border-amber-400 shadow-xl backdrop-blur-md flex items-center justify-center cursor-pointer transition-all duration-200 active:scale-90 hover:scale-105 opacity-60 hover:opacity-100 select-none group"
+          className="fixed bottom-3 right-3 z-50 p-2.5 rounded-2xl bg-slate-900/60 hover:bg-slate-900/95 text-amber-400 border border-amber-500/40 hover:border-amber-400 shadow-xl flex items-center justify-center cursor-pointer transition-all duration-200 active:scale-90 hover:scale-105 opacity-60 hover:opacity-100 select-none group"
           title="Müteahhit DevTools Test Panelini Aç / Kapat"
         >
           <Wrench className="w-4 h-4 text-amber-400 group-hover:rotate-45 transition-transform duration-300" />
@@ -2415,7 +2345,7 @@ export function App() {
       )}
 
       {/* 🛠️ DevTools Modal */}
-      {showDevTools && (
+      {import.meta.env.DEV && showDevTools && (
         <ErrorBoundary name="Geliştirici Araçları" fallback={null}>
           <Suspense fallback={null}>
             <DevToolsModal

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import confetti from 'canvas-confetti';
-import { Trophy, RotateCcw, Award, Dices, Handshake, Eye, Maximize2, Minimize2, Sparkles, Crown } from 'lucide-react';
+import { Trophy, RotateCcw, Award, Dices, Handshake, Eye, Maximize2, Minimize2, Crown } from 'lucide-react';
 import { sounds } from '../sound/soundEffects.js';
 
 export function WinnerModal({ winner, gameState, onRestart, onLeaveRoom }) {
@@ -102,10 +102,7 @@ export function WinnerModal({ winner, gameState, onRestart, onLeaveRoom }) {
   // 2. TAM EKRAN ŞAMPİYONLUK VE SIRALAMA MODALİ
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto animate-in fade-in duration-300">
-      <div className="relative w-full max-w-lg bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 border-2 border-amber-500/60 rounded-3xl p-4 sm:p-7 text-center shadow-2xl shadow-amber-500/20 overflow-hidden my-auto max-h-[92vh] overflow-y-auto custom-scrollbar">
-        {/* Altın Parıltı & Radial Glow */}
-        <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-80 h-80 bg-amber-500/20 rounded-full blur-3xl pointer-events-none" />
-
+      <div className="relative w-full max-w-lg bg-slate-900 border border-amber-500/50 rounded-3xl p-4 sm:p-7 text-center shadow-2xl overflow-hidden my-auto max-h-[92vh] overflow-y-auto custom-scrollbar">
         {/* Küçültme (Tahtayı İncele) Butonu Üst Sağ */}
         <button
           onClick={() => setIsMinimized(true)}
@@ -119,14 +116,12 @@ export function WinnerModal({ winner, gameState, onRestart, onLeaveRoom }) {
 
         <div className="relative z-10 flex flex-col items-center">
           {/* Şampiyonluk Kupası */}
-          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-gradient-to-tr from-amber-500 via-yellow-400 to-amber-600 flex items-center justify-center text-3xl sm:text-4xl shadow-xl shadow-amber-500/40 mb-3 animate-trophy-glow border-2 border-amber-300">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-amber-500 flex items-center justify-center text-3xl sm:text-4xl shadow-lg mb-3 border border-amber-300">
             <Trophy className="w-8 h-8 sm:w-10 sm:h-10 text-slate-950 stroke-[2.5]" />
           </div>
 
-          <span className="text-[10px] sm:text-xs font-black tracking-widest text-amber-400 uppercase mb-1 flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            MÜTEAHHİTLİK ŞAMPİYONU
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+          <span className="text-[10px] sm:text-xs font-bold tracking-widest text-amber-400 uppercase mb-1 flex items-center gap-1.5">
+            OYUN ŞAMPİYONU
           </span>
 
           <h2 className="text-2xl sm:text-3xl font-black text-white mb-1 tracking-tight">

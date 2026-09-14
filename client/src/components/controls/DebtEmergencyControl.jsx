@@ -19,11 +19,11 @@ export function DebtEmergencyControl({
         {onAutoMortgage && (
           <button
             onClick={onAutoMortgage}
-            className="w-full py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs rounded-lg transition flex items-center justify-center gap-1 shadow-sm cursor-pointer active:scale-95"
+            className="w-full py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-lg transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer active:scale-95"
             title="Borcu kapatmak için mülkleri otomatik ipotek et ve binaları sat"
           >
             <Zap className="w-3.5 h-3.5 fill-slate-950" />
-            <span>⚡ Tapuları Otomatik İpotek Et</span>
+            <span>Tapuları Otomatik İpotek Et</span>
           </button>
         )}
         {onDeclareBankruptcy && (
@@ -33,11 +33,11 @@ export function DebtEmergencyControl({
                 onDeclareBankruptcy();
               }
             }}
-            className="w-full py-1.5 bg-rose-700 hover:bg-rose-600 text-white font-black text-xs rounded-lg transition flex items-center justify-center gap-1 shadow-sm cursor-pointer active:scale-95"
+            className="w-full py-1.5 bg-rose-700 hover:bg-rose-600 text-white font-bold text-xs rounded-lg transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer active:scale-95"
             title="Borcu ödeyemiyorsanız iflas edin ve oyundan elenin"
           >
             <Flame className="w-3.5 h-3.5 text-rose-200" />
-            <span>💥 İflas Bayrağını Çek (İflas Et)</span>
+            <span>İflas Bayrağını Çek (İflas Et)</span>
           </button>
         )}
       </div>

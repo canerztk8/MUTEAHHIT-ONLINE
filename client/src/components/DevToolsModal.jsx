@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   Wrench, X, Play, FastForward, DollarSign, MapPin, Dices, 
-  Building2, Bell, Volume2, Sparkles, RefreshCw, 
+  Building2, Bell, Volume2, RefreshCw, 
   Trash2, RotateCcw, AlertCircle, CheckCircle, ChevronRight, Minimize2, Maximize2
 } from 'lucide-react';
 import { BOARD_TILES } from '../game/boardData.js';
@@ -203,9 +203,9 @@ export function DevToolsModal({
                   </button>
                   <button
                     onClick={() => sendDevCmd('fast_forward_bots')}
-                    className="p-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-black transition cursor-pointer flex items-center justify-center gap-1 shadow-xs active:scale-95"
+                    className="p-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold transition cursor-pointer flex items-center justify-center gap-1.5 shadow-xs active:scale-95"
                   >
-                    <Sparkles className="w-4 h-4" />
+                    <FastForward className="w-4 h-4" />
                     <span>Bot Turunu Hızlı Atla</span>
                   </button>
                 </div>
@@ -698,7 +698,7 @@ export function DevToolsModal({
 
         {/* Alt Bar */}
         <div className="px-4 py-2.5 bg-slate-100 border-t border-slate-200 flex items-center justify-between text-[10px] text-slate-500 font-jetbrains">
-          <span>Gizli Komut: <code className="bg-slate-200 px-1.5 py-0.5 rounded font-bold text-slate-800">/20032002Caner.</code></span>
+          <span>Ortam: <code className="bg-slate-200 px-1.5 py-0.5 rounded font-bold text-slate-800">Yalnızca Geliştirme Modu (DEV)</code></span>
           <button
             onClick={onClose}
             className="px-3 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-bold cursor-pointer transition"

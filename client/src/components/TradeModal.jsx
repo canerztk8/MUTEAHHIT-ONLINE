@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Handshake, Check, Ban, AlertTriangle, ShieldAlert, Sparkles, TrendingDown, Clock } from 'lucide-react';
+import { X, Handshake, Check, Ban, AlertTriangle, ShieldAlert, TrendingDown, Clock } from 'lucide-react';
 import { BOARD_TILES } from '../game/boardData.js';
 
 export function TradeModal({
@@ -204,14 +204,14 @@ export function TradeModal({
                   <p className="text-[11px] text-rose-300 font-medium">
                     Karşı tarafın verdiği değer ({pendingTrade.offeredValue}₺), sizden istediği değerden ({pendingTrade.requestedValue}₺) <strong className="text-white font-bold">{valueLoss}₺ DAHA AZ</strong> (İstenen değerin %{offerRatio}'si teklif ediliyor).
                   </p>
-                  <span className="text-[10px] text-rose-400 font-bold bg-rose-900/60 py-0.5 rounded">
-                    ⚠️ Bu teklifi kabul ederseniz ciddi değer kaybedeceksiniz!
+                  <span className="text-[10px] text-rose-400 font-medium bg-rose-900/40 px-2 py-0.5 rounded">
+                    Bu teklifi kabul ederseniz portföyünüz değer kaybeder.
                   </span>
                 </div>
               ) : (
-                <div className="mt-2 p-2 bg-emerald-950/60 border border-emerald-500/40 rounded-xl text-emerald-300 text-xs font-semibold flex items-center justify-center gap-1">
-                  <Sparkles className="w-4 h-4 text-emerald-400" />
-                  <span>Dengeli Teklif (Teklif Değeri: {pendingTrade.offeredValue}₺ vs İstenen: {pendingTrade.requestedValue}₺ - Karşılık: %{offerRatio})</span>
+                <div className="mt-2 p-2 bg-emerald-950/60 border border-emerald-500/40 rounded-xl text-emerald-300 text-xs font-semibold flex items-center justify-center gap-2">
+                  <Check className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                  <span>Dengeli Teklif (Teklif: {pendingTrade.offeredValue}₺ vs İstenen: {pendingTrade.requestedValue}₺ — %{offerRatio})</span>
                 </div>
               )}
             </div>

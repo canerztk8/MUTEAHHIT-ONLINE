@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { BOARD_TILES } from '../game/boardData.js';
-import { sounds } from '../sound/soundEffects.js';
-import { Building2, Building, Train, Zap, AlertTriangle, Coins, Clock, Home, Landmark, Gavel, Sparkles, ChevronDown } from 'lucide-react';
-import { Board3DOverlay } from './Board3DOverlay.jsx';
+import { Building, Train, Zap, AlertTriangle, Coins, Clock, Home, Landmark, Gavel, ChevronDown } from 'lucide-react';
 import { RentImpactOverlay } from './RentImpactOverlay.jsx';
 import { DisconnectTimerText } from './DisconnectTimerText.jsx';
 import { NonDrawerCardAlert } from './controls/NonDrawerCardAlert.jsx';
@@ -137,9 +135,9 @@ const GlidingBoardArrow = React.memo(function GlidingBoardArrow({
       title={title}
     >
       <svg
-        className="w-3.5 h-3 sm:w-4 sm:h-3.5 animate-bounce flex-shrink-0"
+        className="w-3.5 h-3 sm:w-4 sm:h-3.5 flex-shrink-0"
         style={{
-          filter: `drop-shadow(0 2px 4px ${glowColor})`,
+          filter: `drop-shadow(0 1px 2px ${glowColor})`,
           color: color
         }}
         viewBox="0 0 14 10"
@@ -1888,24 +1886,24 @@ export function Board({
 
                 {/* 2. KİRA ÖDEME BİLDİRİMİ */}
                 {rentNotification && myPlayerId && (rentNotification.payerId === myPlayerId || rentNotification.ownerId === myPlayerId) && (
-                  <div className="w-full max-w-xs sm:max-w-sm mx-auto pointer-events-none animate-rent-banner-bounce">
-                    <div className="bg-gradient-to-r from-rose-950/95 via-slate-900/95 to-emerald-950/95 border-2 border-amber-400 rounded-2xl px-3 sm:px-4 py-2 shadow-[0_0_30px_rgba(251,191,36,0.6)] flex items-center gap-2.5 backdrop-blur-md">
-                      <div className="w-8 h-8 rounded-xl bg-amber-400/20 border border-amber-400/50 flex items-center justify-center text-lg flex-shrink-0">
-                        💸
+                  <div className="w-full max-w-xs sm:max-w-sm mx-auto pointer-events-none animate-fadeIn">
+                    <div className="bg-slate-900/95 border border-amber-500/40 rounded-xl px-3.5 py-2.5 shadow-xl flex items-center gap-3 backdrop-blur-md">
+                      <div className="w-8 h-8 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center flex-shrink-0">
+                        <Coins className="w-4 h-4 text-amber-400" />
                       </div>
                       <div className="min-w-0 flex-1 leading-tight text-left">
-                        <span className="text-[8.5px] font-black uppercase tracking-widest text-amber-400 block">
-                          KİRA ÖDEMESİ GERÇEKLEŞTİ!
+                        <span className="text-[9px] font-bold uppercase tracking-wider text-amber-400 block">
+                          Kira Ödemesi Gerçekleşti
                         </span>
-                        <div className="text-[11px] sm:text-xs font-black text-white truncate flex items-center gap-1 mt-0.5">
+                        <div className="text-[11px] sm:text-xs font-semibold text-white truncate flex items-center gap-1 mt-0.5">
                           <span style={{ color: rentNotification.payerColor }}>{rentNotification.payerName}</span>
                           <span className="text-slate-400">➔</span>
                           <span style={{ color: rentNotification.ownerColor }}>{rentNotification.ownerName}</span>
-                          <span className="text-amber-400 font-mono text-xs sm:text-sm font-extrabold ml-1">
+                          <span className="text-amber-400 font-mono text-xs sm:text-sm font-bold ml-1">
                             {rentNotification.amount}₺
                           </span>
                         </div>
-                        <span className="text-[8px] sm:text-[8.5px] text-slate-300 italic truncate block">
+                        <span className="text-[9px] text-slate-400 truncate block mt-0.5">
                           {rentNotification.tileName} mülkü için
                         </span>
                       </div>
@@ -1916,20 +1914,20 @@ export function Board({
                 {/* 3. TAPU SATIN ALMA / İHALE KAZANMA BİLDİRİMİ (Yerel Oyuncu İçin) */}
                 {propertyAcquiredNotification && (propertyAcquiredNotification.playerId === (myPlayer?.id || myPlayerId)) && (
                   <div className="w-full max-w-xs sm:max-w-sm mx-auto pointer-events-auto animate-fadeIn">
-                    <div className="bg-gradient-to-r from-emerald-950/95 via-slate-900/95 to-amber-950/90 border-2 border-amber-400 shadow-[0_0_30px_rgba(245,158,11,0.6)] rounded-2xl px-3 sm:px-4 py-2 flex items-center justify-between gap-2.5 backdrop-blur-md">
-                      <div className="w-8 h-8 rounded-xl bg-amber-400/20 border border-amber-400/50 flex items-center justify-center text-lg flex-shrink-0">
-                        🏛️
+                    <div className="bg-slate-900/95 border border-emerald-500/40 shadow-xl rounded-xl px-3.5 py-2.5 flex items-center justify-between gap-3 backdrop-blur-md">
+                      <div className="w-8 h-8 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center flex-shrink-0">
+                        <Landmark className="w-4 h-4 text-emerald-400" />
                       </div>
                       <div className="min-w-0 flex-1 text-left leading-tight">
-                        <span className="text-[8.5px] font-black uppercase tracking-widest text-amber-400 flex items-center gap-1">
-                          <Sparkles className="w-2.5 h-2.5 text-amber-400 animate-spin" />
-                          TEBRİKLER! YENİ TAPU KAZANDINIZ
+                        <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                          Yeni Tapu Portföyünüze Eklendi
                         </span>
-                        <h4 className="text-xs sm:text-sm font-black text-white truncate">
+                        <h4 className="text-xs sm:text-sm font-bold text-white truncate mt-0.5">
                           {propertyAcquiredNotification.tileName}
                         </h4>
-                        <p className="text-[10px] sm:text-xs text-slate-300 mt-0.5">
-                          {propertyAcquiredNotification.cost}₺ karşılığı tapu kasanıza eklendi.
+                        <p className="text-[10px] text-slate-400 mt-0.5">
+                          {propertyAcquiredNotification.cost}₺ karşılığı mülk kasanıza kaydedildi.
                         </p>
                       </div>
                       <button
@@ -2435,8 +2433,8 @@ export function Board({
 
               if (isHighestBidder) {
                 return (
-                  <div className="bg-emerald-950/60 border border-emerald-500/60 rounded-xl p-3 text-center text-xs text-emerald-300 font-bold flex items-center justify-center gap-1.5">
-                    <Sparkles className="w-4 h-4 text-emerald-400 animate-pulse" />
+                  <div className="bg-emerald-950/60 border border-emerald-500/60 rounded-xl p-3 text-center text-xs text-emerald-300 font-bold flex items-center justify-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" />
                     <span>Şu an en yüksek teklif sizde! Diğer oyuncular bekleniyor...</span>
                   </div>
                 );

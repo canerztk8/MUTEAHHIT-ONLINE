@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Users, Landmark, MessageSquare, ShieldAlert, Bot, X, Handshake, ChevronDown } from 'lucide-react';
+import { Users, Landmark, MessageSquare, ShieldAlert, Bot, X, Handshake, ChevronDown, Dices } from 'lucide-react';
 import { BOARD_TILES } from '../game/boardData.js';
 
 export function MobileTopPlayerBar({
@@ -53,12 +53,12 @@ export function MobileTopPlayerBar({
                 />
 
                 {/* İsim */}
-                <span className="text-[11px] font-black truncate max-w-[70px] font-space">
+                <span className="text-[11px] font-bold truncate max-w-[70px]">
                   {p.name}
                 </span>
 
                 {/* Bakiye */}
-                <span className={`text-[10.5px] font-black font-jetbrains ${
+                <span className={`text-[10.5px] font-bold font-jetbrains ${
                   isBankrupt ? 'text-slate-500' : 'text-amber-400'
                 }`}>
                   {p.money?.toLocaleString('tr-TR')}₺
@@ -66,7 +66,7 @@ export function MobileTopPlayerBar({
 
                 {/* Sıra İkonu */}
                 {isTurn && (
-                  <span className="text-xs animate-bounce-short">🎲</span>
+                  <Dices className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
                 )}
               </button>
             );

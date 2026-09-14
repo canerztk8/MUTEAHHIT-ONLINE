@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShoppingCart, XCircle } from 'lucide-react';
+import { ShoppingCart, XCircle, Building2 } from 'lucide-react';
 
 export function PropertyBuyActionControl({
   currentTile,
@@ -21,11 +21,11 @@ export function PropertyBuyActionControl({
               onError={(e) => { e.currentTarget.style.display = 'none'; }}
             />
           ) : (
-            <span className="text-base">{currentTile?.icon || '🏛️'}</span>
+            <Building2 className="w-4 h-4 text-slate-400" />
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <h3 className="text-xs font-black text-[#0f172a] dark:text-slate-100 truncate font-space leading-tight">
+          <h3 className="text-xs font-bold text-[#0f172a] dark:text-slate-100 truncate leading-tight">
             {currentTile?.name}
           </h3>
           <span className="text-[11px] text-slate-600 dark:text-slate-400 font-jetbrains">
