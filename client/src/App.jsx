@@ -420,18 +420,21 @@ export function App() {
 
   // 3D Zar Tablasında Zarların Yuvarlanma / Durulma Durumu (Erken UI güncellemesini ve erken piyon adımını önler)
   const [isDiceRolling, setIsDiceRolling] = useState(false);
+  const isDiceRollingRef = useRef(false);
   const diceRollActiveUntilRef = useRef(0);
   // Piyonun tahtada kare kare yürüme durumu (Erken bakiye, kart, kira ve tapu tetiklenmesini önler)
   const [isPawnMoving, setIsPawnMoving] = useState(false);
   const isPawnMovingRef = useRef(false);
-  isPawnMovingRef.current = isPawnMoving;
+  const lastSeenRentIdRef = useRef(null);
   const latestStateRef = useRef(null);
 
   useEffect(() => {
     if (gameState?.status === 'lobby' || gameState?.status === 'ended') {
       setIsDiceRolling(false);
+      isDiceRollingRef.current = false;
       setIsPawnMoving(false);
       isPawnMovingRef.current = false;
+      lastSeenRentIdRef.current = null;
     }
   }, [gameState?.status]);
 
@@ -524,6 +527,12 @@ export function App() {
     setIsPawnMoving(false);
     isPawnMovingRef.current = false;
     setIsDiceRolling(false);
+    isDiceRollingRef.current = false;
+    diceRollActiveUntilRef.current = 0;
+
+    if (latestStateRef.current?.lastRentPayment?.id) {
+      lastSeenRentIdRef.current = latestStateRef.current.lastRentPayment.id;
+    }
 
     if (pawnMovingSafetyTimeoutRef.current) {
       clearTimeout(pawnMovingSafetyTimeoutRef.current);
@@ -615,6 +624,8 @@ export function App() {
       setIsPawnMoving(false);
       isPawnMovingRef.current = false;
       setIsDiceRolling(false);
+      isDiceRollingRef.current = false;
+      diceRollActiveUntilRef.current = 0;
       const curPlayers = latestStateRef.current?.players || [];
       if (curPlayers.length > 0) {
         setDisplayedBalances((prev) => {
@@ -637,55 +648,65 @@ export function App() {
 
     const now = Date.now();
     if (isNewDiceRoll && state.status === 'playing') {
-      diceRollActiveUntilRef.current = now + 2300;
+      diceRollActiveUntilRef.current = now + 4500;
       setIsDiceRolling(true);
+      isDiceRollingRef.current = true;
       setIsPawnMoving(true);
       isPawnMovingRef.current = true;
       if (pawnMovingSafetyTimeoutRef.current) clearTimeout(pawnMovingSafetyTimeoutRef.current);
-      pawnMovingSafetyTimeoutRef.current = setTimeout(flushVisualStateOnSafetyTimeout, 4500);
+      pawnMovingSafetyTimeoutRef.current = setTimeout(flushVisualStateOnSafetyTimeout, 6500);
     } else if (hasPawnMoved && state.status === 'playing') {
       setIsPawnMoving(true);
       isPawnMovingRef.current = true;
       if (pawnMovingSafetyTimeoutRef.current) clearTimeout(pawnMovingSafetyTimeoutRef.current);
-      pawnMovingSafetyTimeoutRef.current = setTimeout(flushVisualStateOnSafetyTimeout, 4500);
+      pawnMovingSafetyTimeoutRef.current = setTimeout(flushVisualStateOnSafetyTimeout, 6500);
     } else if ((state.phase === 'TURN_ACTIONS' || state.phase === 'TILE_ACTION' || state.phase === 'WAITING_ROLL') && !hasPawnMoved && !isNewDiceRoll) {
-      if (now >= (diceRollActiveUntilRef.current || 0)) {
+      const isStillBusy = isPawnMovingRef.current || isDiceRollingRef.current || now < (diceRollActiveUntilRef.current || 0);
+      if (!isStillBusy) {
         setIsPawnMoving(false);
         isPawnMovingRef.current = false;
         setIsDiceRolling(false);
+        isDiceRollingRef.current = false;
         if (pawnMovingSafetyTimeoutRef.current) {
           clearTimeout(pawnMovingSafetyTimeoutRef.current);
           pawnMovingSafetyTimeoutRef.current = null;
         }
-      }
-      if (state.players && state.players.length > 0) {
-        setDisplayedBalances((prev) => {
-          const next = { ...prev };
-          state.players.forEach((p) => {
-            delete pendingBalancesRef.current[p.id];
-            next[p.id] = p.money;
+        if (state.players && state.players.length > 0) {
+          setDisplayedBalances((prev) => {
+            const next = { ...prev };
+            state.players.forEach((p) => {
+              delete pendingBalancesRef.current[p.id];
+              next[p.id] = p.money;
+            });
+            return next;
           });
-          return next;
-        });
-        setDisplayedJailStatus((prev) => {
-          const next = { ...prev };
-          state.players.forEach((p) => {
-            next[p.id] = p.inJail;
+          setDisplayedJailStatus((prev) => {
+            const next = { ...prev };
+            state.players.forEach((p) => {
+              next[p.id] = p.inJail;
+            });
+            return next;
           });
-          return next;
-        });
-        setDisplayedPlayerPositions((prev) => {
-          const next = { ...prev };
-          state.players.forEach((p) => {
-            delete pendingPlayerPositionsRef.current[p.id];
-            next[p.id] = p.position;
+          setDisplayedPlayerPositions((prev) => {
+            const next = { ...prev };
+            state.players.forEach((p) => {
+              delete pendingPlayerPositionsRef.current[p.id];
+              next[p.id] = p.position;
+            });
+            return next;
           });
-          return next;
-        });
+        }
       }
     }
 
-    const isMovementTurnInProgress = hasPawnMoved || isNewDiceRoll || isPawnMovingRef.current;
+    const isMovementTurnInProgress = Boolean(
+      hasPawnMoved ||
+      isNewDiceRoll ||
+      isPawnMovingRef.current ||
+      isDiceRollingRef.current ||
+      (diceRollActiveUntilRef.current && now < diceRollActiveUntilRef.current) ||
+      (state.lastRentPayment && state.lastRentPayment.id !== lastSeenRentIdRef.current)
+    );
 
     // Olay günlüğü tamponlama: Piyon yürürken varış/kira/kart spoilerlarını engelle
     if (isMovementTurnInProgress && state.logs && state.logs.length > 0) {
@@ -752,7 +773,7 @@ export function App() {
               }
               return next;
             });
-          }, 2200);
+          }, 7000);
         } else {
           // Piyon hareketi yok (takas, kredi, doğrudan işlem vb.): Derhal tetikle
           if (diff > 0) {
@@ -809,7 +830,8 @@ export function App() {
             // Piyon hareketi esnasında ne ödeyenin ne mülk sahibinin bakiyesi erkenden değişmez!
             pendingBalancesRef.current[p.id] = p.money;
             if (nextBalances[p.id] === undefined) {
-              nextBalances[p.id] = p.money;
+              const prevP = prev?.players?.find(op => op.id === p.id);
+              nextBalances[p.id] = prevP ? prevP.money : p.money;
               changed = true;
             }
           } else {
@@ -1199,11 +1221,15 @@ export function App() {
 
   const handleRollDice = (data) => {
     setIsDiceRolling(true);
-    diceRollActiveUntilRef.current = Date.now() + 2300;
+    isDiceRollingRef.current = true;
+    setIsPawnMoving(true);
+    isPawnMovingRef.current = true;
+    diceRollActiveUntilRef.current = Date.now() + 4500;
     if (diceRollingFallbackTimeoutRef.current) clearTimeout(diceRollingFallbackTimeoutRef.current);
     diceRollingFallbackTimeoutRef.current = setTimeout(() => {
       setIsDiceRolling(false);
-    }, 3200);
+      isDiceRollingRef.current = false;
+    }, 4500);
 
     const payload = (data && typeof data === 'object' && !data.nativeEvent && Array.isArray(data.dice))
       ? { dice: data.dice, toss: data.toss }
@@ -1213,11 +1239,15 @@ export function App() {
 
   const handleRollAgain = (data) => {
     setIsDiceRolling(true);
-    diceRollActiveUntilRef.current = Date.now() + 2300;
+    isDiceRollingRef.current = true;
+    setIsPawnMoving(true);
+    isPawnMovingRef.current = true;
+    diceRollActiveUntilRef.current = Date.now() + 4500;
     if (diceRollingFallbackTimeoutRef.current) clearTimeout(diceRollingFallbackTimeoutRef.current);
     diceRollingFallbackTimeoutRef.current = setTimeout(() => {
       setIsDiceRolling(false);
-    }, 3200);
+      isDiceRollingRef.current = false;
+    }, 4500);
 
     const payload = (data && typeof data === 'object' && !data.nativeEvent && Array.isArray(data.dice))
       ? { dice: data.dice, toss: data.toss }
@@ -1797,15 +1827,22 @@ export function App() {
                 onToggleDarkMode={toggleDarkMode}
                 isPerformanceMode={isPerformanceMode}
                 onRollStart={() => {
-                  diceRollActiveUntilRef.current = Date.now() + 2300;
+                  diceRollActiveUntilRef.current = Date.now() + 4500;
                   setIsDiceRolling(true);
+                  isDiceRollingRef.current = true;
+                  setIsPawnMoving(true);
+                  isPawnMovingRef.current = true;
                 }}
                 onRollSettled={() => {
                   const remaining = Math.max(0, (diceRollActiveUntilRef.current || 0) - Date.now());
                   if (remaining > 0) {
-                    setTimeout(() => setIsDiceRolling(false), remaining);
+                    setTimeout(() => {
+                      setIsDiceRolling(false);
+                      isDiceRollingRef.current = false;
+                    }, remaining);
                   } else {
                     setIsDiceRolling(false);
+                    isDiceRollingRef.current = false;
                   }
                 }}
               />
