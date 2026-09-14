@@ -3,6 +3,7 @@ import { BOARD_TILES } from '../game/boardData.js';
 import { sounds } from '../sound/soundEffects.js';
 import { Building2, Building, Train, Zap, AlertTriangle, Coins, Clock, Home, Landmark, Gavel, Sparkles, ChevronDown } from 'lucide-react';
 import { Board3DOverlay } from './Board3DOverlay.jsx';
+import { RentImpactOverlay } from './RentImpactOverlay.jsx';
 
 // 11x11 Grid konumlandırması
 function getGridPosition(id) {
@@ -965,6 +966,45 @@ export function Board({
   const [rentNotification, setRentNotification] = useState(null);
   const lastRentIdRef = useRef(null);
   const pendingRentRef = useRef(null);
+  const [rentShakeClass, setRentShakeClass] = useState('');
+
+  const triggerRentSoundAndVfx = useCallback((rentData) => {
+    if (!rentData) return;
+    const effectiveMyId = myPlayer?.id || myPlayerId;
+    const amount = rentData.amount || 0;
+    const isPayer = Boolean(effectiveMyId && rentData.payerId === effectiveMyId);
+    const isReceiver = Boolean(effectiveMyId && rentData.ownerId === effectiveMyId);
+
+    if (isPayer) {
+      if (amount >= 1000) {
+        setRentShakeClass('animate-rent-shake-heavy');
+        setTimeout(() => setRentShakeClass(''), 550);
+        if (typeof sounds.playHeavyImpact === 'function') {
+          sounds.playHeavyImpact();
+        } else {
+          sounds.playMoneyOut();
+        }
+      } else if (amount >= 400) {
+        setRentShakeClass('animate-rent-shake-light');
+        setTimeout(() => setRentShakeClass(''), 350);
+        sounds.playMoneyOut();
+      } else {
+        sounds.playCash();
+      }
+    } else if (isReceiver) {
+      if (amount >= 1000) {
+        if (typeof sounds.playJackpotFanfare === 'function') {
+          sounds.playJackpotFanfare();
+        } else {
+          sounds.playCash();
+        }
+      } else {
+        sounds.playCash();
+      }
+    } else {
+      sounds.playCash();
+    }
+  }, [myPlayer, myPlayerId]);
 
   // Piyon hareket durumu (Zar atıldıktan sonra piyon hareket halindeyken butonların erken açılmasını önler)
   const [isMovingPawn, setIsMovingPawn] = useState(false);
@@ -1051,12 +1091,14 @@ export function Board({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentTurnIndex]);
 
-  // Kira bildirimi otomatik kaybolma (2.5 saniye sonra kaybolur)
+  // Kira bildirimi otomatik kaybolma (Ağır kirada 3.2s, normalde 2.5s)
   useEffect(() => {
     if (rentNotification) {
+      const isExtreme = rentNotification.amount >= 1000;
+      const duration = isExtreme ? 3200 : (rentNotification.amount >= 400 ? 2700 : 2500);
       const timer = setTimeout(() => {
         setRentNotification(null);
-      }, 2500);
+      }, duration);
       return () => clearTimeout(timer);
     }
   }, [rentNotification]);
@@ -1075,10 +1117,10 @@ export function Board({
         pendingRentRef.current = gameState.lastRentPayment;
       } else {
         setRentNotification(gameState.lastRentPayment);
-        sounds.playCash();
+        triggerRentSoundAndVfx(gameState.lastRentPayment);
       }
     }
-  }, [gameState.lastRentPayment, isDiceRolling, isMovingPawn, players, currentTurnIndex, displayedPositions]);
+  }, [gameState.lastRentPayment, isDiceRolling, isMovingPawn, players, currentTurnIndex, displayedPositions, triggerRentSoundAndVfx]);
 
   useEffect(() => {
     const isPawnMoving =
@@ -1240,7 +1282,7 @@ export function Board({
                     // Piyon tam kareye ulaştı: bekleyen kira bildirimi ve ses efektini tetikle
                     if (pendingRentRef.current) {
                       setRentNotification(pendingRentRef.current);
-                      sounds.playCash();
+                      triggerRentSoundAndVfx(pendingRentRef.current);
                       pendingRentRef.current = null;
                     }
 
@@ -1302,7 +1344,7 @@ export function Board({
 
                       if (pendingRentRef.current) {
                         setRentNotification(pendingRentRef.current);
-                        sounds.playCash();
+                        triggerRentSoundAndVfx(pendingRentRef.current);
                         pendingRentRef.current = null;
                       }
 
@@ -1335,7 +1377,7 @@ export function Board({
               setIsMovingPawn(false);
               if (pendingRentRef.current) {
                 setRentNotification(pendingRentRef.current);
-                sounds.playCash();
+                triggerRentSoundAndVfx(pendingRentRef.current);
                 pendingRentRef.current = null;
               }
               if (onPawnLanded) {
@@ -1467,7 +1509,7 @@ export function Board({
       {/* 11x11 Grid Tahta */}
       <div
         onMouseLeave={handleTileMouseLeave}
-        className={`relative w-full h-full grid gap-0.5 sm:gap-1 rounded-2xl p-0.5 sm:p-1 transition-colors duration-500 overflow-hidden ${
+        className={`relative w-full h-full grid gap-0.5 sm:gap-1 rounded-2xl p-0.5 sm:p-1 transition-colors duration-500 overflow-hidden ${rentShakeClass} ${
           isApocalypse
             ? 'bg-[#450a0a] border-4 border-rose-600 shadow-[0_0_65px_rgba(225,29,72,0.7)] ring-4 ring-rose-500/60'
             : isDarkMode
@@ -2451,6 +2493,13 @@ export function Board({
           </div>
         </div>
       )}
+
+      {/* 🚨 AĞIR KİRA & BÜYÜK VURGUN EKRAN VFX (400₺+ ve 1000₺+) */}
+      <RentImpactOverlay
+        rentNotification={rentNotification}
+        myPlayerId={myPlayer?.id || myPlayerId}
+        isDarkMode={isDarkMode}
+      />
     </div>
   );
 }

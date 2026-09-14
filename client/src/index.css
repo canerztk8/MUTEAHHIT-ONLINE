@@ -812,3 +812,83 @@ html:not(.dark) .bg-white\/80 {
     padding-top: max(0.25rem, env(safe-area-inset-top, 0px));
   }
 }
+
+/* ==========================================================================
+   🚨 AĞIR KİRA & BÜYÜK VURGUN EKRAN VFX (400₺+ ve 1000₺+)
+   ========================================================================== */
+@keyframes rentShakeLight {
+  0% { transform: translate(0, 0); }
+  20% { transform: translate(-3px, 2px); }
+  40% { transform: translate(3px, -2px); }
+  60% { transform: translate(-2px, -1px); }
+  80% { transform: translate(2px, 1px); }
+  100% { transform: translate(0, 0); }
+}
+
+@keyframes rentShakeHeavy {
+  0% { transform: translate(0, 0) scale(1); }
+  15% { transform: translate(-7px, 5px) scale(0.995); }
+  30% { transform: translate(7px, -5px) scale(0.997); }
+  45% { transform: translate(-5px, 4px); }
+  60% { transform: translate(5px, -3px); }
+  75% { transform: translate(-3px, 2px); }
+  90% { transform: translate(2px, -1px) scale(1); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+
+@keyframes rentPulseDamageTier1 {
+  0% { opacity: 0; transform: scale(1.02); }
+  15% { opacity: 0.95; transform: scale(1); }
+  55% { opacity: 0.7; }
+  85% { opacity: 0.35; }
+  100% { opacity: 0; }
+}
+
+@keyframes rentPulseDamageTier2 {
+  0% { opacity: 0; }
+  15% { opacity: 1; transform: scale(0.992); }
+  32% { opacity: 0.45; }
+  52% { opacity: 0.98; transform: scale(0.996); }
+  78% { opacity: 0.55; }
+  100% { opacity: 0; transform: scale(1); }
+}
+
+@keyframes rentPulseGainTier1 {
+  0% { opacity: 0; transform: scale(0.99); }
+  20% { opacity: 0.92; transform: scale(1); }
+  60% { opacity: 0.55; }
+  100% { opacity: 0; }
+}
+
+@keyframes rentPulseGainTier2 {
+  0% { opacity: 0; transform: scale(0.985); }
+  20% { opacity: 1; transform: scale(1); }
+  45% { opacity: 0.65; }
+  65% { opacity: 0.95; }
+  85% { opacity: 0.45; }
+  100% { opacity: 0; }
+}
+
+.animate-rent-shake-light {
+  animation: rentShakeLight 0.35s ease-out forwards;
+}
+
+.animate-rent-shake-heavy {
+  animation: rentShakeHeavy 0.55s cubic-bezier(0.36, 0.07, 0.19, 0.97) forwards;
+}
+
+.animate-rent-damage-tier1 {
+  animation: rentPulseDamageTier1 1.5s ease-out forwards;
+}
+
+.animate-rent-damage-tier2 {
+  animation: rentPulseDamageTier2 2.2s ease-out forwards;
+}
+
+.animate-rent-gain-tier1 {
+  animation: rentPulseGainTier1 1.5s ease-out forwards;
+}
+
+.animate-rent-gain-tier2 {
+  animation: rentPulseGainTier2 2.2s ease-out forwards;
+}

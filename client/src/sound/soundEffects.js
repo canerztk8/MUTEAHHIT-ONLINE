@@ -367,6 +367,82 @@ const rawSounds = {
     } catch (e) {}
   },
 
+  // Ağır Darbe / Can Yakıcı Kira Ödeme Sesi (Kritik hasar, çift vuruşlu tok bas darbesi)
+  playHeavyImpact() {
+    try {
+      const ctx = getAudioContext();
+      if (!ctx || currentVolume === 0) return;
+      const now = ctx.currentTime;
+
+      // 1. Derin sub-bass darbesi (90Hz -> 28Hz)
+      const subOsc = ctx.createOscillator();
+      const subGain = ctx.createGain();
+      subOsc.type = 'sine';
+      subOsc.frequency.setValueAtTime(90, now);
+      subOsc.frequency.exponentialRampToValueAtTime(28, now + 0.38);
+
+      subGain.gain.setValueAtTime(0.35 * currentVolume, now);
+      subGain.gain.exponentialRampToValueAtTime(0.001, now + 0.42);
+
+      subOsc.connect(subGain);
+      subGain.connect(getDestination(ctx));
+      subOsc.start(now);
+      subOsc.stop(now + 0.43);
+
+      // 2. Kalp atışı ikinci tok vuruşu (Thump-Thump)
+      const thudOsc = ctx.createOscillator();
+      const thudGain = ctx.createGain();
+      thudOsc.type = 'triangle';
+      thudOsc.frequency.setValueAtTime(70, now + 0.12);
+      thudOsc.frequency.exponentialRampToValueAtTime(24, now + 0.36);
+
+      thudGain.gain.setValueAtTime(0.28 * currentVolume, now + 0.12);
+      thudGain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+
+      thudOsc.connect(thudGain);
+      thudGain.connect(getDestination(ctx));
+      thudOsc.start(now + 0.12);
+      thudOsc.stop(now + 0.4);
+
+      // 3. Cüzdan boşalma / para kaybı hışırtısı
+      const noiseGain = ctx.createGain();
+      const oscNoise = ctx.createOscillator();
+      oscNoise.type = 'sawtooth';
+      oscNoise.frequency.setValueAtTime(140, now);
+      oscNoise.frequency.exponentialRampToValueAtTime(40, now + 0.25);
+      noiseGain.gain.setValueAtTime(0.12 * currentVolume, now);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.26);
+      oscNoise.connect(noiseGain);
+      noiseGain.connect(getDestination(ctx));
+      oscNoise.start(now);
+      oscNoise.stop(now + 0.28);
+    } catch (e) {}
+  },
+
+  // Büyük Vurgun / Jackpot Zafer Fanfarı (1000₺+ devasa kira tahsilatı)
+  playJackpotFanfare() {
+    try {
+      const ctx = getAudioContext();
+      if (!ctx || currentVolume === 0) return;
+      const now = ctx.currentTime;
+      // C5, E5, G5, B5, C6, E6
+      const freqs = [523.25, 659.25, 783.99, 987.77, 1046.50, 1318.51];
+      freqs.forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = idx === freqs.length - 1 ? 'sine' : 'triangle';
+        const t = now + idx * 0.065;
+        osc.frequency.setValueAtTime(freq, t);
+        gain.gain.setValueAtTime(0.22 * currentVolume, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + (idx === freqs.length - 1 ? 0.6 : 0.28));
+        osc.connect(gain);
+        gain.connect(getDestination(ctx));
+        osc.start(t);
+        osc.stop(t + (idx === freqs.length - 1 ? 0.65 : 0.3));
+      });
+    } catch (e) {}
+  },
+
   // Para sesi (Cha-ching!) - Geriye dönük uyumluluk için
   playCash() {
     this.playMoneyIn();
