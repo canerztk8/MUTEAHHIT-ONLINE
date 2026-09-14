@@ -9,7 +9,7 @@
     "dev:client": "vite --config client/vite.config.js client",
     "build": "vite build --config client/vite.config.js",
     "start": "node server/index.js",
-    "test": "node test/testOfficialRules.js && node test/testNewBalanceMechanics.js"
+    "test": "node test/testOfficialRules.js && node test/testNewBalanceMechanics.js && node test/testSecurityAndOptimizationFixes.js"
   },
   "dependencies": {
     "@3d-dice/dice-box-threejs": "^0.0.12",
