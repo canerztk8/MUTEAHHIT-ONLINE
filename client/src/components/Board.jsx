@@ -437,18 +437,16 @@ const TileCell = React.memo(function TileCell({
         </div>
       )}
 
-      {/* İpotek Damgası (45 Derece Eğimli, Kırmızı Harflerle 'İPOTEK') */}
+      {/* İpotek Damgası (Klasik Çift Çerçeveli Kırmızı Kaşe & Bütünsel Matlaştırma) */}
       {propState && propState.mortgaged && (
-        <div
-          className={`absolute inset-x-0 top-0 ${
-            canBeOwned
-              ? (isSideTile ? 'bottom-[12px] sm:bottom-[14px]' : 'bottom-[14px] sm:bottom-[16px]')
-              : 'bottom-0'
-          } bg-rose-950/65 flex items-center justify-center z-20 backdrop-blur-[0.5px] pointer-events-none select-none overflow-hidden`}
-        >
-          <span className="text-[8px] sm:text-[9px] md:text-[10px] font-space font-black text-red-500 uppercase tracking-widest -rotate-45 border border-red-500/90 px-1.5 py-0.5 rounded bg-black/80 shadow-md text-center leading-none select-none">
-            İPOTEK
-          </span>
+        <div className="absolute inset-0 bg-rose-950/25 backdrop-grayscale-[0.35] backdrop-contrast-[0.92] flex items-center justify-center z-20 pointer-events-none select-none overflow-hidden">
+          <div className="transform -rotate-12 p-[2px] rounded-md border-2 border-red-500/90 bg-black/75 shadow-xl flex items-center justify-center">
+            <div className="border border-red-500/60 rounded-[3px] px-1.5 py-0.5 flex items-center justify-center">
+              <span className="text-[8.5px] sm:text-[9.5px] md:text-[10.5px] font-space font-black text-red-500 uppercase tracking-widest leading-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+                İPOTEK
+              </span>
+            </div>
+          </div>
         </div>
       )}
 
@@ -510,7 +508,7 @@ const TileCell = React.memo(function TileCell({
             isSideTile ? 'h-[12px] sm:h-[14px]' : 'h-[14px] sm:h-[16px]'
           } border-t ${
             isDarkMode ? 'border-slate-800' : 'border-slate-300/80'
-          } flex items-center justify-center px-0.5 flex-shrink-0 z-30 overflow-hidden relative`}
+          } flex items-center justify-center px-0.5 flex-shrink-0 z-10 overflow-hidden relative`}
           style={{
             backgroundColor: owner ? `${owner.color}${isDarkMode ? '26' : '18'}` : (isDarkMode ? '#080d1a' : '#F1F5F9'),
             borderBottom: owner ? `2px solid ${owner.color}` : 'none'
