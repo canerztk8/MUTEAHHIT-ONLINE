@@ -35,6 +35,11 @@ export function DiceSidebarTray({
 
   // Fiziksel olarak duran zarları yerel state'te sakla; atış sırasında null yapılarak erken UI güncellemesi önlenir
   const [settledDice, setSettledDice] = useState(null);
+  const [isRollingLocal, setIsRollingLocal] = useState(false);
+  const isRollingLocalRef      = useRef(false);
+  const localRollTimeoutRef    = useRef(null);
+  const handleManualRollRef    = useRef(null);
+
   const displayDice = settledDice || (gameState?.phase !== 'WAITING_ROLL' ? gameState?.dice : null);
   const dice1 = displayDice?.[0] || 1;
   const dice2 = displayDice?.[1] || 1;
@@ -110,10 +115,6 @@ export function DiceSidebarTray({
 
   // Tur süresi sayacı (75 saniye)
   const [secondsLeft, setSecondsLeft] = useState(gameState?.turnTimeLimit || 75);
-  const [isRollingLocal, setIsRollingLocal] = useState(false);
-  const isRollingLocalRef      = useRef(false);
-  const localRollTimeoutRef    = useRef(null);
-  const handleManualRollRef    = useRef(null);
 
   // Sıra / faz değiştiğinde bekleyen zamanlayıcıları sıfırla (zarlar hala havada dönüyorsa kilidi erken açma)
   useEffect(() => {
