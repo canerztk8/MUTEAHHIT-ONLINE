@@ -411,6 +411,8 @@ export class HostPeerService {
 
     /** Bot watchdog timer handle */
     this._watchdogInterval = null;
+    /** Oyunda yalnızca bot kaldığında (veya kimse kalmadığında) 2dk sayaç başlangıcı */
+    this._onlyBotsStartTime = null;
 
     /** Spam koruması: son sohbet zamanı */
     this._lastChatTime = new Map();
@@ -608,10 +610,12 @@ export class HostPeerService {
     }
 
     try {
+      const now = Date.now();
       if (this._sessionToken) localStorage.setItem('muteahhit_session_token', this._sessionToken);
       localStorage.setItem('muteahhit_room_code', this._roomCode);
       localStorage.setItem('muteahhit_is_host_' + this._roomCode, '1');
       localStorage.setItem('muteahhit_host_room', this._roomCode);
+      localStorage.setItem('muteahhit_host_saved_at_' + this._roomCode, String(now));
     } catch (_) {}
 
     this._startWatchdog();
@@ -1512,9 +1516,12 @@ export class HostPeerService {
     // Host F5 ve kesintisiz oturum kurtarma için son geçerli durumu localStorage'a kaydet
     if (this._roomCode) {
       try {
+        const now = Date.now();
+        state.savedAt = now;
         localStorage.setItem('muteahhit_is_host_' + this._roomCode, '1');
         localStorage.setItem('muteahhit_host_room', this._roomCode);
         localStorage.setItem('muteahhit_host_state_' + this._roomCode, JSON.stringify(state));
+        localStorage.setItem('muteahhit_host_saved_at_' + this._roomCode, String(now));
       } catch (_) {}
     }
 
@@ -1535,7 +1542,10 @@ export class HostPeerService {
         this._onState(s2);
         if (this._roomCode) {
           try {
+            const now2 = Date.now();
+            s2.savedAt = now2;
             localStorage.setItem('muteahhit_host_state_' + this._roomCode, JSON.stringify(s2));
+            localStorage.setItem('muteahhit_host_saved_at_' + this._roomCode, String(now2));
           } catch (_) {}
         }
         const m2 = createSyncState(s2);
@@ -1622,6 +1632,34 @@ export class HostPeerService {
           }
         }
 
+        // 3. Yalnızca Bot Kalma / Boş Oda Zaman Aşımı (2 Dakika Grace Period)
+        // Eğer oyunda aktif hiç insan oyuncu kalmadıysa (sadece botlar varsa veya tüm insanlar iflas ettiyse/ayrıldıysa)
+        if (game.status === 'playing') {
+          const activeHumans = game.players?.filter(p => !p.isBot && !p.isBankrupt && !p.isKicked) || [];
+          if (activeHumans.length === 0) {
+            if (!this._onlyBotsStartTime) {
+              this._onlyBotsStartTime = now;
+              console.warn('[HostPeerService] Oyunda aktif insan oyuncu kalmadı (sadece botlar var). 2dk süre sınırı başladı.');
+            } else if (now - this._onlyBotsStartTime > 120000) {
+              console.warn('[HostPeerService] Oyunda 2 dakikadır sadece botlar var / kimse yok. Oturum sonlandırılıyor.');
+              this._game.addLog('⌛ Oyunda aktif insan oyuncu kalmadığı için 2 dakikalık süre sınırı doldu ve oyun sonlandırıldı.', 'warning');
+              this._game.status = 'ended';
+              this._broadcastState();
+              if (this._roomCode) {
+                try {
+                  localStorage.removeItem('muteahhit_is_host_' + this._roomCode);
+                  localStorage.removeItem('muteahhit_host_state_' + this._roomCode);
+                  localStorage.removeItem('muteahhit_host_saved_at_' + this._roomCode);
+                  localStorage.removeItem('muteahhit_host_room');
+                } catch (_) {}
+              }
+              return;
+            }
+          } else {
+            this._onlyBotsStartTime = null;
+          }
+        }
+
         if (game.status !== 'playing' || game.isPaused) return;
 
         if (game.phase === 'AUCTION' && game.auction) {
@@ -1659,6 +1697,7 @@ export class HostPeerService {
   }
 
   _stopWatchdog() {
+    this._onlyBotsStartTime = null;
     if (this._watchdogInterval) {
       clearInterval(this._watchdogInterval);
       this._watchdogInterval = null;
@@ -1711,6 +1750,7 @@ export class HostPeerService {
         if (this._roomCode) {
           localStorage.removeItem('muteahhit_is_host_' + this._roomCode);
           localStorage.removeItem('muteahhit_host_state_' + this._roomCode);
+          localStorage.removeItem('muteahhit_host_saved_at_' + this._roomCode);
         }
         localStorage.removeItem('muteahhit_host_room');
       } catch (_) {}

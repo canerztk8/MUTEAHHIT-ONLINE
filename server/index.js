@@ -114,7 +114,7 @@ const relayWss = new WebSocketServer({ noServer: true });
 
 // Map<roomCode, Map<WebSocket, playerId>>
 const relayRooms = new Map();
-// Map<roomCode, TimeoutId> — Boşalan odaların anında silinmesini önleyen 60sn grace period (F5 / reconnect koruması)
+// Map<roomCode, TimeoutId> — Boşalan odaların anında silinmesini önleyen 2dk (120sn) grace period (F5 / reconnect koruması)
 const roomGraceTimers = new Map();
 
 // 🔋 Bağlantı Canlılık Takibi (Application-level Heartbeat & Keepalive)
@@ -290,15 +290,15 @@ relayWss.on('connection', (ws) => {
 
         if (remaining === 0) {
           // F5 yenilemesi ve geçici ağ kopmalarında odayı ANINDA SİLME!
-          // 60 saniyelik tolerans tanı:
+          // 2 dakikalık (120sn) grace period toleransı tanı:
           if (roomGraceTimers.has(roomCode)) clearTimeout(roomGraceTimers.get(roomCode));
           const timer = setTimeout(() => {
             roomGraceTimers.delete(roomCode);
             if (relayRooms.has(roomCode) && relayRooms.get(roomCode).size === 0) {
               relayRooms.delete(roomCode);
-              console.log(`[Relay] Boş oda (60sn grace period doldu) silindi: ${roomCode}`);
+              console.log(`[Relay] Boş oda (2dk grace period doldu) silindi: ${roomCode}`);
             }
-          }, 60000);
+          }, 120000); // 2 dakika
           roomGraceTimers.set(roomCode, timer);
         }
       }

@@ -81,21 +81,45 @@ export function Lobby({
     const isHostForThisRoom = localStorage.getItem('muteahhit_is_host_' + code) === '1';
     const savedHostStateStr = localStorage.getItem('muteahhit_host_state_' + code);
     if (isHostForThisRoom && savedHostStateStr) {
-      console.log(`[Lobby] ${code} odasının Host'u sayfayı yeniledi. Host olarak restore ediliyor...`);
+      let savedHostState = null;
       try {
-        const savedHostState = JSON.parse(savedHostStateStr);
-        const hostP = savedHostState.players?.find(p => p.isHost || p.name === savedName);
-        onCreateRoom?.({
-          playerName: hostP?.name || savedName || 'Yönetici',
-          token: hostP?.token || selectedToken,
-          color: hostP?.color || selectedColor,
-          sessionToken: hostP?.sessionToken || localStorage.getItem('muteahhit_session_token'),
-          migratedRoomCode: code,
-          migratedState: savedHostState
-        });
-        return; // Client katılma veya oda kontrolü yapmadan derhal çık
-      } catch (err) {
-        console.warn('[Lobby] Host state parse hatası:', err);
+        savedHostState = JSON.parse(savedHostStateStr);
+      } catch (_) {}
+
+      const savedAt = Number(
+        localStorage.getItem('muteahhit_host_saved_at_' + code) ||
+        savedHostState?.savedAt ||
+        0
+      );
+      const GRACE_PERIOD_MS = 2 * 60 * 1000; // 2 dakika (120 saniye)
+      const now = Date.now();
+      const timeElapsed = savedAt > 0 ? (now - savedAt) : Infinity;
+
+      const activeHumans = savedHostState?.players?.filter(p => !p.isBot && !p.isBankrupt && !p.isKicked) || [];
+      const onlyBotsOrEmpty = activeHumans.length === 0;
+
+      if (timeElapsed > GRACE_PERIOD_MS || onlyBotsOrEmpty) {
+        console.log(`[Lobby] ${code} oturumu zaman aşımına uğradı (>2dk veya kimse yok/sadece bot). Temizleniyor...`);
+        localStorage.removeItem('muteahhit_is_host_' + code);
+        localStorage.removeItem('muteahhit_host_state_' + code);
+        localStorage.removeItem('muteahhit_host_saved_at_' + code);
+        localStorage.removeItem('muteahhit_host_room');
+      } else {
+        console.log(`[Lobby] ${code} odasının Host'u sayfayı yeniledi. Host olarak restore ediliyor...`);
+        try {
+          const hostP = savedHostState?.players?.find(p => p.isHost || p.name === savedName);
+          onCreateRoom?.({
+            playerName: hostP?.name || savedName || 'Yönetici',
+            token: hostP?.token || selectedToken,
+            color: hostP?.color || selectedColor,
+            sessionToken: hostP?.sessionToken || localStorage.getItem('muteahhit_session_token'),
+            migratedRoomCode: code,
+            migratedState: savedHostState
+          });
+          return; // Client katılma veya oda kontrolü yapmadan derhal çık
+        } catch (err) {
+          console.warn('[Lobby] Host state parse hatası:', err);
+        }
       }
     }
 

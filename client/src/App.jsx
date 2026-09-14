@@ -911,6 +911,10 @@ export function App() {
   useEffect(() => {
     const handleUnload = () => {
       try {
+        const room = networkRef.current?.roomCode || localStorage.getItem('muteahhit_host_room');
+        if (room) {
+          localStorage.setItem(`muteahhit_host_saved_at_${room}`, String(Date.now()));
+        }
         networkRef.current?.destroy(false);
       } catch (_) {}
     };
@@ -1098,9 +1102,10 @@ export function App() {
     networkRef.current = client;
   }, [handleIncomingState]);
 
-  // ─── Host F5 Otomatik Kurtarma Kalkanı ─────────────────────────────────────────
-  // Host sayfayı yenilediğinde (F5), oturumu ve tahtayı eksiksiz olarak Host kimliğiyle
-  // anında restore et (Lobiye veya "Odaya Bağlanılıyor..." hatasına düşmesini önler)
+  // ─── Host F5 Otomatik Kurtarma Kalkanı (2 Dakika Grace Period) ────────────────
+  // Host sayfayı yenilediğinde (F5), 2 dakika (120sn) içinde dönülmüşse oturumu
+  // eksiksiz olarak Host kimliğiyle restore et. 2dk aşılmışsa veya oyunda aktif insan
+  // kalmamışsa (sadece bot varsa / kimse yoksa) oturumu temizle ve ana menüye dön.
   useEffect(() => {
     try {
       const urlParams = new URLSearchParams(window.location.search);
@@ -1111,12 +1116,42 @@ export function App() {
       const isHostSaved = localStorage.getItem(`muteahhit_is_host_${targetRoom}`) === '1';
       const savedStateRaw = localStorage.getItem(`muteahhit_host_state_${targetRoom}`);
       if (isHostSaved && savedStateRaw && !networkRef.current) {
-        console.log(`[App] Host F5 kurtarma devrede! Oda: ${targetRoom}`);
-        const savedState = JSON.parse(savedStateRaw);
+        let savedState = null;
+        try {
+          savedState = JSON.parse(savedStateRaw);
+        } catch (_) {}
+
+        const savedAt = Number(
+          localStorage.getItem(`muteahhit_host_saved_at_${targetRoom}`) ||
+          savedState?.savedAt ||
+          0
+        );
+
+        const GRACE_PERIOD_MS = 2 * 60 * 1000; // 2 dakika (120 saniye) süre sınırı
+        const now = Date.now();
+        const timeElapsed = savedAt > 0 ? (now - savedAt) : Infinity;
+
+        // Kontrol: Oyunda kimse yoksa ya da sadece bot varsa veya 2dk grace period dolmuşsa
+        const activeHumans = savedState?.players?.filter(p => !p.isBot && !p.isBankrupt && !p.isKicked) || [];
+        const onlyBotsOrEmpty = activeHumans.length === 0;
+
+        const isExpired = timeElapsed > GRACE_PERIOD_MS || onlyBotsOrEmpty;
+
+        if (isExpired) {
+          console.log(`[App] Kayıtlı oturum zaman aşımına uğradı (${timeElapsed === Infinity ? 'eski oturum' : `${Math.round(timeElapsed / 1000)}sn`}, sadece bot/boş: ${onlyBotsOrEmpty}). Temizleniyor: ${targetRoom}`);
+          localStorage.removeItem(`muteahhit_is_host_${targetRoom}`);
+          localStorage.removeItem(`muteahhit_host_state_${targetRoom}`);
+          localStorage.removeItem(`muteahhit_host_saved_at_${targetRoom}`);
+          localStorage.removeItem('muteahhit_host_room');
+          localStorage.removeItem('muteahhit_room_code');
+          return;
+        }
+
+        console.log(`[App] Host F5 kurtarma devrede! Oda: ${targetRoom} (Kalan tolerans: ${Math.round((GRACE_PERIOD_MS - timeElapsed) / 1000)}sn)`);
         const savedName = localStorage.getItem('muteahhit_name') || 'Yönetici';
         const savedSessionToken = localStorage.getItem('muteahhit_session_token');
 
-        const hostP = savedState.players?.find(p => p.isHost || (savedSessionToken && p.sessionToken === savedSessionToken) || p.name === savedName);
+        const hostP = savedState?.players?.find(p => p.isHost || (savedSessionToken && p.sessionToken === savedSessionToken) || p.name === savedName);
 
         createRoom({
           playerName: hostP?.name || savedName,
@@ -1284,6 +1319,7 @@ export function App() {
       if (room) {
         localStorage.removeItem(`muteahhit_is_host_${room}`);
         localStorage.removeItem(`muteahhit_host_state_${room}`);
+        localStorage.removeItem(`muteahhit_host_saved_at_${room}`);
       }
       localStorage.removeItem('muteahhit_host_room');
       localStorage.removeItem('muteahhit_room_code');
@@ -1307,6 +1343,7 @@ export function App() {
     if (room) {
       localStorage.removeItem(`muteahhit_is_host_${room}`);
       localStorage.removeItem(`muteahhit_host_state_${room}`);
+      localStorage.removeItem(`muteahhit_host_saved_at_${room}`);
     }
     localStorage.removeItem('muteahhit_host_room');
     localStorage.removeItem('muteahhit_room_code');
