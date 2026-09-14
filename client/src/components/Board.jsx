@@ -261,6 +261,16 @@ const TileCell = React.memo(function TileCell({
   const isLeftEdge = tile.id >= 11 && tile.id <= 19;
   const isRightEdge = tile.id >= 31 && tile.id <= 39;
 
+  const cornerRoundClass = tile.id === 0
+    ? 'rounded-br-xl'
+    : tile.id === 10
+    ? 'rounded-bl-xl'
+    : tile.id === 20
+    ? 'rounded-tl-xl'
+    : tile.id === 30
+    ? 'rounded-tr-xl'
+    : '';
+
   return (
     <div
       onClick={() => onTileClick(tile)}
@@ -272,7 +282,7 @@ const TileCell = React.memo(function TileCell({
       }}
       className={`tile relative flex flex-col justify-between border transition-colors duration-150 cursor-pointer ${
         isDemandHighlighted ? 'overflow-visible z-35' : 'overflow-hidden'
-      } group tile-paper-press ${
+      } ${cornerRoundClass} group tile-paper-press ${
         tile.id === 0 && isApocalypse
           ? 'bg-gradient-to-br from-rose-950 via-red-950 to-slate-950 text-rose-100 border-2 border-rose-500 shadow-[inset_0_0_25px_rgba(225,29,72,0.85)]'
           : isDarkMode
@@ -1504,12 +1514,12 @@ export function Board({
 
   return (
     <div
-      className="relative w-full aspect-square select-none mx-auto flex items-center justify-center p-0.5 sm:p-1 max-w-[min(98vw,calc(100dvh-105px))] max-h-[min(98vw,calc(100dvh-105px))] lg:max-w-[calc(100dvh-24px)] lg:max-h-[calc(100dvh-24px)]"
+      className="relative w-full aspect-square select-none mx-auto flex items-center justify-center p-2 sm:p-3 max-w-[min(98vw,calc(100dvh-105px))] max-h-[min(98vw,calc(100dvh-105px))] lg:max-w-[calc(100dvh-24px)] lg:max-h-[calc(100dvh-24px)]"
     >
       {/* 11x11 Grid Tahta */}
       <div
         onMouseLeave={handleTileMouseLeave}
-        className={`relative w-full h-full grid gap-0.5 sm:gap-1 rounded-2xl p-0.5 sm:p-1 transition-colors duration-500 overflow-hidden ${rentShakeClass} ${
+        className={`relative w-full h-full grid gap-0.5 sm:gap-1 rounded-2xl p-0.5 sm:p-1 transition-colors duration-500 overflow-visible ${rentShakeClass} ${
           isApocalypse
             ? 'bg-[#450a0a] border-4 border-rose-600 shadow-[0_0_65px_rgba(225,29,72,0.7)] ring-4 ring-rose-500/60'
             : isDarkMode
