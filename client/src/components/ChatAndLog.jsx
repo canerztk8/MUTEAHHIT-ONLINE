@@ -108,7 +108,8 @@ function ChatAndLogBase({
     }
   }, [activeTab, isExpanded, messages.length]);
 
-  const hasUnreadChat = activeTab !== 'chat' && messages.length > lastReadMessageCount;
+  const unreadCount = Math.max(0, messages.length - lastReadMessageCount);
+  const hasUnreadChat = activeTab !== 'chat' && unreadCount > 0;
 
   // Son 3 olay ve tersine çevrilmiş günlükler (useMemo ile bellek & GC optimizasyonu)
   const reversedLogs = useMemo(() => [...logs].reverse(), [logs]);
@@ -184,7 +185,7 @@ function ChatAndLogBase({
                 }`}
               >
                 <MessageSquare className={`w-3 h-3 ${hasUnreadChat && activeTab !== 'chat' ? 'text-white' : ''}`} />
-                <span>Sohbet</span>
+                <span>Sohbet{hasUnreadChat ? ` (${unreadCount})` : ''}</span>
                 {hasUnreadChat && activeTab !== 'chat' && (
                   <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping ml-0.5" />
                 )}
@@ -382,7 +383,7 @@ function ChatAndLogBase({
                     }`}
                   >
                     <MessageSquare className={`w-3.5 h-3.5 ${hasUnreadChat && activeTab !== 'chat' ? 'text-white' : ''}`} />
-                    <span>Canlı Sohbet</span>
+                    <span>Canlı Sohbet{hasUnreadChat ? ` (${unreadCount})` : ''}</span>
                     {hasUnreadChat && activeTab !== 'chat' && (
                       <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping ml-0.5" />
                     )}
@@ -582,7 +583,7 @@ function ChatAndLogBase({
             )}
           </div>
           <div className={`flex items-center gap-1 text-[11px] font-bold font-space ${hasUnreadChat ? 'text-blue-600 dark:text-blue-400 animate-pulse font-black' : 'text-indigo-600 group-hover:text-indigo-800'}`}>
-            <span>Aç & Sohbet Et</span>
+            <span>Aç & Sohbet Et{hasUnreadChat ? ` (${unreadCount})` : ''}</span>
             <Maximize2 className="w-3.5 h-3.5 transition-transform group-hover:scale-110" />
           </div>
         </div>
@@ -662,7 +663,7 @@ function ChatAndLogBase({
                   }`}
                 >
                   <MessageSquare className={`w-3.5 h-3.5 ${hasUnreadChat && activeTab !== 'chat' ? 'text-white' : ''}`} />
-                  <span>Canlı Sohbet</span>
+                  <span>Canlı Sohbet{hasUnreadChat ? ` (${unreadCount})` : ''}</span>
                   {hasUnreadChat && activeTab !== 'chat' && (
                     <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping ml-0.5" />
                   )}

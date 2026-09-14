@@ -98,7 +98,10 @@ export function MobileTopPlayerBar({
             <MessageSquare className={`w-3 h-3 ${unreadChatCount > 0 ? 'text-white' : 'text-amber-400'}`} />
             <span className="hidden sm:inline">Sohbet</span>
             {unreadChatCount > 0 && (
-              <span className="w-2 h-2 bg-white rounded-full animate-ping ml-0.5" />
+              <span className="font-black text-[10px] font-jetbrains sm:ml-0.5">({unreadChatCount})</span>
+            )}
+            {unreadChatCount > 0 && (
+              <span className="w-1.5 h-1.5 bg-white rounded-full animate-ping ml-0.5" />
             )}
           </button>
         </div>
