@@ -5,6 +5,7 @@ import { TopDownPawnPreview } from './TopDownPawnPreview.jsx';
 import { TopDownPawnSvg } from './TopDownPawnSvg.jsx';
 import { ACTION } from '../network/protocol.js';
 import { getShareableInviteUrl } from '../network/PeerService.js';
+import { DisconnectTimerText } from './DisconnectTimerText.jsx';
 
 
 export function Lobby({
@@ -478,7 +479,7 @@ export function Lobby({
                 <div className="bg-amber-500/95 text-slate-950 px-3 py-2 rounded-xl border-2 border-amber-300 shadow-xl flex items-center justify-center gap-2 text-xs sm:text-sm font-black backdrop-blur-md animate-pulse">
                   <span className="text-base">⚠️</span>
                   <span className="truncate">
-                    <strong>{gameState.disconnectNotice.playerName}</strong> bağlantısı kesildi... (Yeniden bağlanması bekleniyor - {gameState.disconnectNotice.remainingSeconds !== undefined ? gameState.disconnectNotice.remainingSeconds : Math.max(0, Math.ceil(((gameState.disconnectNotice.expiresAt || 0) - Date.now()) / 1000))}sn)
+                    <strong>{gameState.disconnectNotice.playerName}</strong> bağlantısı kesildi... (Yeniden bağlanması bekleniyor - <DisconnectTimerText expiresAt={gameState.disconnectNotice.expiresAt} fallbackSeconds={gameState.disconnectNotice.remainingSeconds} />)
                   </span>
                 </div>
               ) : gameState.disconnectNotice.type === 'kicked' ? (

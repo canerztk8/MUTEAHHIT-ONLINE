@@ -12,6 +12,7 @@ import { DiceSidebarTray } from './components/DiceSidebarTray.jsx';
 import { MobileTopPlayerBar } from './components/MobileTopPlayerBar.jsx';
 import { MobileBottomActionBar } from './components/MobileBottomActionBar.jsx';
 import { ErrorBoundary } from './components/ErrorBoundary.jsx';
+import { DisconnectTimerText } from './components/DisconnectTimerText.jsx';
 
 // 🚀 Modallar — Dinamik code-splitting ile ana bundle yükü hafifletilir
 const PropertyCardModal = lazy(() => import('./components/PropertyCardModal.jsx').then(m => ({ default: m.PropertyCardModal })));
@@ -1674,7 +1675,7 @@ export function App() {
           <span className="text-xs sm:text-sm font-black font-space tracking-wide">
             {effectiveGameState.disconnectNotice.type === 'disconnecting' ? (
               <>
-                <strong>{effectiveGameState.disconnectNotice.playerName}</strong> bağlantısı kesildi... (Yeniden bağlanması bekleniyor - {effectiveGameState.disconnectNotice.remainingSeconds !== undefined ? effectiveGameState.disconnectNotice.remainingSeconds : Math.max(0, Math.ceil(((effectiveGameState.disconnectNotice.expiresAt || 0) - Date.now()) / 1000))}sn)
+                <strong>{effectiveGameState.disconnectNotice.playerName}</strong> bağlantısı kesildi... (Yeniden bağlanması bekleniyor - <DisconnectTimerText expiresAt={effectiveGameState.disconnectNotice.expiresAt} fallbackSeconds={effectiveGameState.disconnectNotice.remainingSeconds} />)
               </>
             ) : (
               <>

@@ -4,6 +4,7 @@ import { sounds } from '../sound/soundEffects.js';
 import { Building2, Building, Train, Zap, AlertTriangle, Coins, Clock, Home, Landmark, Gavel, Sparkles, ChevronDown } from 'lucide-react';
 import { Board3DOverlay } from './Board3DOverlay.jsx';
 import { RentImpactOverlay } from './RentImpactOverlay.jsx';
+import { DisconnectTimerText } from './DisconnectTimerText.jsx';
 
 // 11x11 Grid konumlandırması
 function getGridPosition(id) {
@@ -1695,7 +1696,7 @@ export function Board({
                     <div className="bg-amber-500/95 text-slate-950 px-2.5 py-1.5 rounded-xl border-2 border-amber-300 shadow-xl flex items-center justify-center gap-1.5 text-[9px] sm:text-[11px] font-black backdrop-blur-md animate-pulse">
                       <span className="text-xs">⚠️</span>
                       <span className="truncate">
-                        <strong>{gameState.disconnectNotice.playerName}</strong> bağlantısı kesildi... (Yeniden bağlanması bekleniyor - {gameState.disconnectNotice.remainingSeconds !== undefined ? gameState.disconnectNotice.remainingSeconds : Math.max(0, Math.ceil(((gameState.disconnectNotice.expiresAt || 0) - Date.now()) / 1000))}sn)
+                        <strong>{gameState.disconnectNotice.playerName}</strong> bağlantısı kesildi... (Yeniden bağlanması bekleniyor - <DisconnectTimerText expiresAt={gameState.disconnectNotice.expiresAt} fallbackSeconds={gameState.disconnectNotice.remainingSeconds} />)
                       </span>
                     </div>
                   ) : gameState.disconnectNotice.type === 'kicked' ? (

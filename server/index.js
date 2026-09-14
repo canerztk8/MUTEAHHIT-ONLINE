@@ -66,7 +66,15 @@ const peerServer = ExpressPeerServer(httpServer, {
   alive_timeout: 180000,          // 3 dakika heartbeat zaman aşımı (2dk'dan artırıldı)
   expire_timeout: 60000,          // 60 saniye mesaj zaman aşımı
   createWebSocketServer: (options) => {
-    peerWss = new WebSocketServer(options);
+    peerWss = new WebSocketServer({
+      ...options,
+      perMessageDeflate: {
+        zlibDeflateOptions: { level: 3 },
+        threshold: 1024,
+        clientNoContextTakeover: true,
+        serverNoContextTakeover: true,
+      },
+    });
     return peerWss;
   },
 });
@@ -110,7 +118,15 @@ peerServer.on('disconnect', (client) => {
 //   → { type: 'relay:broadcast', payload: { ...oyun mesajı... } }
 //   ← { type: 'relay:msg', payload: { ...oyun mesajı... }, from: 'playerId' } (tüm odaya)
 
-const relayWss = new WebSocketServer({ noServer: true });
+const relayWss = new WebSocketServer({
+  noServer: true,
+  perMessageDeflate: {
+    zlibDeflateOptions: { level: 3 },
+    threshold: 1024, // 1 KB altındaki minik ping/pong paketleri sıkıştırma masrafı olmadan ham akar
+    clientNoContextTakeover: true, // Bellek sızıntısı önleme (Render RAM dostu)
+    serverNoContextTakeover: true,
+  },
+});
 
 // Map<roomCode, Map<WebSocket, playerId>>
 const relayRooms = new Map();
@@ -135,7 +151,7 @@ const relayHeartbeat = setInterval(() => {
       try { ws.ping(); } catch (_) {}
     }
   });
-}, 20000);
+}, 25000);
 
 relayWss.on('close', () => {
   clearInterval(relayHeartbeat);
@@ -329,7 +345,7 @@ setInterval(() => {
       }
     });
   }
-}, 10000);
+}, 25000);
 
 // HTTP Upgrade — /wsrelay path'i relay'e, diğerleri PeerJS'e
 const peerUpgradeListeners = httpServer.rawListeners('upgrade').slice();

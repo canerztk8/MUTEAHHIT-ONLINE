@@ -252,14 +252,14 @@ class RelayConnection {
 
   _startHeartbeat() {
     this._stopHeartbeat();
-    // Render/Cloudflare 100s zaman aşımını önlemek için 6 saniyede bir ping gönder
+    // Render/Cloudflare 100s zaman aşımını önlemek için 15 saniyede bir ping gönder (sunucu zaten 25sn'de keepalive yolluyor)
     this._heartbeatTimer = setInterval(() => {
       if (this._ws?.readyState === WebSocket.OPEN) {
         try {
           this._ws.send(JSON.stringify({ type: 'relay:ping', t0: Date.now() }));
         } catch (_) {}
       }
-    }, 6000);
+    }, 15000);
   }
 
   _stopHeartbeat() {
@@ -573,7 +573,7 @@ export class HostPeerService {
             } else {
               updateHostPing(1);
             }
-          }, 2500);
+          }, 5000);
           this._onPing(1);
         }
       });
@@ -1605,14 +1605,13 @@ export class HostPeerService {
     }
 
     const msg = createSyncState(state);
-    // WebRTC DataChannel üzerinden doğrudan gönder
+    // 1. WebRTC DataChannel üzerinden doğrudan P2P gönder (0 sunucu bant genişliği maliyeti)
     for (const conn of this._connections.values()) {
       this._sendTo(conn, msg);
     }
-    // WebSocket Relay üzerinden de her zaman gönder (Relay bağlıysa)
-    if (this._relay?.isConnected) {
-      this._relay.broadcast(msg);
-    }
+    // 2. Akıllı Relay Yayını: Yalnızca WebRTC'si açık olmayan istemci varsa anında ilet;
+    // aksi halde sunucuyu korumak için 10 saniyede bir güvenlik/senkron nabzı at.
+    this._relayBroadcastIfNeeded(msg);
 
     // Bot açık artırma tetikleme
     if (this._game.phase === 'AUCTION' && this._game.auction) {
@@ -1629,9 +1628,44 @@ export class HostPeerService {
         }
         const m2 = createSyncState(s2);
         for (const c of this._connections.values()) this._sendTo(c, m2);
-        // FIX: Bot auction sonucu Relay'e de yayınla (önceden eksikti)
-        if (this._relay?.isConnected) this._relay.broadcast(m2);
+        this._relayBroadcastIfNeeded(m2);
       });
+    }
+  }
+
+  /**
+   * Akıllı Relay Durum Yayını:
+   * Eğer odadaki tüm bağlı insan oyuncuların WebRTC DataChannel'ı açıksa,
+   * 15 KB'lık GameState zaten P2P üzerinden 0 sunucu bant genişliğiyle iletilmiştir.
+   * Bu durumda sunucu trafiğini şişirmemek için Relay'e yalnızca 10 saniyede bir senkron nabzı atılır.
+   * Eğer odada WebRTC kuramamış (CGNAT, firewall vb.) veya bağlantısı kopmuş bir oyuncu / izleyici varsa,
+   * Relay yayını ANINDA (0 ms gecikme) yapılır; böylece hiç kimse desync yaşamaz.
+   */
+  _relayBroadcastIfNeeded(msg, force = false) {
+    if (!this._relay?.isConnected) return;
+    const now = Date.now();
+    if (force) {
+      this._lastRelayBroadcastTime = now;
+      this._relay.broadcast(msg);
+      return;
+    }
+
+    const activeHumanPlayers = this._game?.players?.filter(p => !p.isHost && !p.isBot && !p.isBankrupt && !p.isKicked) || [];
+    const hasPlayerNeedingRelay = activeHumanPlayers.length > 0 && activeHumanPlayers.some(p => {
+      return !Array.from(this._connections.values()).some(c => c?.open && (
+        c.peer === p.id ||
+        this._peerIdToPlayerId.get(c.peer) === p.id ||
+        (p.sessionToken && this._peerIdToPlayerId.get(c.peer) === p.sessionToken)
+      ));
+    });
+
+    const hasSpectatorNeedingRelay = (this._spectators?.size || 0) > 0 && Array.from(this._spectators.keys()).some(specId => {
+      return !Array.from(this._connections.values()).some(c => c?.open && (c.peer === specId || this._peerIdToPlayerId.get(c.peer) === specId));
+    });
+
+    if (hasPlayerNeedingRelay || hasSpectatorNeedingRelay || !this._lastRelayBroadcastTime || (now - this._lastRelayBroadcastTime > 10000)) {
+      this._lastRelayBroadcastTime = now;
+      this._relay.broadcast(msg);
     }
   }
 
@@ -1689,13 +1723,12 @@ export class HostPeerService {
       try {
         const now = Date.now();
 
-        // 1. Canlı Geri Sayım Senkronizasyonu (Tüm istemcilerde saniye saniye geri sayımı güncelle)
+        // 1. Canlı Geri Sayım Senkronizasyonu: Kalan süreyi motorda güncelle
+        // NOT: Artık her saniye 15 KB'lık tam GameState yayını YAPILMAZ!
+        // İstemciler ve Host UI 'expiresAt' üzerinden süreyi yerel olarak hesaplar.
         if (game.disconnectNotice && game.disconnectNotice.type === 'disconnecting' && game.disconnectNotice.expiresAt) {
           const remaining = Math.max(0, Math.ceil((game.disconnectNotice.expiresAt - now) / 1000));
-          if (game.disconnectNotice.remainingSeconds !== remaining) {
-            game.disconnectNotice.remainingSeconds = remaining;
-            this._broadcastState();
-          }
+          game.disconnectNotice.remainingSeconds = remaining;
         }
 
         // 2. Oyuncu Canlılık / Hareketsizlik Kontrolü (Inactivity Liveness Check)
@@ -2291,17 +2324,17 @@ export class ClientPeerService {
       } else if (this._relay?.isConnected) {
         // WebRTC açık değilse doğrudan Relay üzerinden Host'a PING ilet
         try {
-          this._relay.send(createPing(Date.now(), this._myId));
+          this._relay.send(createPing(Date.now(), this._myId), this._hostPeerId);
         } catch (_) {}
       }
-    }, 2500);
+    }, 4500);
 
     setTimeout(() => {
       if (this._relay?.isConnected) this._relay.ping((rtt) => handlePingResult(rtt));
       if (this._conn?.open) {
         try { this._conn.send(createPing(Date.now(), this._myId)); } catch (_) {}
       } else if (this._relay?.isConnected) {
-        try { this._relay.send(createPing(Date.now(), this._myId)); } catch (_) {}
+        try { this._relay.send(createPing(Date.now(), this._myId), this._hostPeerId); } catch (_) {}
       }
     }, 300);
   }
@@ -2315,8 +2348,10 @@ export class ClientPeerService {
 
   /**
    * Host'a eylem gönder.
-   * Çift kanal (Dual-Transport) mimarisi: Hem WebRTC DataChannel hem WebSocket Relay üzerinden
-   * actionId ile gönderilir; Host ilk ulaşanı işleyip diğerini tekilleştirir.
+   * Çift kanal (Dual-Transport) mimarisi: WebRTC DataChannel açıksa doğrudan P2P gönderilir.
+   * Kritik eylemlerde veya WebRTC kapalıysa Relay üzerinden Host'a iletilir.
+   * Eylemler daima Yetkili Host'a hedeflenir (targetId = hostPeerId) — böylece sunucu
+   * eylemi odadaki diğer istemcilere boş yere dağıtmaz (sunucu outbound trafiğini katbekat azaltır).
    * @param {string} action - ACTION sabitlerinden biri
    * @param {object} payload - Eyleme özgü veri
    */
@@ -2330,7 +2365,7 @@ export class ClientPeerService {
 
     let sent = false;
 
-    // 1. WebRTC DataChannel açıksa ultra hızlı gönder
+    // 1. WebRTC DataChannel açıksa ultra hızlı ve 0 sunucu maliyetiyle gönder
     if (this._conn?.open) {
       try {
         this._conn.send(actionMsg);
@@ -2340,10 +2375,12 @@ export class ClientPeerService {
       }
     }
 
-    // 2. WebSocket Relay bağlıysa garantili sunucu kanalı üzerinden de gönder
-    if (this._relay?.isConnected) {
+    // 2. UPDATE_PING gibi periyodik hafif aksiyonları WebRTC zaten açıksa Relay'e boş yere gönderme!
+    // Yalnızca WebRTC henüz kurulmamış/kopmuşsa veya kritik oyun aksiyonu ise Relay üzerinden gönder:
+    const isPingAction = action === ACTION.UPDATE_PING;
+    if (this._relay?.isConnected && (!sent || !isPingAction)) {
       try {
-        this._relay.send(actionMsg);
+        this._relay.send(actionMsg, this._hostPeerId);
         sent = true;
       } catch (e) {
         console.warn('[ClientPeerService] Relay send hatası:', e);
@@ -2352,7 +2389,7 @@ export class ClientPeerService {
 
     if (!sent) {
       console.warn('[ClientPeerService] Hiçbir kanal açık değil, mesaj Relay kuyruğuna alınıyor:', action);
-      this._relay?.send(actionMsg);
+      this._relay?.send(actionMsg, this._hostPeerId);
     }
   }
 
