@@ -118,15 +118,15 @@ function TitleDeedCardsBase({ gameState = {}, myPlayerId, onTileClick }) {
           <div className="flex items-center gap-2 flex-wrap">
             <h2 className="text-xs font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider flex items-center gap-1.5 font-space">
               <Landmark className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-              <span>Tapu Senetleri ({allOwnedTiles.length})</span>
+              <span>
+                Tapu Senetleri ({allOwnedTiles.length})
+                {mortgagedCount > 0 ? (
+                  <span className="text-rose-600 dark:text-rose-400 ml-1.5 font-bold">
+                    • {mortgagedCount} İpotekli
+                  </span>
+                ) : null}
+              </span>
             </h2>
-            <span className={`text-[9.5px] font-black px-2 py-0.5 rounded-full font-jetbrains border ${
-              mortgagedCount > 0
-                ? 'bg-rose-100 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400 border-rose-300 dark:border-rose-800'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700'
-            }`}>
-              İpotekli: {mortgagedCount}
-            </span>
           </div>
           <span className="text-[10px] sm:text-[10.5px] text-slate-500 dark:text-slate-400 font-medium">
             {targetPlayer?.id !== effectiveMyId ? 'Teklif yapmak için tapuya tıkla' : 'Yönetmek için tapuya tıkla'}
@@ -315,7 +315,7 @@ function TitleDeedCardsBase({ gameState = {}, myPlayerId, onTileClick }) {
                     isDemandHighlighted
                       ? (isAuctionTile ? 'demand-highlight-auction' : 'demand-highlight-trade')
                       : isMortgaged
-                      ? 'border-rose-300 dark:border-rose-700 opacity-60'
+                      ? 'border-rose-400 dark:border-rose-600'
                       : 'border-slate-300 dark:border-slate-700 hover:border-amber-500'
                   }`}
                 >
@@ -442,11 +442,15 @@ function TitleDeedCardsBase({ gameState = {}, myPlayerId, onTileClick }) {
                     </div>
                   </div>
 
-                  {/* İpotek Damgası (Varsa) */}
+                  {/* İpotek Damgası (Klasik Çift Çerçeveli Kırmızı Kaşe) */}
                   {isMortgaged && (
-                    <div className="absolute inset-0 z-20 bg-rose-950/60 backdrop-blur-[1px] flex items-center justify-center p-2 pointer-events-none">
-                      <div className="border-2 border-rose-500 bg-rose-600 text-white font-black text-xs uppercase tracking-wider px-2.5 py-1 rounded-lg -rotate-12 shadow-xl font-space text-center max-w-[90%] truncate">
-                        {targetPlayer?.name ? `${targetPlayer.name} (İpotek)` : 'İpotekli'}
+                    <div className="absolute inset-0 z-20 bg-rose-900/10 dark:bg-rose-950/30 backdrop-grayscale-[0.3] backdrop-contrast-[0.95] flex items-center justify-center p-2 pointer-events-none select-none overflow-hidden">
+                      <div className="transform -rotate-12 p-[2px] rounded-md border-2 border-red-600 dark:border-red-500/90 bg-red-50/95 dark:bg-black/80 shadow-xl flex items-center justify-center">
+                        <div className="border border-red-500/70 dark:border-red-500/60 rounded-[3px] px-2.5 py-0.5 flex items-center justify-center">
+                          <span className="text-[10.5px] sm:text-xs font-space font-black uppercase tracking-widest text-red-700 dark:text-red-400 leading-none drop-shadow-xs">
+                            İPOTEK
+                          </span>
+                        </div>
                       </div>
                     </div>
                   )}

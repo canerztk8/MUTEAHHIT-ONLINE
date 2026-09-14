@@ -439,10 +439,32 @@ const TileCell = React.memo(function TileCell({
 
       {/* İpotek Damgası (Klasik Çift Çerçeveli Kırmızı Kaşe & Bütünsel Matlaştırma) */}
       {propState && propState.mortgaged && (
-        <div className="absolute inset-0 bg-rose-950/25 backdrop-grayscale-[0.35] backdrop-contrast-[0.92] flex items-center justify-center z-20 pointer-events-none select-none overflow-hidden">
-          <div className="transform -rotate-12 p-[2px] rounded-md border-2 border-red-500/90 bg-black/75 shadow-xl flex items-center justify-center">
-            <div className="border border-red-500/60 rounded-[3px] px-1.5 py-0.5 flex items-center justify-center">
-              <span className="text-[8.5px] sm:text-[9.5px] md:text-[10.5px] font-space font-black text-red-500 uppercase tracking-widest leading-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+        <div
+          className={`absolute inset-0 ${
+            isDarkMode
+              ? 'bg-rose-950/25 backdrop-grayscale-[0.35] backdrop-contrast-[0.92]'
+              : 'bg-rose-900/10 backdrop-grayscale-[0.25] backdrop-contrast-[0.95]'
+          } flex items-center justify-center z-20 pointer-events-none select-none overflow-hidden`}
+        >
+          <div
+            className={`transform -rotate-12 p-[2px] rounded-md border-2 ${
+              isDarkMode
+                ? 'border-red-500/90 bg-black/80 shadow-xl'
+                : 'border-red-600 bg-red-50/95 shadow-md'
+            } flex items-center justify-center`}
+          >
+            <div
+              className={`border ${
+                isDarkMode ? 'border-red-500/60' : 'border-red-500/70'
+              } rounded-[3px] px-1.5 py-0.5 flex items-center justify-center`}
+            >
+              <span
+                className={`text-[8.5px] sm:text-[9.5px] md:text-[10.5px] font-space font-black uppercase tracking-widest leading-none ${
+                  isDarkMode
+                    ? 'text-red-400 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]'
+                    : 'text-red-700'
+                }`}
+              >
                 İPOTEK
               </span>
             </div>
