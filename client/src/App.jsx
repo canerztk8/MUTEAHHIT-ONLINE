@@ -25,7 +25,7 @@ const DevToolsModal = import.meta.env.DEV
 import { MoneyHistoryModal } from './components/MoneyHistoryModal.jsx';
 import { ENV } from './config/env.js';
 import { sounds } from './sound/soundEffects.js';
-import { X, Wrench, WifiOff, Eye, AlertTriangle, XCircle, MapPin, TrendingUp, TrendingDown, HardHat } from 'lucide-react';
+import { X, Wrench, Wifi, WifiOff, Eye, AlertTriangle, XCircle, MapPin, TrendingUp, TrendingDown, HardHat, Sun, Moon, Landmark, MessageSquare } from 'lucide-react';
 
 // 🃏 Son 3 Çekilen Kart Geçmişi Modalı (Deste kartına tıklanınca açılır)
 function CardHistoryModal({ deckType, logs, onClose }) {

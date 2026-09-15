@@ -4,6 +4,7 @@ import { Building, Train, Zap, AlertTriangle, Coins, Clock, Home, Landmark, Gave
 import { RentImpactOverlay } from './RentImpactOverlay.jsx';
 import { DisconnectTimerText } from './DisconnectTimerText.jsx';
 import { NonDrawerCardAlert } from './controls/NonDrawerCardAlert.jsx';
+import { Board3DOverlay } from './Board3DOverlay.jsx';
 
 // 11x11 Grid konumlandırması
 function getGridPosition(id) {

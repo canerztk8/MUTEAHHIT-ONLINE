@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Users, Handshake, ShieldAlert, Bot, Landmark, Trash2, Minimize2, Maximize2, X, TrendingUp, TrendingDown } from 'lucide-react';
 import { BOARD_TILES } from '../game/boardData.js';
+import { MoneyHistoryModal } from './MoneyHistoryModal.jsx';
 
 function PlayerPanelBase({ gameState, myPlayerId, onOpenTrade, onTileClick, onRemoveBot, onSetBotDifficulty, onKickPlayer }) {
   const { players, currentTurnIndex, properties, logs = [] } = gameState;
