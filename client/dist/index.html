@@ -1,7 +1,21 @@
 <!DOCTYPE html>
-<html lang="tr" class="dark perf-mode">
+<html lang="tr" class="perf-mode">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      (function() {
+        try {
+          var urlParams = new URLSearchParams(window.location.search);
+          var themeParam = urlParams.get('theme');
+          var saved = localStorage.getItem('muteahhit_dark_mode');
+          if (themeParam === 'dark' || saved === '1') {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="alternate icon" type="image/png" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -35,12 +49,12 @@
     <link rel="preload" href="/fonts/SF-Orson-Casual-Shaded-Regular.ttf" as="font" type="font/ttf" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="preload" as="image" href="/images/ankara-backdrop.webp" />
-    <script type="module" crossorigin src="/assets/index-BUWRY6dL.js"></script>
+    <script type="module" crossorigin src="/assets/index-DoNngCYs.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/vendor-D7vqEVr2.js">
     <link rel="modulepreload" crossorigin href="/assets/physics-BSpbupWn.js">
     <link rel="modulepreload" crossorigin href="/assets/three-C-n003aU.js">
     <link rel="modulepreload" crossorigin href="/assets/dice-FRGsSvKR.js">
-    <link rel="stylesheet" crossorigin href="/assets/index-nkLCLhK9.css">
+    <link rel="stylesheet" crossorigin href="/assets/index-rBIQW5kT.css">
   </head>
   <body class="bg-slate-950 text-slate-100 min-h-screen overflow-x-hidden font-sans selection:bg-amber-500 selection:text-black">
     <div id="root"></div>

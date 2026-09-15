@@ -3,7 +3,7 @@ import { Users, Handshake, ShieldAlert, Bot, Landmark, Trash2, Minimize2, Maximi
 import { BOARD_TILES } from '../game/boardData.js';
 import { MoneyHistoryModal } from './MoneyHistoryModal.jsx';
 
-function PlayerPanelBase({ gameState, myPlayerId, onOpenTrade, onTileClick, onRemoveBot, onSetBotDifficulty, onKickPlayer }) {
+function PlayerPanelBase({ gameState, myPlayerId, onOpenTrade, onTileClick, onRemoveBot, onSetBotDifficulty, onKickPlayer, isDarkMode }) {
   const { players, currentTurnIndex, properties, logs = [] } = gameState;
   const activePlayer = players[currentTurnIndex];
   const myPlayer = players.find(p => p.id === myPlayerId);
@@ -93,6 +93,7 @@ function PlayerPanelBase({ gameState, myPlayerId, onOpenTrade, onTileClick, onRe
             player={hp}
             history={hp.moneyHistory && hp.moneyHistory.length > 0 ? hp.moneyHistory : (moneyHistoryRef.current[historyModal] || [])}
             onClose={() => setHistoryModal(null)}
+            isDarkMode={isDarkMode}
           />
         );
       })()}
@@ -437,6 +438,7 @@ function PlayerPanelBase({ gameState, myPlayerId, onOpenTrade, onTileClick, onRe
 }
 
 function arePlayerPanelPropsEqual(prev, next) {
+  if (prev.isDarkMode !== next.isDarkMode) return false;
   if (prev.myPlayerId !== next.myPlayerId) return false;
   if (!prev.gameState || !next.gameState) return prev.gameState === next.gameState;
 

@@ -1,7 +1,21 @@
 <!DOCTYPE html>
-<html lang="tr" class="dark perf-mode">
+<html lang="tr" class="perf-mode">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      (function() {
+        try {
+          var urlParams = new URLSearchParams(window.location.search);
+          var themeParam = urlParams.get('theme');
+          var saved = localStorage.getItem('muteahhit_dark_mode');
+          if (themeParam === 'dark' || saved === '1') {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="alternate icon" type="image/png" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />

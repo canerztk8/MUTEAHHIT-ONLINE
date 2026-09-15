@@ -1801,6 +1801,7 @@ export function App() {
               onRemoveBot={handleRemoveBot}
               onSetBotDifficulty={handleSetBotDifficulty}
               onKickPlayer={handleKickPlayer}
+              isDarkMode={isDarkMode}
             />
           </ErrorBoundary>
 
@@ -2360,6 +2361,7 @@ export function App() {
           player={myPlayer}
           history={(myPlayer.moneyHistory && myPlayer.moneyHistory.length > 0) ? myPlayer.moneyHistory : myMoneyHistoryRef.current}
           onClose={() => setShowMyMoneyHistory(false)}
+          isDarkMode={isDarkMode}
         />
       )}
 
