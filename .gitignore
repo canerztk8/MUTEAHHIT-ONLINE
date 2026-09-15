@@ -4,3 +4,4 @@ node_modules/
 .agents/
 walkthrough.md
 preview*.png
+*.zip
