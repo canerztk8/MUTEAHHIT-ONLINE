@@ -2,7 +2,65 @@
 @tailwind components;
 @tailwind utilities;
 
+/* 🎲 SF Orson Casual Shaded Font Family */
+@font-face {
+  font-family: 'SF Orson Casual Shaded Regular';
+  src: url('/fonts/SF-Orson-Casual-Shaded-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'SF Orson Casual Shaded Regular';
+  src: url('/fonts/SF-Orson-Casual-Shaded-Regular.ttf') format('truetype');
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'SF Orson Casual Shaded';
+  src: url('/fonts/SF-Orson-Casual-Shaded-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'SF Orson Casual Shaded';
+  src: url('/fonts/SF-Orson-Casual-Shaded-Regular.ttf') format('truetype');
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'SF Orson Casual Shaded';
+  src: url('/fonts/SF-Orson-Casual-Shaded-Oblique.ttf') format('truetype');
+  font-weight: normal;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'SF Orson Casual Shaded';
+  src: url('/fonts/SF-Orson-Casual-Shaded-Oblique.ttf') format('truetype');
+  font-weight: bold;
+  font-style: italic;
+  font-display: swap;
+}
+
 @layer base {
+  html,
+  body,
+  button,
+  input,
+  select,
+  textarea {
+    font-family: 'SF Orson Casual Shaded Regular', 'SF Orson Casual Shaded', 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
   body {
     background-color: #ded1be;
     background-image:
@@ -660,7 +718,11 @@ html.dark ::-webkit-scrollbar-thumb:hover {
 
 /* Font Sınıfları */
 .font-space {
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: 'SF Orson Casual Shaded Regular', 'SF Orson Casual Shaded', 'Space Grotesk', sans-serif !important;
+}
+
+.font-orson {
+  font-family: 'SF Orson Casual Shaded Regular', 'SF Orson Casual Shaded', 'Outfit', sans-serif !important;
 }
 
 .font-jetbrains {
