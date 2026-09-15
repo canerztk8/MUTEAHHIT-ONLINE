@@ -90,7 +90,8 @@ function ChatAndLogBase({
   myPlayerId = '',
   myPlayerName = '',
   isDarkMode = false,
-  initialTab = 'log'
+  initialTab = 'log',
+  voiceChat = null
 }) {
   // Varsayılan olarak minimize (kapalı/kompakt) başlar
   const [isExpanded, setIsExpanded] = useState(false);
@@ -575,10 +576,10 @@ function ChatAndLogBase({
                 <span>{messages.length}</span>
               </span>
             )}
-            {voiceChat.isInVoice && (
+            {voiceChat?.isInVoice && (
               <span className="text-[10px] bg-emerald-50 text-emerald-800 border border-emerald-300 dark:bg-emerald-950/50 dark:text-emerald-300 px-1.5 py-0.2 rounded-full font-bold flex items-center gap-1 font-jetbrains">
                 <Radio className="w-2.5 h-2.5 text-emerald-500 animate-pulse" />
-                <span>Seste ({voiceChat.participantsCount})</span>
+                <span>Seste ({voiceChat?.participantsCount || 0})</span>
               </span>
             )}
           </div>
