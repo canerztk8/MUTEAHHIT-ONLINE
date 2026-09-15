@@ -1,32 +1,63 @@
-﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <defs>
+    <!-- Arka plan gradient: Koyu lacivert -->
     <linearGradient id="bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stopColor="#0f172a" />
-      <stop offset="100%" stopColor="#020617" />
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#020617" />
     </linearGradient>
-    <linearGradient id="hh-dome" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stopColor="#fef08a" />
-      <stop offset="45%" stopColor="#eab308" />
-      <stop offset="100%" stopColor="#a16207" />
-    </linearGradient>
+    <!-- Baret kubbe gradient: Altın sarısı -->
+    <radialGradient id="hh-dome" cx="38%" cy="30%" r="65%">
+      <stop offset="0%" stop-color="#fef08a" />
+      <stop offset="40%" stop-color="#eab308" />
+      <stop offset="100%" stop-color="#78350f" />
+    </radialGradient>
+    <!-- Baret ağzı gradient -->
     <linearGradient id="hh-brim" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stopColor="#fde047" />
-      <stop offset="100%" stopColor="#854d0e" />
+      <stop offset="0%" stop-color="#fde047" />
+      <stop offset="100%" stop-color="#92400e" />
     </linearGradient>
+    <!-- Tepe çıtası highlight -->
     <linearGradient id="hh-ridge" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stopColor="#ffffff" stopOpacity="0.8" />
-      <stop offset="50%" stopColor="#fef08a" />
-      <stop offset="100%" stopColor="#713f12" />
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.6" />
+      <stop offset="50%" stop-color="#fef9c3" />
+      <stop offset="100%" stop-color="#713f12" stop-opacity="0.5" />
     </linearGradient>
+    <!-- Speküler parlama -->
+    <radialGradient id="hh-shine" cx="35%" cy="25%" r="40%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.55" />
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+    </radialGradient>
   </defs>
-  <rect width="64" height="64" rx="16" fill="url(#bg-grad)" stroke="#f59e0b" stroke-width="1.5" />
-  <g transform="translate(0, 1)">
-    <path d="M 18,22 C 18,10 24,7 32,7 C 40,7 46,10 46,22 C 50,30 50,44 45,52 C 40,58 24,58 19,52 C 14,44 14,30 18,22 Z" fill="url(#hh-brim)" stroke="#713f12" stroke-width="1.2" />
-    <ellipse cx="32" cy="33" rx="16.5" ry="20.5" fill="none" stroke="#713f12" stroke-width="1" opacity="0.4" />
-    <ellipse cx="32" cy="34" rx="14.5" ry="18.5" fill="url(#hh-dome)" stroke="#854d0e" stroke-width="1.2" />
-    <path d="M 30.5,15 C 30.5,15 30,34 30,51 L 34,51 C 34,34 33.5,15 33.5,15 Z" fill="url(#hh-ridge)" />
-    <line x1="32" y1="16" x2="32" y2="50" stroke="#ffffff" stroke-width="0.8" opacity="0.9" />
-    <path d="M 23,26 C 21,32 21,38 23,42" fill="none" stroke="#854d0e" stroke-width="1.2" stroke-linecap="round" />
-    <path d="M 41,26 C 43,32 43,38 41,42" fill="none" stroke="#854d0e" stroke-width="1.2" stroke-linecap="round" />
+
+  <!-- Arka plan: yuvarlak köşeli kare, altın kenarlık -->
+  <rect width="64" height="64" rx="15" fill="url(#bg-grad)" stroke="#b45309" stroke-width="1.5" />
+
+  <!-- Alt gölge efekti -->
+  <ellipse cx="32" cy="56" rx="17" ry="3" fill="#000000" opacity="0.35" />
+
+  <g transform="translate(32,32)">
+    <!-- BARET AĞZ (brim) — yatay oval -->
+    <ellipse cx="0" cy="14" rx="20" ry="5.5" fill="url(#hh-brim)" stroke="#92400e" stroke-width="1" />
+    <!-- Ağız alt gölge hattı -->
+    <ellipse cx="0" cy="16" rx="19" ry="3.5" fill="#78350f" opacity="0.5" />
+
+    <!-- BARET KUBBESI — ana gövde -->
+    <path d="M -18,14 C -18,14 -21,-2 -13,-12 C -6,-20 6,-22 0,-23 C -6,-22 6,-22 13,-12 C 21,-2 18,14 18,14 Z" fill="url(#hh-dome)" stroke="#92400e" stroke-width="1.2" />
+
+    <!-- Speküler parlama (soluk üst beyaz) -->
+    <path d="M -18,14 C -18,14 -21,-2 -13,-12 C -6,-20 6,-22 0,-23 C -6,-22 6,-22 13,-12 C 21,-2 18,14 18,14 Z" fill="url(#hh-shine)" />
+
+    <!-- Merkez dikey çıta (klasik baret çizgisi) -->
+    <path d="M -2,-22 C -2,-22 -1.5,12 -1.5,14 L 1.5,14 C 1.5,12 2,12 2,-22 Z" fill="url(#hh-ridge)" />
+    <!-- Merkez ince parlak çizgi -->
+    <line x1="0" y1="-22" x2="0" y2="14" stroke="#ffffff" stroke-width="0.7" opacity="0.8" />
+
+    <!-- Sol yay çıtası -->
+    <path d="M -10,-16 C -15,-8 -16,4 -12,12" fill="none" stroke="#78350f" stroke-width="1.1" stroke-linecap="round" opacity="0.7" />
+    <!-- Sağ yay çıtası -->
+    <path d="M 10,-16 C 15,-8 16,4 12,12" fill="none" stroke="#78350f" stroke-width="1.1" stroke-linecap="round" opacity="0.7" />
+
+    <!-- Ön orta yürüme bandı (baret ön kaydırma) -->
+    <rect x="-5" y="11" width="10" height="3.5" rx="1.5" fill="#a16207" opacity="0.8" />
   </g>
 </svg>
