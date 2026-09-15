@@ -2,52 +2,68 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 🎲 SF Orson Casual Shaded Font Family */
+/* 🏛️ Gill Sans Web Font Family */
 @font-face {
-  font-family: 'SF Orson Casual Shaded Regular';
-  src: url('/fonts/SF-Orson-Casual-Shaded-Regular.ttf') format('truetype');
-  font-weight: normal;
+  font-family: 'Gill Sans';
+  src: local('Gill Sans'), local('Gill Sans MT'), url('/fonts/GillSans.woff') format('woff');
+  font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: 'SF Orson Casual Shaded Regular';
-  src: url('/fonts/SF-Orson-Casual-Shaded-Regular.ttf') format('truetype');
-  font-weight: bold;
+  font-family: 'Gill Sans';
+  src: local('Gill Sans Medium'), local('Gill Sans MT'), url('/fonts/GillSans-Medium.woff') format('woff');
+  font-weight: 500;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: 'SF Orson Casual Shaded';
-  src: url('/fonts/SF-Orson-Casual-Shaded-Regular.ttf') format('truetype');
-  font-weight: normal;
+  font-family: 'Gill Sans';
+  src: local('Gill Sans Bold'), local('Gill Sans MT Bold'), url('/fonts/GillSans-Bold.woff') format('woff');
+  font-weight: 600;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: 'SF Orson Casual Shaded';
-  src: url('/fonts/SF-Orson-Casual-Shaded-Regular.ttf') format('truetype');
-  font-weight: bold;
+  font-family: 'Gill Sans';
+  src: local('Gill Sans Bold'), local('Gill Sans MT Bold'), url('/fonts/GillSans-Bold.woff') format('woff');
+  font-weight: 700;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: 'SF Orson Casual Shaded';
-  src: url('/fonts/SF-Orson-Casual-Shaded-Oblique.ttf') format('truetype');
-  font-weight: normal;
+  font-family: 'Gill Sans';
+  src: local('Gill Sans Bold'), local('Gill Sans MT Bold'), url('/fonts/GillSans-Bold.woff') format('woff');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Gill Sans';
+  src: local('Gill Sans Italic'), local('Gill Sans MT Italic'), url('/fonts/GillSans-Italic.woff') format('woff');
+  font-weight: 400;
   font-style: italic;
   font-display: swap;
 }
 
 @font-face {
-  font-family: 'SF Orson Casual Shaded';
-  src: url('/fonts/SF-Orson-Casual-Shaded-Oblique.ttf') format('truetype');
-  font-weight: bold;
-  font-style: italic;
+  font-family: 'Gill Sans MT';
+  src: local('Gill Sans MT'), local('Gill Sans'), url('/fonts/GillSans.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Gill Sans MT';
+  src: local('Gill Sans MT Bold'), local('Gill Sans Bold'), url('/fonts/GillSans-Bold.woff') format('woff');
+  font-weight: 700;
+  font-style: normal;
   font-display: swap;
 }
 
@@ -58,7 +74,7 @@
   input,
   select,
   textarea {
-    font-family: 'SF Orson Casual Shaded Regular', 'SF Orson Casual Shaded', 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   }
 
   body {
@@ -718,11 +734,11 @@ html.dark ::-webkit-scrollbar-thumb:hover {
 
 /* Font Sınıfları */
 .font-space {
-  font-family: 'SF Orson Casual Shaded Regular', 'SF Orson Casual Shaded', 'Space Grotesk', sans-serif !important;
+  font-family: 'Gill Sans', 'Gill Sans MT', 'Space Grotesk', sans-serif !important;
 }
 
-.font-orson {
-  font-family: 'SF Orson Casual Shaded Regular', 'SF Orson Casual Shaded', 'Outfit', sans-serif !important;
+.font-gill {
+  font-family: 'Gill Sans', 'Gill Sans MT', Calibri, sans-serif !important;
 }
 
 .font-jetbrains {

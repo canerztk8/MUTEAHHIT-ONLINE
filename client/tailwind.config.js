@@ -17,9 +17,9 @@ export default {
         'slate-850': '#151f32',
       },
       fontFamily: {
-        sans: ['"SF Orson Casual Shaded Regular"', '"SF Orson Casual Shaded"', 'Outfit', 'Inter', 'sans-serif'],
-        space: ['"SF Orson Casual Shaded Regular"', '"SF Orson Casual Shaded"', 'Space Grotesk', 'Outfit', 'sans-serif'],
-        orson: ['"SF Orson Casual Shaded Regular"', '"SF Orson Casual Shaded"', 'Outfit', 'sans-serif'],
+        sans: ['"Gill Sans"', '"Gill Sans MT"', 'Calibri', '"Trebuchet MS"', 'Outfit', 'Inter', 'sans-serif'],
+        space: ['"Gill Sans"', '"Gill Sans MT"', 'Space Grotesk', 'Outfit', 'sans-serif'],
+        gill: ['"Gill Sans"', '"Gill Sans MT"', 'Calibri', 'sans-serif'],
       },
       animation: {
         'bounce-short': 'bounce 0.5s ease-in-out 2',
