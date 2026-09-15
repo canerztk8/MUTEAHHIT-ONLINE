@@ -31,6 +31,7 @@ export function Lobby({
   const [roomInput, setRoomInput] = useState('');
   const [copied, setCopied] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [errorField, setErrorField] = useState(null); // 'name' | 'room' | null
   const [selectedBotDiff, setSelectedBotDiff] = useState('orta');
   const [editingLobbyName, setEditingLobbyName] = useState('');
   const [optimisticTokenId, setOptimisticTokenId] = useState(null);
@@ -175,9 +176,11 @@ export function Lobby({
   const handleCreateRoom = () => {
     if (!name.trim()) {
       setErrorMsg('Lütfen adınızı girin!');
+      setErrorField('name');
       return;
     }
     setErrorMsg('');
+    setErrorField(null);
     try { sessionStorage.removeItem('muteahhit_auto_join_cancelled'); } catch (_) {}
     localStorage.setItem('muteahhit_name', name.trim());
     let sessionToken = localStorage.getItem('muteahhit_session_token');
@@ -198,13 +201,16 @@ export function Lobby({
     if (isJoining || network) return;
     if (!name.trim()) {
       setErrorMsg('Lütfen adınızı girin!');
+      setErrorField('name');
       return;
     }
     if (!roomInput.trim()) {
       setErrorMsg('Lütfen bir oda kodu girin!');
+      setErrorField('room');
       return;
     }
     setErrorMsg('');
+    setErrorField(null);
     try { sessionStorage.removeItem('muteahhit_auto_join_cancelled'); } catch (_) {}
     setIsJoining(true);
     localStorage.setItem('muteahhit_name', name.trim());
@@ -726,9 +732,21 @@ export function Lobby({
               type="text"
               value={name}
               maxLength={16}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => {
+                setName(e.target.value);
+                if (errorField === 'name') {
+                  setErrorField(null);
+                  setErrorMsg('');
+                }
+              }}
               placeholder="Adınızı girin..."
-              className={`w-full px-4 py-3 ${isDarkMode ? 'bg-slate-800/80 border-slate-700 text-white placeholder-slate-500' : 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400'} border rounded-xl focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 transition text-sm font-medium`}
+              className={`w-full px-4 py-3 ${
+                errorField === 'name'
+                  ? 'border-rose-500 ring-2 ring-rose-500/30'
+                  : isDarkMode
+                  ? 'border-slate-700 focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20'
+                  : 'border-slate-300 focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20'
+              } ${isDarkMode ? 'bg-slate-800/80 text-white placeholder-slate-500' : 'bg-slate-50 text-slate-900 placeholder-slate-400'} border rounded-xl focus:outline-none transition text-sm font-medium`}
             />
           </div>
 
@@ -745,7 +763,7 @@ export function Lobby({
             <label className={`block text-xs font-bold ${isDarkMode ? 'text-slate-300' : 'text-slate-700'} uppercase tracking-wider mb-2`}>
               Piyonunu Seç
             </label>
-            <div className="grid grid-cols-3 sm:grid-cols-9 gap-2">
+            <div className="grid grid-cols-5 sm:grid-cols-9 gap-1.5 sm:gap-2">
               {PLAYER_TOKENS.map((token) => (
                 <button
                   key={token.id}
@@ -832,10 +850,22 @@ export function Lobby({
               <input
                 type="text"
                 value={roomInput}
-                onChange={(e) => setRoomInput(e.target.value.toUpperCase())}
+                onChange={(e) => {
+                  setRoomInput(e.target.value.toUpperCase());
+                  if (errorField === 'room') {
+                    setErrorField(null);
+                    setErrorMsg('');
+                  }
+                }}
                 placeholder="ODA KODU (örn. 7XK8)"
                 maxLength={8}
-                className={`flex-1 px-4 py-3 ${isDarkMode ? 'bg-slate-800/80 border-slate-700 text-white placeholder-slate-500' : 'bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400'} border rounded-xl text-center font-mono font-bold tracking-widest focus:outline-none focus:border-amber-400 transition text-sm`}
+                className={`flex-1 px-4 py-3 ${
+                  errorField === 'room'
+                    ? 'border-rose-500 ring-2 ring-rose-500/30'
+                    : isDarkMode
+                    ? 'border-slate-700 focus:border-amber-400'
+                    : 'border-slate-300 focus:border-amber-400'
+                } ${isDarkMode ? 'bg-slate-800/80 text-white placeholder-slate-500' : 'bg-slate-50 text-slate-900 placeholder-slate-400'} border rounded-xl text-center font-mono font-bold tracking-widest focus:outline-none transition text-sm`}
               />
               <button
                 onClick={handleJoinRoom}
@@ -868,7 +898,7 @@ export function Lobby({
       </div>
 
       {/* Footer Legal & Transparency */}
-      <footer className="mt-8 mb-4 text-center text-xs text-slate-500 flex items-center justify-center gap-4">
+      <footer className="mt-8 mb-4 text-center text-xs text-slate-500 flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
         <span>© {new Date().getFullYear()} Müteahhit Online</span>
         <span>•</span>
         <button
@@ -886,6 +916,13 @@ export function Lobby({
         >
           Gizlilik & KVKK
         </button>
+        <span>•</span>
+        <a
+          href="mailto:destek@muteahhit.online"
+          className="hover:text-amber-400 underline underline-offset-2 transition"
+        >
+          destek@muteahhit.online
+        </a>
       </footer>
 
       {legalModalType && (

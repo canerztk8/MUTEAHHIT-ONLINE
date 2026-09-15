@@ -1,0 +1,32 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#0f172a" />
+      <stop offset="100%" stopColor="#020617" />
+    </linearGradient>
+    <linearGradient id="hh-dome" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#fef08a" />
+      <stop offset="45%" stopColor="#eab308" />
+      <stop offset="100%" stopColor="#a16207" />
+    </linearGradient>
+    <linearGradient id="hh-brim" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stopColor="#fde047" />
+      <stop offset="100%" stopColor="#854d0e" />
+    </linearGradient>
+    <linearGradient id="hh-ridge" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stopColor="#ffffff" stopOpacity="0.8" />
+      <stop offset="50%" stopColor="#fef08a" />
+      <stop offset="100%" stopColor="#713f12" />
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="url(#bg-grad)" stroke="#f59e0b" stroke-width="1.5" />
+  <g transform="translate(0, 1)">
+    <path d="M 18,22 C 18,10 24,7 32,7 C 40,7 46,10 46,22 C 50,30 50,44 45,52 C 40,58 24,58 19,52 C 14,44 14,30 18,22 Z" fill="url(#hh-brim)" stroke="#713f12" stroke-width="1.2" />
+    <ellipse cx="32" cy="33" rx="16.5" ry="20.5" fill="none" stroke="#713f12" stroke-width="1" opacity="0.4" />
+    <ellipse cx="32" cy="34" rx="14.5" ry="18.5" fill="url(#hh-dome)" stroke="#854d0e" stroke-width="1.2" />
+    <path d="M 30.5,15 C 30.5,15 30,34 30,51 L 34,51 C 34,34 33.5,15 33.5,15 Z" fill="url(#hh-ridge)" />
+    <line x1="32" y1="16" x2="32" y2="50" stroke="#ffffff" stroke-width="0.8" opacity="0.9" />
+    <path d="M 23,26 C 21,32 21,38 23,42" fill="none" stroke="#854d0e" stroke-width="1.2" stroke-linecap="round" />
+    <path d="M 41,26 C 43,32 43,38 41,42" fill="none" stroke="#854d0e" stroke-width="1.2" stroke-linecap="round" />
+  </g>
+</svg>

@@ -523,7 +523,37 @@ export function App() {
       }, 2600);
       return () => clearTimeout(timer);
     }
-  }, [moneyToast?.key]);
+  }, [moneyToast]);
+
+  // Dinamik Sayfa Başlığı (SEO & Sekme Bildirimi)
+  useEffect(() => {
+    if (!gameState || gameState.status === 'lobby') {
+      const roomCode = gameState?.roomCode || localStorage.getItem('muteahhit_room_code');
+      if (roomCode) {
+        document.title = `Lobi (${roomCode}) • Müteahhit Online`;
+      } else {
+        document.title = 'Müteahhit Online - Arkadaşlarınla Canlı Ankara Monopolü Oyna';
+      }
+      return;
+    }
+
+    if (gameState.status === 'playing') {
+      const activePlayer = gameState.players?.[gameState.currentTurnIndex];
+      const isMyTurn = activePlayer?.id === effectiveMyPlayerId;
+      if (gameState.phase === 'AUCTION') {
+        document.title = `🔨 Açık Artırma! • ${gameState.roomCode} • Müteahhit Online`;
+      } else if (isMyTurn) {
+        document.title = `🔔 Sıra Sende! • ${gameState.roomCode} • Müteahhit Online`;
+      } else {
+        document.title = `Sıra: ${activePlayer?.name || 'Bekleniyor'} • ${gameState.roomCode} • Müteahhit Online`;
+      }
+      return;
+    }
+
+    if (gameState.status === 'ended') {
+      document.title = '🏆 Oyun Bitti! • Müteahhit Online';
+    }
+  }, [gameState?.status, gameState?.roomCode, gameState?.currentTurnIndex, gameState?.phase, effectiveMyPlayerId]);
 
   // Piyon hedefe ulaştığında bekleyen para bildirimini ve bakiyeleri senkronize tetikle
   const handlePawnLanded = (playerId, targetPos) => {

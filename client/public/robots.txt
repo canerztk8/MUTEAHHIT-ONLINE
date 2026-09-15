@@ -1,0 +1,6 @@
+﻿# robots.txt for Müteahhit Online
+User-agent: *
+Allow: /
+Disallow: /*?room=
+
+Sitemap: /sitemap.xml
