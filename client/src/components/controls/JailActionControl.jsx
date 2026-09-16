@@ -32,7 +32,8 @@ export function JailActionControl({
             className="flex-1 py-1 px-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-[10.5px] font-bold transition flex items-center justify-center gap-1 cursor-pointer"
           >
             <Key className="w-3 h-3" />
-            <span>Muafiyet Belgesi ({activePlayer.jailCards})</span>
+            <span className="hidden sm:inline">Muafiyet Belgesi ({activePlayer.jailCards})</span>
+            <span className="sm:hidden">Belge ({activePlayer.jailCards})</span>
           </button>
         )}
       </div>

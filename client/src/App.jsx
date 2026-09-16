@@ -1791,7 +1791,7 @@ export function App() {
         />
 
         {/* SOL PANEL: SADECE MASAÜSTÜ (Desktop - lg:flex, Mobilde Cardboard'ı İtmez) */}
-        <div className="hidden lg:flex w-[320px] xl:w-[350px] 2xl:w-[370px] h-full max-h-full flex-col gap-2 min-h-0 overflow-y-auto pr-0 lg:pr-1 pb-32 sm:pb-36 custom-scrollbar flex-shrink-0 order-2 lg:order-1">
+        <div className="hidden lg:flex w-[260px] xl:w-[330px] 2xl:w-[370px] h-full max-h-full flex-col gap-2 min-h-0 overflow-y-auto pr-0 lg:pr-1 pb-32 sm:pb-36 custom-scrollbar flex-shrink-0 order-2 lg:order-1">
           <ErrorBoundary name="Oyuncu Durumları Paneli">
             <PlayerPanel
               gameState={effectiveGameState}
@@ -1867,7 +1867,7 @@ export function App() {
         </div>
 
         {/* SAĞ PANEL: SADECE MASAÜSTÜ (Desktop - lg:flex, Mobilde Zar Tablası Gizlendi) */}
-        <aside className="hidden lg:flex w-[290px] xl:w-[320px] 2xl:w-[340px] h-full max-h-full flex-col gap-2 min-h-0 flex-shrink-0 order-3 lg:order-3">
+        <aside className="hidden lg:flex w-[250px] xl:w-[310px] 2xl:w-[340px] h-full max-h-full flex-col gap-2 min-h-0 flex-shrink-0 order-3 lg:order-3">
           {/* ÜST: 3D Zar Tablası (Sağ tarafın %70'i) */}
           <div className="flex-[7] h-[70%] min-h-[280px] flex-shrink-0 flex flex-col min-h-0">
             <ErrorBoundary name="Zar Tablası">

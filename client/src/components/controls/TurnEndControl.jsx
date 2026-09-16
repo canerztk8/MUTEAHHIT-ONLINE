@@ -46,7 +46,8 @@ export function TurnEndControl({
         className="w-full py-2.5 px-3 bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-600 hover:brightness-110 active:scale-95 text-white font-black text-xs sm:text-sm rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed animate-dice-glow border border-emerald-300 font-space"
       >
         <Dices className={`w-4 h-4 ${isSubmitting ? 'animate-spin' : 'animate-bounce-short'}`} />
-        <span>{isSubmitting ? 'Zar Atılıyor...' : 'Çift Attın! Tekrar Zar At'}</span>
+        <span className="hidden sm:inline">{isSubmitting ? 'Zar Atılıyor...' : 'Çift Attın! Tekrar Zar At'}</span>
+        <span className="sm:hidden">{isSubmitting ? 'Atılıyor...' : 'Çift! Tekrar At'}</span>
       </button>
     );
   }

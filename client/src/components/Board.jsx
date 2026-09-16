@@ -1549,10 +1549,11 @@ export function Board({
               {/* Ankara Kalesi Fotoğraf Arka Planı */}
               {!isApocalypse && (
                 <img
-                  src="/images/ankara-castle-bg.webp"
+                  src="/images/ankara-backdrop.webp"
                   alt=""
                   aria-hidden="true"
                   className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none select-none rounded-2xl"
+                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
                   style={{
                     filter: isDarkMode
                       ? 'saturate(0.55) brightness(0.38) contrast(1.05)'
@@ -1582,8 +1583,8 @@ export function Board({
                   : 'bg-[radial-gradient(circle_at_50%_35%,rgba(15,23,42,0.04)_0%,transparent_70%)]'
               }`} style={{ zIndex: 2 }} />
 
-              {/* Tahtaya Sabit Basılmış İhale Kartı Yuvası (Board Slot) */}
-              <div className="flex absolute left-3 sm:left-6 md:left-8 top-8 sm:top-12 md:top-14 w-20 h-28 sm:w-28 sm:h-40 md:w-32 md:h-44 -rotate-12 rounded-2xl board-card-slot items-center justify-center pointer-events-none select-none z-0">
+              {/* Tahtaya Sabit Basılmış İhale Kartı Yuvası (Board Slot - Sadece Geniş Ekranlarda xl:flex) */}
+              <div className="hidden xl:flex absolute left-3 sm:left-6 md:left-8 top-8 sm:top-12 md:top-14 w-20 h-28 sm:w-28 sm:h-40 md:w-32 md:h-44 -rotate-12 rounded-2xl board-card-slot items-center justify-center pointer-events-none select-none z-0">
                 <div className="flex flex-col items-center justify-center text-center opacity-20 dark:opacity-30">
                   <span className="text-lg sm:text-2xl md:text-3xl mb-1">📁</span>
                   <span className={`text-[7px] sm:text-[9px] md:text-[10px] font-black uppercase tracking-[0.15em] sm:tracking-[0.2em] ${isDarkMode ? 'text-slate-300' : 'text-[#0F172A]'} font-space text-center leading-snug`}>
@@ -1592,8 +1593,8 @@ export function Board({
                 </div>
               </div>
 
-              {/* Fiziksel İhale & Fırsat Destesi (Manila Klasörü / Kraft & Kamu İhalesi Damgası) */}
-              <div className="flex absolute left-3 sm:left-6 md:left-8 top-8 sm:top-12 md:top-14 z-30 pointer-events-auto select-none">
+              {/* Fiziksel İhale & Fırsat Destesi (Sadece Geniş Ekranlarda xl:flex) */}
+              <div className="hidden xl:flex absolute left-3 sm:left-6 md:left-8 top-8 sm:top-12 md:top-14 z-30 pointer-events-auto select-none">
                 <div
                   onClick={(e) => {
                     e.stopPropagation();
@@ -1632,8 +1633,8 @@ export function Board({
                 </div>
               </div>
 
-              {/* Tahtaya Sabit Basılmış Şans / Belediye Kartı Yuvası (Board Slot) */}
-              <div className="flex absolute right-3 sm:right-6 md:right-8 bottom-8 sm:bottom-12 md:bottom-14 w-20 h-28 sm:w-28 sm:h-40 md:w-32 md:h-44 rotate-12 rounded-2xl board-card-slot items-center justify-center pointer-events-none select-none z-0">
+              {/* Tahtaya Sabit Basılmış Şans / Belediye Kartı Yuvası (Board Slot - Sadece Geniş Ekranlarda xl:flex) */}
+              <div className="hidden xl:flex absolute right-3 sm:right-6 md:right-8 bottom-8 sm:bottom-12 md:bottom-14 w-20 h-28 sm:w-28 sm:h-40 md:w-32 md:h-44 rotate-12 rounded-2xl board-card-slot items-center justify-center pointer-events-none select-none z-0">
                 <div className="flex flex-col items-center justify-center text-center opacity-20 dark:opacity-30">
                   <span className="text-lg sm:text-2xl md:text-3xl mb-1">🏛️</span>
                   <span className={`text-[7px] sm:text-[9px] md:text-[10px] font-black uppercase tracking-[0.15em] sm:tracking-[0.2em] ${isDarkMode ? 'text-slate-300' : 'text-[#0F172A]'} font-space text-center leading-snug`}>
@@ -1642,8 +1643,8 @@ export function Board({
                 </div>
               </div>
 
-              {/* Fiziksel Belediye & Şans Destesi (Resmi Tebligat & Altın Yaldız Estetiği) */}
-              <div className="flex absolute right-3 sm:right-6 md:right-8 bottom-8 sm:bottom-12 md:bottom-14 z-30 pointer-events-auto select-none">
+              {/* Fiziksel Belediye & Şans Destesi (Sadece Geniş Ekranlarda xl:flex) */}
+              <div className="hidden xl:flex absolute right-3 sm:right-6 md:right-8 bottom-8 sm:bottom-12 md:bottom-14 z-30 pointer-events-auto select-none">
                 <div
                   onClick={(e) => {
                     e.stopPropagation();
