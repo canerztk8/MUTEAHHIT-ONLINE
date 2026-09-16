@@ -340,6 +340,7 @@ export function App() {
     }
   });
   const [selectedTileModal, setSelectedTileModal] = useState(null);
+  const [showDeedsModal, setShowDeedsModal] = useState(false);
   const [cardHistoryModal, setCardHistoryModal] = useState(null); // { deckType: 'chance'|'chest' }
 
   const [tradeTargetPlayer, setTradeTargetPlayer] = useState(null);
@@ -1790,8 +1791,8 @@ export function App() {
           unreadChatCount={mobileDrawer === 'chat' ? 0 : Math.max(0, (chatMessages?.length || 0) - lastReadChatCount)}
         />
 
-        {/* SOL PANEL: SADECE MASAÜSTÜ (Desktop - lg:flex, Mobilde Cardboard'ı İtmez) */}
-        <div className="hidden lg:flex w-[260px] xl:w-[330px] 2xl:w-[370px] h-full max-h-full flex-col gap-2 min-h-0 overflow-y-auto pr-0 lg:pr-1 pb-32 sm:pb-36 custom-scrollbar flex-shrink-0 order-2 lg:order-1">
+        {/* SOL PANEL: YALNIZCA 2XL+ DEV EKRANLARDA (Desktop - 2xl:flex, 18" ve altında gizlenerek tahtaya devasa alan açar) */}
+        <div className="hidden 2xl:flex w-[350px] 2xl:w-[370px] h-full max-h-full flex-col gap-2 min-h-0 overflow-y-auto pr-0 lg:pr-1 pb-32 sm:pb-36 custom-scrollbar flex-shrink-0 order-2 lg:order-1">
           <ErrorBoundary name="Oyuncu Durumları Paneli">
             <PlayerPanel
               gameState={effectiveGameState}
@@ -1866,10 +1867,10 @@ export function App() {
           </ErrorBoundary>
         </div>
 
-        {/* SAĞ PANEL: SADECE MASAÜSTÜ (Desktop - lg:flex, Mobilde Zar Tablası Gizlendi) */}
-        <aside className="hidden lg:flex w-[250px] xl:w-[310px] 2xl:w-[340px] h-full max-h-full flex-col gap-2 min-h-0 flex-shrink-0 order-3 lg:order-3">
-          {/* ÜST: 3D Zar Tablası (%50 dengeli oran) */}
-          <div className="flex-1 h-1/2 min-h-[200px] flex-shrink-0 flex flex-col min-h-0">
+        {/* SAĞ PANEL: SADECE MASAÜSTÜ (Desktop - lg:flex) */}
+        <aside className="hidden lg:flex w-[260px] xl:w-[290px] 2xl:w-[340px] h-full max-h-full flex-col gap-2 min-h-0 flex-shrink-0 order-3 lg:order-3">
+          {/* ÜST: 3D Zar Tablası */}
+          <div className="h-[44%] 2xl:h-1/2 min-h-[160px] flex-shrink-0 flex flex-col min-h-0">
             <ErrorBoundary name="Zar Tablası">
               <DiceSidebarTray
                 gameState={gameState}
@@ -1943,23 +1944,43 @@ export function App() {
             </ErrorBoundary>
           </div>
 
-          {/* ALT: Olaylar ve Canlı Sohbet (%50 dengeli oran) */}
-          <div className="flex-1 h-1/2 min-h-[180px] min-h-0 flex flex-col overflow-hidden">
-            <ErrorBoundary name="Olaylar ve Canlı Sohbet">
-              <ChatAndLog
-                logs={displayedLogs !== null ? displayedLogs : (gameState?.logs || [])}
-                messages={chatMessages}
-                players={gameState?.players}
-                onSendMessage={handleSendMessage}
-                embedded={true}
-                gameStartTime={gameState?.gameStartTime}
-                totalPausedDuration={gameState?.totalPausedDuration}
-                roomCode={gameState?.roomCode || localStorage.getItem('muteahhit_room_code') || ''}
-                myPlayerId={effectiveMyPlayerId}
-                myPlayerName={myPlayer?.name}
-                isDarkMode={isDarkMode}
-              />
-            </ErrorBoundary>
+          {/* ALT (18" ve Altında Oyuncu Durumları Paneli, 2XL+ Dev Ekranlarda Canlı Sohbet) */}
+          <div className="h-[56%] 2xl:h-1/2 min-h-[180px] min-h-0 flex flex-col overflow-hidden">
+            {/* 18" ve Altı Ekranlarda: Oyuncu Durumları Box'ı ve Tapu Senetleri Butonu */}
+            <div className="flex 2xl:hidden flex-1 h-full min-h-0 flex-col overflow-y-auto custom-scrollbar">
+              <ErrorBoundary name="Oyuncu Durumları Paneli">
+                <PlayerPanel
+                  gameState={effectiveGameState}
+                  myPlayerId={effectiveMyPlayerId}
+                  onOpenTrade={(target) => handleOpenTradeForTile(target, null)}
+                  onTileClick={(tile) => setSelectedTileModal(tile)}
+                  onRemoveBot={handleRemoveBot}
+                  onSetBotDifficulty={handleSetBotDifficulty}
+                  onKickPlayer={handleKickPlayer}
+                  onOpenDeeds={() => setShowDeedsModal(true)}
+                  isDarkMode={isDarkMode}
+                />
+              </ErrorBoundary>
+            </div>
+
+            {/* 2XL+ Dev Ekranlarda: Olaylar ve Canlı Sohbet */}
+            <div className="hidden 2xl:flex flex-1 h-full min-h-0 flex-col overflow-hidden">
+              <ErrorBoundary name="Olaylar ve Canlı Sohbet">
+                <ChatAndLog
+                  logs={displayedLogs !== null ? displayedLogs : (gameState?.logs || [])}
+                  messages={chatMessages}
+                  players={gameState?.players}
+                  onSendMessage={handleSendMessage}
+                  embedded={true}
+                  gameStartTime={gameState?.gameStartTime}
+                  totalPausedDuration={gameState?.totalPausedDuration}
+                  roomCode={gameState?.roomCode || localStorage.getItem('muteahhit_room_code') || ''}
+                  myPlayerId={effectiveMyPlayerId}
+                  myPlayerName={myPlayer?.name}
+                  isDarkMode={isDarkMode}
+                />
+              </ErrorBoundary>
+            </div>
           </div>
         </aside>
 
@@ -2177,179 +2198,169 @@ export function App() {
             </div>
           )}
 
-          {/* Profil & Büyük Bakiye Kartı (Fiziksel Müteahhit Kimlik Kartı) — Tıklanır */}
+          {/* Profil & Canlı Bakiye Kartı — Ultra Kompakt Yatay Kapsül */}
           <div
             onClick={() => setShowMyMoneyHistory(true)}
             role="button"
             tabIndex={0}
             onKeyDown={(e) => e.key === 'Enter' && setShowMyMoneyHistory(true)}
-            className="cardstock-panel hover:bg-white dark:hover:bg-slate-850 border border-amber-500/60 rounded-2xl p-2.5 sm:p-3 shadow-xl flex items-center gap-3 transition text-slate-900 dark:text-slate-100 tile-paper-press cursor-pointer active:scale-95 text-left relative"
-            title="Para giriş/çıkış geçmişini gör"
+            className="cardstock-panel hover:bg-white dark:hover:bg-slate-850 border border-amber-500/50 hover:border-amber-400 rounded-full px-2.5 py-1.5 sm:px-3 sm:py-2 shadow-xl flex items-center gap-2 sm:gap-2.5 transition text-slate-900 dark:text-slate-100 tile-paper-press cursor-pointer active:scale-95 text-left relative max-w-[280px] sm:max-w-xs"
+            title="Para giriş/çıkış geçmişini görmek için tıklayın"
           >
-            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-amber-500 flex items-center justify-center text-xl sm:text-2xl shadow-md border border-white/60 flex-shrink-0">
-              {myPlayer.avatar || <HardHat className="w-6 h-6 text-slate-950" />}
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-amber-500 flex items-center justify-center text-sm sm:text-base shadow-md border border-white/60 flex-shrink-0">
+              {myPlayer.avatar || <HardHat className="w-4 h-4 text-slate-950" />}
             </div>
-            <div className="flex flex-col min-w-0 pr-1 flex-1">
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs sm:text-sm font-black text-slate-900 dark:text-slate-100 truncate max-w-[100px] font-space">
-                  {myPlayer.name}
-                </span>
-                <span className="text-[9px] bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-700 px-1.5 py-0.2 rounded font-black tracking-wider uppercase font-space">
-                  SEN
-                </span>
-                {/* Host veya Dinamik Ping Göstergesi & Kompakt Ping Tablosu */}
+            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+              <span className="text-[11px] sm:text-xs font-black text-slate-900 dark:text-slate-100 truncate max-w-[70px] sm:max-w-[90px] font-space">
+                {myPlayer.name}
+              </span>
+              <span className="text-[8px] bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 px-1 py-0.2 rounded font-black tracking-wider uppercase font-space hidden xs:inline">
+                SEN
+              </span>
+              <span className="text-xs sm:text-sm font-black font-jetbrains text-emerald-600 dark:text-emerald-400 drop-shadow-xs ml-0.5 whitespace-nowrap">
+                {myPlayer.money?.toLocaleString('tr-TR')} ₺
+              </span>
+            </div>
+
+            {/* Host veya Dinamik Ping Göstergesi & Kompakt Ping Tablosu */}
+            <div
+              className="relative flex-shrink-0"
+              onMouseEnter={() => setShowPingTable(true)}
+              onMouseLeave={() => setShowPingTable(false)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowPingTable((prev) => !prev);
+              }}
+            >
+              {myPlayer?.isHost || network?.isHost ? (
                 <div
-                  className="relative ml-auto"
-                  onMouseEnter={() => setShowPingTable(true)}
-                  onMouseLeave={() => setShowPingTable(false)}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowPingTable((prev) => !prev);
-                  }}
+                  className="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[8.5px] font-black font-space border shadow-xs bg-emerald-500/15 border-emerald-500/35 text-emerald-600 dark:text-emerald-400 select-none cursor-help hover:bg-emerald-500/25 transition-colors"
+                  title="Oda Kurucusu (Host) — Ping tablosu için dokunun"
                 >
-                  {myPlayer?.isHost || network?.isHost ? (
-                    <div
-                      className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9.5px] font-black font-space border shadow-xs bg-emerald-500/15 border-emerald-500/35 text-emerald-600 dark:text-emerald-400 select-none cursor-help hover:bg-emerald-500/25 transition-colors"
-                      title="Oda Kurucusu (Host) — Ping tablosunu görmek için üzerine gelin"
-                    >
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)]" />
-                      <span>HOST</span>
-                    </div>
-                  ) : (
-                    <div
-                      className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-black font-jetbrains border shadow-xs transition-colors cursor-help hover:brightness-110 ${
-                        ping === null
-                          ? 'text-slate-400 dark:text-slate-500 bg-slate-500/10 border-slate-500/20'
-                          : ping < 75
-                          ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
-                          : ping < 160
-                          ? 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/30'
-                          : 'text-rose-600 dark:text-rose-400 bg-rose-500/10 border-rose-500/30 animate-pulse'
-                      }`}
-                      title="Ping tablosunu görmek için üzerine gelin"
-                    >
-                      <span
-                        className={`w-1.5 h-1.5 rounded-full ${
-                          ping === null
-                            ? 'bg-slate-400'
-                            : ping < 75
-                            ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)]'
-                            : ping < 160
-                            ? 'bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.8)]'
-                            : 'bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.8)]'
-                        }`}
-                      />
-                      <span>{ping !== null ? `${ping} ms` : '...'}</span>
-                    </div>
-                  )}
-
-                  {/* Kompakt Canlı Ping Tablosu Popover'ı */}
-                  {showPingTable && (
-                    <div
-                      className="absolute bottom-full right-0 mb-2.5 z-50 w-60 p-2.5 rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-2 border-emerald-500/40 dark:border-emerald-500/50 shadow-[0_16px_45px_rgba(0,0,0,0.5)] animate-fadeIn select-none pointer-events-auto"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800/80 pb-1.5 mb-1.5">
-                        <div className="flex items-center gap-1.5">
-                          <Wifi className="w-3.5 h-3.5 text-emerald-500" />
-                          <span className="text-[10px] font-space font-extrabold uppercase tracking-wider text-slate-800 dark:text-slate-200">
-                            Ağ Gecikmesi (Ping)
-                          </span>
-                        </div>
-                        <span className="text-[8px] font-jetbrains font-bold text-slate-500 dark:text-slate-400">
-                          {gameState?.players?.length || 1} Oyuncu
-                        </span>
-                      </div>
-
-                      {/* Oyuncu Satırları */}
-                      <div className="flex flex-col gap-1 max-h-48 overflow-y-auto custom-scrollbar">
-                        {gameState?.players?.map((p) => {
-                          const isMe = p.id === myPlayerId;
-                          const pPing = p.isBot
-                            ? 1
-                            : (isMe
-                                ? (p.isHost ? 1 : (ping || 1))
-                                : (p.isHost ? 1 : (p.ping ?? 12)));
-                          const dotColor = pPing < 60
-                            ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)]'
-                            : pPing < 150
-                            ? 'bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.8)]'
-                            : 'bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.8)] animate-pulse';
-                          const textColor = pPing < 60
-                            ? 'text-emerald-600 dark:text-emerald-400'
-                            : pPing < 150
-                            ? 'text-amber-600 dark:text-amber-400'
-                            : 'text-rose-600 dark:text-rose-400';
-
-                          return (
-                            <div
-                              key={p.id}
-                              className={`flex items-center justify-between px-2 py-1 rounded-xl text-[10px] transition-colors ${
-                                isMe
-                                  ? 'bg-amber-500/10 border border-amber-500/30'
-                                  : 'hover:bg-slate-100 dark:hover:bg-slate-800/60'
-                              }`}
-                            >
-                              <div className="flex items-center gap-1.5 min-w-0 pr-1">
-                                <div
-                                  className="w-2.5 h-2.5 rounded-full flex-shrink-0 border border-white/40"
-                                  style={{ backgroundColor: p.color || '#cbd5e1' }}
-                                />
-                                <span className="font-space font-bold truncate max-w-[90px] text-slate-900 dark:text-slate-100">
-                                  {p.name}
-                                </span>
-                                {isMe && (
-                                  <span className="text-[7.5px] font-black text-amber-600 dark:text-amber-400 uppercase">
-                                    (Sen)
-                                  </span>
-                                )}
-                              </div>
-
-                              <div className="flex items-center gap-1.5 flex-shrink-0">
-                                {p.isHost && (
-                                  <span className="text-[7.5px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-1 py-0.2 rounded uppercase">
-                                    HOST
-                                  </span>
-                                )}
-                                {p.isBot ? (
-                                  <span className="text-[7.5px] font-bold text-slate-400 bg-slate-500/10 px-1 py-0.2 rounded font-jetbrains">
-                                    BOT
-                                  </span>
-                                ) : (
-                                  <div className={`flex items-center gap-1 font-jetbrains font-bold ${textColor}`}>
-                                    <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`} />
-                                    <span>{p.isHost ? '0 ms' : `${pPing} ms`}</span>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                      {/* Alt Bilgi: Bağlantı Türü */}
-                      <div className="mt-1.5 pt-1.5 border-t border-slate-200/80 dark:border-slate-800/80 flex items-center justify-between text-[8px] text-slate-500 dark:text-slate-400 font-jetbrains">
-                        <span>Bağlantı Türü:</span>
-                        <span className="font-bold text-slate-700 dark:text-slate-300">
-                          {network?.isHost ? 'Yerel Sunucu (Host)' : network?.isRelayActive ? 'Röle Sunucusu' : 'WebRTC P2P'}
-                        </span>
-                      </div>
-                    </div>
-                  )}
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)]" />
+                  <span>HOST</span>
                 </div>
-              </div>
-              <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-base sm:text-xl font-black font-jetbrains text-emerald-700 dark:text-emerald-400 drop-shadow-xs">
-                  {myPlayer.money?.toLocaleString('tr-TR')} ₺
-                </span>
-                {currentTile && (
-                  <span className="text-[9.5px] text-slate-600 dark:text-slate-400 font-bold truncate max-w-[110px] flex items-center gap-1" title={currentTile.name}>
-                    <MapPin className="w-2.5 h-2.5 text-amber-500 flex-shrink-0" />
-                    <span>{currentTile.name}</span>
-                  </span>
-                )}
-              </div>
-              <span className="text-[8.5px] text-amber-600 dark:text-amber-400 font-bold mt-0.5 opacity-80">Hesap Geçmişi →</span>
+              ) : (
+                <div
+                  className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[8.5px] font-black font-jetbrains border shadow-xs transition-colors cursor-help hover:brightness-110 ${
+                    ping === null
+                      ? 'text-slate-400 dark:text-slate-500 bg-slate-500/10 border-slate-500/20'
+                      : ping < 75
+                      ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
+                      : ping < 160
+                      ? 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/30'
+                      : 'text-rose-600 dark:text-rose-400 bg-rose-500/10 border-rose-500/30 animate-pulse'
+                  }`}
+                  title="Ping tablosunu görmek için tıklayın"
+                >
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      ping === null
+                        ? 'bg-slate-400'
+                        : ping < 75
+                        ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)]'
+                        : ping < 160
+                        ? 'bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.8)]'
+                        : 'bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.8)]'
+                    }`}
+                  />
+                  <span>{ping !== null ? `${ping} ms` : '...'}</span>
+                </div>
+              )}
+
+              {/* Kompakt Canlı Ping Tablosu Popover'ı */}
+              {showPingTable && (
+                <div
+                  className="absolute bottom-full right-0 mb-2.5 z-50 w-60 p-2.5 rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-2 border-emerald-500/40 dark:border-emerald-500/50 shadow-[0_16px_45px_rgba(0,0,0,0.5)] animate-fadeIn select-none pointer-events-auto"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800/80 pb-1.5 mb-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <Wifi className="w-3.5 h-3.5 text-emerald-500" />
+                      <span className="text-[10px] font-space font-extrabold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                        Ağ Gecikmesi (Ping)
+                      </span>
+                    </div>
+                    <span className="text-[8px] font-jetbrains font-bold text-slate-500 dark:text-slate-400">
+                      {gameState?.players?.length || 1} Oyuncu
+                    </span>
+                  </div>
+
+                  {/* Oyuncu Satırları */}
+                  <div className="flex flex-col gap-1 max-h-48 overflow-y-auto custom-scrollbar">
+                    {gameState?.players?.map((p) => {
+                      const isMe = p.id === myPlayerId;
+                      const pPing = p.isBot
+                        ? 1
+                        : (isMe
+                            ? (p.isHost ? 1 : (ping || 1))
+                            : (p.isHost ? 1 : (p.ping ?? 12)));
+                      const dotColor = pPing < 60
+                        ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)]'
+                        : pPing < 150
+                        ? 'bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.8)]'
+                        : 'bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.8)] animate-pulse';
+                      const textColor = pPing < 60
+                        ? 'text-emerald-600 dark:text-emerald-400'
+                        : pPing < 150
+                        ? 'text-amber-600 dark:text-amber-400'
+                        : 'text-rose-600 dark:text-rose-400';
+
+                      return (
+                        <div
+                          key={p.id}
+                          className={`flex items-center justify-between px-2 py-1 rounded-xl text-[10px] transition-colors ${
+                            isMe
+                              ? 'bg-amber-500/10 border border-amber-500/30'
+                              : 'hover:bg-slate-100 dark:hover:bg-slate-800/60'
+                          }`}
+                        >
+                          <div className="flex items-center gap-1.5 min-w-0 pr-1">
+                            <div
+                              className="w-2.5 h-2.5 rounded-full flex-shrink-0 border border-white/40"
+                              style={{ backgroundColor: p.color || '#cbd5e1' }}
+                            />
+                            <span className="font-space font-bold truncate max-w-[90px] text-slate-900 dark:text-slate-100">
+                              {p.name}
+                            </span>
+                            {isMe && (
+                              <span className="text-[7.5px] font-black text-amber-600 dark:text-amber-400 uppercase">
+                                (Sen)
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                            {p.isHost && (
+                              <span className="text-[7.5px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-1 py-0.2 rounded uppercase">
+                                HOST
+                              </span>
+                            )}
+                            {p.isBot ? (
+                              <span className="text-[7.5px] font-bold text-slate-400 bg-slate-500/10 px-1 py-0.2 rounded font-jetbrains">
+                                BOT
+                              </span>
+                            ) : (
+                              <div className={`flex items-center gap-1 font-jetbrains font-bold ${textColor}`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`} />
+                                <span>{p.isHost ? '0 ms' : `${pPing} ms`}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Alt Bilgi: Bağlantı Türü */}
+                  <div className="mt-1.5 pt-1.5 border-t border-slate-200/80 dark:border-slate-800/80 flex items-center justify-between text-[8px] text-slate-500 dark:text-slate-400 font-jetbrains">
+                    <span>Bağlantı Türü:</span>
+                    <span className="font-bold text-slate-700 dark:text-slate-300">
+                      {network?.isHost ? 'Yerel Sunucu (Host)' : network?.isRelayActive ? 'Röle Sunucusu' : 'WebRTC P2P'}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -2363,6 +2374,43 @@ export function App() {
           onClose={() => setShowMyMoneyHistory(false)}
           isDarkMode={isDarkMode}
         />
+      )}
+
+      {/* 📜 Tapu Senetleri Modalı (18" ve altı ekranlarda PlayerPanel üzerinden veya butondan açılır) */}
+      {showDeedsModal && (
+        <div
+          className="fixed inset-0 z-[120] flex items-center justify-center bg-black/70 backdrop-blur-md p-3 sm:p-4 animate-fadeIn"
+          onClick={() => setShowDeedsModal(false)}
+        >
+          <div
+            className="w-full max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 sm:p-6 shadow-2xl flex flex-col gap-3 max-h-[88vh] overflow-y-auto custom-scrollbar"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+              <h3 className="font-space font-black text-base sm:text-lg text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <Landmark className="w-5 h-5 text-amber-500" />
+                <span>Tapu Senetleri Portföyü</span>
+              </h3>
+              <button
+                onClick={() => setShowDeedsModal(false)}
+                className="p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="flex-1 min-h-0">
+              <ErrorBoundary name="Tapu Senetleri Portföyü">
+                <TitleDeedCards
+                  gameState={effectiveGameState}
+                  myPlayerId={effectiveMyPlayerId}
+                  onTileClick={(tile) => {
+                    setSelectedTileModal(tile);
+                  }}
+                />
+              </ErrorBoundary>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* DevTools Tetikleyici Butonu (Yalnızca Geliştirme Ortamında) */}

@@ -723,6 +723,63 @@ const CenterInspectedTilePreview = React.memo(function CenterInspectedTilePrevie
   );
 });
 
+// ─── Merkez Canlı Şeffaf Olay Akışı (Son 5 Olay - Aşağı Doğru Solar) ─────────
+const CenterTransparentEventFeed = React.memo(function CenterTransparentEventFeed({ logs = [], isDarkMode }) {
+  const recentLogs = useMemo(() => {
+    if (!logs || logs.length === 0) return [];
+    return [...logs].slice(-5).reverse();
+  }, [logs]);
+
+  if (recentLogs.length === 0) return null;
+
+  return (
+    <div className="w-full max-w-[260px] sm:max-w-[310px] mx-auto mt-1 flex flex-col gap-0.5 pointer-events-none select-none px-1 overflow-hidden transition-all duration-300">
+      {recentLogs.map((log, idx) => {
+        const opacities = [
+          'opacity-95 scale-100',
+          'opacity-70 scale-[0.98]',
+          'opacity-45 scale-[0.96]',
+          'opacity-25 scale-[0.94]',
+          'opacity-15 scale-[0.92]'
+        ];
+        const opacityClass = opacities[idx] || 'opacity-10';
+
+        const icon = log.type === 'dice' ? '🎲'
+          : log.type === 'buy' ? '📜'
+          : log.type === 'rent' ? '💰'
+          : log.type === 'build' ? '🏠'
+          : log.type === 'tax' ? '💸'
+          : log.type === 'jail' ? '👮'
+          : log.type === 'card' ? '📁'
+          : log.type === 'trade' ? '🤝'
+          : '📢';
+
+        return (
+          <div
+            key={log.id || `${log.time}-${idx}-${(log.text || '').slice(0, 15)}`}
+            className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md backdrop-blur-xs transition-all duration-300 ${opacityClass} ${
+              isDarkMode
+                ? 'bg-slate-950/40 text-slate-200 border border-slate-700/20 shadow-2xs'
+                : 'bg-white/60 text-slate-800 border border-slate-300/40 shadow-2xs'
+            }`}
+          >
+            <span className="text-[9px] sm:text-[10px] flex-shrink-0">{icon}</span>
+            <span
+              className="text-[8px] sm:text-[9px] font-medium truncate leading-tight font-space"
+              dangerouslySetInnerHTML={{ __html: log.text || '' }}
+            />
+            {log.time && (
+              <span className="text-[7px] text-slate-400 font-jetbrains ml-auto flex-shrink-0 opacity-70">
+                {log.time}
+              </span>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+});
+
 export function Board({
   gameState,
   onTileClick,
@@ -1521,7 +1578,7 @@ export function Board({
 
   return (
     <div
-      className="relative w-full aspect-square select-none mx-auto flex items-center justify-center p-2 sm:p-3 max-w-[min(98vw,calc(100dvh-105px))] max-h-[min(98vw,calc(100dvh-105px))] lg:max-w-[calc(100dvh-24px)] lg:max-h-[calc(100dvh-24px)]"
+      className="relative w-full aspect-square select-none mx-auto flex items-center justify-center p-1 sm:p-2 max-w-[min(99vw,calc(100dvh-60px))] max-h-[min(99vw,calc(100dvh-60px))] lg:max-w-[calc(100dvh-16px)] lg:max-h-[calc(100dvh-16px)]"
     >
       {/* 11x11 Grid Tahta */}
       <div
@@ -1586,8 +1643,8 @@ export function Board({
                   : 'bg-[radial-gradient(circle_at_50%_35%,rgba(15,23,42,0.04)_0%,transparent_70%)]'
               }`} style={{ zIndex: 2 }} />
 
-              {/* Tahtaya Sabit Basılmış İhale Kartı Yuvası (Board Slot - Sadece Geniş Ekranlarda xl:flex) */}
-              <div className="hidden xl:flex absolute left-3 sm:left-6 md:left-8 top-8 sm:top-12 md:top-14 w-20 h-28 sm:w-28 sm:h-40 md:w-32 md:h-44 -rotate-12 rounded-2xl board-card-slot items-center justify-center pointer-events-none select-none z-0">
+              {/* Tahtaya Sabit Basılmış İhale Kartı Yuvası (Board Slot - Sadece Geniş 2XL Ekranlarda 2xl:flex) */}
+              <div className="hidden 2xl:flex absolute left-3 sm:left-6 md:left-8 top-8 sm:top-12 md:top-14 w-20 h-28 sm:w-28 sm:h-40 md:w-32 md:h-44 -rotate-12 rounded-2xl board-card-slot items-center justify-center pointer-events-none select-none z-0">
                 <div className="flex flex-col items-center justify-center text-center opacity-20 dark:opacity-30">
                   <span className="text-lg sm:text-2xl md:text-3xl mb-1">📁</span>
                   <span className={`text-[7px] sm:text-[9px] md:text-[10px] font-black uppercase tracking-[0.15em] sm:tracking-[0.2em] ${isDarkMode ? 'text-slate-300' : 'text-[#0F172A]'} font-space text-center leading-snug`}>
@@ -1596,8 +1653,8 @@ export function Board({
                 </div>
               </div>
 
-              {/* Fiziksel İhale & Fırsat Destesi (Sadece Geniş Ekranlarda xl:flex) */}
-              <div className="hidden xl:flex absolute left-3 sm:left-6 md:left-8 top-8 sm:top-12 md:top-14 z-30 pointer-events-auto select-none">
+              {/* Fiziksel İhale & Fırsat Destesi (Sadece Geniş 2XL Ekranlarda 2xl:flex) */}
+              <div className="hidden 2xl:flex absolute left-3 sm:left-6 md:left-8 top-8 sm:top-12 md:top-14 z-30 pointer-events-auto select-none">
                 <div
                   onClick={(e) => {
                     e.stopPropagation();
@@ -1636,8 +1693,8 @@ export function Board({
                 </div>
               </div>
 
-              {/* Tahtaya Sabit Basılmış Şans / Belediye Kartı Yuvası (Board Slot - Sadece Geniş Ekranlarda xl:flex) */}
-              <div className="hidden xl:flex absolute right-3 sm:right-6 md:right-8 bottom-8 sm:bottom-12 md:bottom-14 w-20 h-28 sm:w-28 sm:h-40 md:w-32 md:h-44 rotate-12 rounded-2xl board-card-slot items-center justify-center pointer-events-none select-none z-0">
+              {/* Tahtaya Sabit Basılmış Şans / Belediye Kartı Yuvası (Board Slot - Sadece Geniş 2XL Ekranlarda 2xl:flex) */}
+              <div className="hidden 2xl:flex absolute right-3 sm:right-6 md:right-8 bottom-8 sm:bottom-12 md:bottom-14 w-20 h-28 sm:w-28 sm:h-40 md:w-32 md:h-44 rotate-12 rounded-2xl board-card-slot items-center justify-center pointer-events-none select-none z-0">
                 <div className="flex flex-col items-center justify-center text-center opacity-20 dark:opacity-30">
                   <span className="text-lg sm:text-2xl md:text-3xl mb-1">🏛️</span>
                   <span className={`text-[7px] sm:text-[9px] md:text-[10px] font-black uppercase tracking-[0.15em] sm:tracking-[0.2em] ${isDarkMode ? 'text-slate-300' : 'text-[#0F172A]'} font-space text-center leading-snug`}>
@@ -1646,8 +1703,8 @@ export function Board({
                 </div>
               </div>
 
-              {/* Fiziksel Belediye & Şans Destesi (Sadece Geniş Ekranlarda xl:flex) */}
-              <div className="hidden xl:flex absolute right-3 sm:right-6 md:right-8 bottom-8 sm:bottom-12 md:bottom-14 z-30 pointer-events-auto select-none">
+              {/* Fiziksel Belediye & Şans Destesi (Sadece Geniş 2XL Ekranlarda 2xl:flex) */}
+              <div className="hidden 2xl:flex absolute right-3 sm:right-6 md:right-8 bottom-8 sm:bottom-12 md:bottom-14 z-30 pointer-events-auto select-none">
                 <div
                   onClick={(e) => {
                     e.stopPropagation();
@@ -1970,6 +2027,9 @@ export function Board({
                   onTimeoutTurn: onTimeoutTurn || centerControlsSlot.props?.onTimeoutTurn
                 })
               : centerControlsSlot}
+
+            {/* Canlı Şeffaf Olaylar Akışı (Son 5 Olay — Yeni Olay Geldikçe Aşağı Kayarak Solar) */}
+            <CenterTransparentEventFeed logs={gameState?.logs || []} isDarkMode={isDarkMode} />
           </div>
 
           {/* İncelenen Arsa / Tapu Bilgi Şeridi (Layout Shift Engellenmiş Sabit Taban Rozeti) */}
