@@ -993,8 +993,9 @@ export function App() {
     prevStateRef.current = state;
     setGameState(state);
 
-    // Otomatik gelen takas açma
-    if (state.pendingTrade && currentPid && state.pendingTrade.toPlayerId === currentPid) {
+    // Otomatik gelen takas açma (Aktif kart çekimi veya açık artırma kilitlenmesini engelle)
+    const isModalConflict = Boolean(state.drawnCard) || state.phase === 'CARD_DRAWN' || Boolean(state.auction) || state.phase === 'AUCTION';
+    if (state.pendingTrade && currentPid && state.pendingTrade.toPlayerId === currentPid && !isModalConflict) {
       setShowTradeModal(true);
     }
   }, []); // Deps intentionally empty — state alındıktan sonra yeniden render gerekmiyor

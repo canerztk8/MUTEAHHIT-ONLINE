@@ -950,6 +950,7 @@ export class MonopolyGame {
     this.drawnCard = null;
 
     this.applyCard(active, card, diceSum);
+    this.tradeManager?.processNextQueuedTrade?.();
     return { success: true, card };
   }
 
@@ -1587,6 +1588,7 @@ export class MonopolyGame {
     this.lastAuctionResult = resultSummary;
     const wasTimeoutAuction = Boolean(auction.startedByTimeout);
     this.auction = null;
+    this.tradeManager?.processNextQueuedTrade?.();
 
     if (wasTimeoutAuction) {
       // Açık artırma süre aşımı (AFK) nedeniyle başlatılmıştı; ihale bitince tur doğrudan devredilir!
@@ -2742,6 +2744,12 @@ export class MonopolyGame {
       freeParkingPool: this.freeParkingPool,
       turnStartTime: this.turnStartTime,
       turnTimeLimit: this.turnTimeLimit,
+      serverTime: Date.now(),
+      turnRemainingSeconds: this.status === 'playing'
+        ? (this.isPaused && typeof this.pausedRemainingTurnMs === 'number'
+            ? Math.max(0, Math.ceil(this.pausedRemainingTurnMs / 1000))
+            : Math.max(0, Math.ceil(((this.turnTimeLimit || 75) * 1000 - (Date.now() - (this.turnStartTime || Date.now()))) / 1000)))
+        : null,
       stats: this.stats,
       disconnectNotice: this.disconnectNotice || null,
       spectatorCount: this.spectatorCount || 0

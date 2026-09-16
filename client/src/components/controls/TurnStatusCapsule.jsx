@@ -19,10 +19,12 @@ export function TurnStatusCapsule({
       return;
     }
 
+    const offset = gameState?.serverTimeOffset || 0;
+
     if (gameState?.isPaused) {
       const remaining = typeof gameState.pausedRemainingTurnMs === 'number'
         ? Math.max(0, Math.ceil(gameState.pausedRemainingTurnMs / 1000))
-        : Math.max(0, (gameState.turnTimeLimit || 75) - Math.floor(((gameState.pausedAt || Date.now()) - gameState.turnStartTime) / 1000));
+        : Math.max(0, (gameState.turnTimeLimit || 75) - Math.floor(((gameState.pausedAt || (Date.now() + offset)) - gameState.turnStartTime) / 1000));
       setSecondsLeft(remaining);
       return;
     }
@@ -32,7 +34,8 @@ export function TurnStatusCapsule({
     }
 
     const updateCountdown = () => {
-      const elapsed = Math.floor((Date.now() - gameState.turnStartTime) / 1000);
+      const now = Date.now() + (gameState?.serverTimeOffset || 0);
+      const elapsed = Math.floor((now - gameState.turnStartTime) / 1000);
       const remaining = Math.max(0, (gameState.turnTimeLimit || 75) - elapsed);
       setSecondsLeft(prev => (prev !== remaining ? remaining : prev));
 
@@ -56,6 +59,7 @@ export function TurnStatusCapsule({
   }, [
     gameState?.turnStartTime,
     gameState?.turnTimeLimit,
+    gameState?.serverTimeOffset,
     gameState?.status,
     gameState?.isPaused,
     gameState?.pausedAt,

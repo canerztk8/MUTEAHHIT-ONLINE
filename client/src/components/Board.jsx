@@ -160,6 +160,7 @@ const GlidingBoardArrow = React.memo(function GlidingBoardArrow({
 // ─── İzole Açık Artırma Sayacı ────────────────────────────────────────────────
 const AuctionCountdownBadge = React.memo(function AuctionCountdownBadge({
   auction,
+  serverTimeOffset = 0,
   onTimeoutAuction
 }) {
   const [secondsLeft, setSecondsLeft] = useState(auction?.timer || 15);
@@ -172,8 +173,9 @@ const AuctionCountdownBadge = React.memo(function AuctionCountdownBadge({
 
     const updateAuctionCountdown = () => {
       const timerLimit = auction?.timer || 15;
-      const lastBidTime = auction?.lastBidTime || Date.now();
-      const elapsed = Math.floor((Date.now() - lastBidTime) / 1000);
+      const lastBidTime = auction?.lastBidTime || (Date.now() + serverTimeOffset);
+      const now = Date.now() + serverTimeOffset;
+      const elapsed = Math.floor((now - lastBidTime) / 1000);
       const rem = Math.max(0, timerLimit - elapsed);
       setSecondsLeft(prev => (prev !== rem ? rem : prev));
 
@@ -191,7 +193,7 @@ const AuctionCountdownBadge = React.memo(function AuctionCountdownBadge({
     updateAuctionCountdown();
     const interval = setInterval(updateAuctionCountdown, 500);
     return () => clearInterval(interval);
-  }, [auction?.lastBidTime, auction?.timer, onTimeoutAuction]);
+  }, [auction?.lastBidTime, auction?.timer, serverTimeOffset, onTimeoutAuction]);
 
   return (
     <div className="flex items-center gap-1 bg-amber-400/20 border border-amber-400/50 px-2.5 py-1 rounded-xl text-xs font-black text-amber-300">
@@ -2424,6 +2426,7 @@ export function Board({
               </div>
               <AuctionCountdownBadge
                 auction={gameState.auction}
+                serverTimeOffset={gameState.serverTimeOffset}
                 onTimeoutAuction={onTimeoutAuction}
               />
             </div>

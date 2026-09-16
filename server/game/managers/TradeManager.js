@@ -131,10 +131,13 @@ export class TradeManager {
       createdAt: now
     };
 
-    if (this.pendingTrade) {
+    const isModalBlocking = this.game.phase === 'CARD_DRAWN' || Boolean(this.game.drawnCard) || this.game.phase === 'AUCTION' || Boolean(this.game.auction);
+
+    if (this.pendingTrade || isModalBlocking) {
       this.tradeQueue.push(trade);
-      this.game.addLog(`⏳ ${fromPlayer.name}, ${toPlayer.name} oyuncusuna bir takas teklifi gönderdi (Önceki teklif sonuçlanana kadar sıraya alındı).`, 'info');
-      return { success: true, queued: true, trade, message: 'Teklifiniz sıraya alındı, önceki teklif yanıtlandıktan sonra iletilecektir.' };
+      const queueReason = isModalBlocking ? 'Kart veya ihale işlemi tamamlanana kadar' : 'Önceki teklif sonuçlanana kadar';
+      this.game.addLog(`⏳ ${fromPlayer.name}, ${toPlayer.name} oyuncusuna bir takas teklifi gönderdi (${queueReason} sıraya alındı).`, 'info');
+      return { success: true, queued: true, trade, message: 'Teklifiniz sıraya alındı, aktif işlem tamamlandıktan sonra iletilecektir.' };
     }
 
     this.pendingTrade = trade;
@@ -287,6 +290,10 @@ export class TradeManager {
 
   processNextQueuedTrade() {
     this.pendingTrade = null;
+    const isModalBlocking = this.game.phase === 'CARD_DRAWN' || Boolean(this.game.drawnCard) || this.game.phase === 'AUCTION' || Boolean(this.game.auction);
+    if (isModalBlocking) {
+      return;
+    }
     while (this.tradeQueue.length > 0) {
       const nextTrade = this.tradeQueue.shift();
       const fromPlayer = this.game.players.find(p => p.id === nextTrade.fromPlayerId);

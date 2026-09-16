@@ -2189,6 +2189,14 @@ export class ClientPeerService {
           clearTimeout(this._stateWatchdogTimer);
           this._stateWatchdogTimer = null;
         }
+        if (msg.gameState) {
+          const serverNow = typeof msg.gameState.serverTime === 'number' ? msg.gameState.serverTime : msg.timestamp;
+          if (typeof serverNow === 'number') {
+            msg.gameState.serverTimeOffset = serverNow - Date.now();
+          } else {
+            msg.gameState.serverTimeOffset = 0;
+          }
+        }
         this._onState(msg.gameState);
         break;
 
