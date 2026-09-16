@@ -735,7 +735,7 @@ const CenterTransparentEventFeed = React.memo(function CenterTransparentEventFee
   if (recentLogs.length === 0) return null;
 
   return (
-    <div className="w-full max-w-[270px] sm:max-w-[320px] mx-auto mt-1 flex flex-col gap-0.5 pointer-events-none select-none px-1 overflow-hidden transition-all duration-300">
+    <div className="2xl:hidden w-full max-w-[270px] sm:max-w-[320px] mx-auto mt-1 flex flex-col gap-0.5 pointer-events-none select-none px-1 overflow-hidden transition-all duration-300">
       {recentLogs.map((log, idx) => {
         const opacities = [
           'opacity-100 scale-100 font-semibold shadow-xs',

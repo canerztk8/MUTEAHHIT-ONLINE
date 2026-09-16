@@ -1870,8 +1870,8 @@ export function App() {
 
         {/* SAĞ PANEL: SADECE MASAÜSTÜ (Desktop - lg:flex) */}
         <aside className="hidden lg:flex w-[260px] xl:w-[290px] 2xl:w-[340px] h-full max-h-full flex-col gap-2 min-h-0 flex-shrink-0 order-3 lg:order-3">
-          {/* ÜST: 3D Zar Tablası */}
-          <div className="h-[44%] 2xl:h-1/2 min-h-[160px] flex-shrink-0 flex flex-col min-h-0">
+          {/* ÜST: 3D Zar Tablası (2XL+ Ekranlarda Büyütülmüş) */}
+          <div className="h-[44%] 2xl:h-[65%] min-h-[160px] 2xl:min-h-[280px] flex-shrink-0 flex flex-col min-h-0">
             <ErrorBoundary name="Zar Tablası">
               <DiceSidebarTray
                 gameState={gameState}
@@ -1945,8 +1945,8 @@ export function App() {
             </ErrorBoundary>
           </div>
 
-          {/* ALT (18" ve Altında Oyuncu Durumları + Tapular Paneli, 2XL+ Dev Ekranlarda Canlı Sohbet) */}
-          <div className="h-[56%] 2xl:h-1/2 min-h-[180px] min-h-0 flex flex-col overflow-hidden">
+          {/* ALT (18" ve Altında Oyuncu Durumları + Tapular Paneli, 2XL+ Dev Ekranlarda Canlı Sohbet & Olaylar) */}
+          <div className="h-[56%] 2xl:h-[35%] min-h-[180px] min-h-0 flex flex-col overflow-hidden">
             {/* 18" ve Altı Ekranlarda: Oyuncu Durumları Box'ı ve Altında Tapu Senetleri Portföyü */}
             <div className="flex 2xl:hidden flex-1 h-full min-h-0 flex-col overflow-y-auto custom-scrollbar gap-2">
               <ErrorBoundary name="Oyuncu Durumları Paneli">
@@ -1972,7 +1972,7 @@ export function App() {
               </ErrorBoundary>
             </div>
 
-            {/* 2XL+ Dev Ekranlarda: Olaylar ve Canlı Sohbet */}
+            {/* 2XL+ Dev Ekranlarda: Kompakt Olaylar (Son 7 Olay) ve Canlı Sohbet */}
             <div className="hidden 2xl:flex flex-1 h-full min-h-0 flex-col overflow-hidden">
               <ErrorBoundary name="Olaylar ve Canlı Sohbet">
                 <ChatAndLog
@@ -1981,6 +1981,7 @@ export function App() {
                   players={gameState?.players}
                   onSendMessage={handleSendMessage}
                   embedded={true}
+                  maxLogs={7}
                   gameStartTime={gameState?.gameStartTime}
                   totalPausedDuration={gameState?.totalPausedDuration}
                   roomCode={gameState?.roomCode || localStorage.getItem('muteahhit_room_code') || ''}

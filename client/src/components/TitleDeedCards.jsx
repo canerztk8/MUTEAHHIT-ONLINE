@@ -265,7 +265,7 @@ function TitleDeedCardsBase({ gameState = {}, myPlayerId, onTileClick }) {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
+          <div className="grid grid-cols-2 2xl:grid-cols-1 gap-2 sm:gap-2.5">
             {displayedTiles.map(({ tile, state }) => {
               const houses = Math.max(0, Math.min(5, Number(state?.houses) || 0));
               const isMortgaged = Boolean(state?.mortgaged);
@@ -287,28 +287,18 @@ function TitleDeedCardsBase({ gameState = {}, myPlayerId, onTileClick }) {
                 currentRent = ownerUtilities === 2 ? '10x Zar' : '4x Zar';
               }
 
-              const ownerRailroadsCount = Object.values(properties).filter(
-                pr => pr && pr.ownerId === targetPlayer?.id && BOARD_TILES[pr.tileId]?.type === 'railroad'
-              ).length;
-
-              const ownerUtilitiesCount = Object.values(properties).filter(
-                pr => pr && pr.ownerId === targetPlayer?.id && BOARD_TILES[pr.tileId]?.type === 'utility'
-              ).length;
-
               const isAuctionTile = gameState.auction && gameState.auction.tileId === tile.id;
               const isPendingTradeTile = gameState.pendingTrade && (
                 gameState.pendingTrade.offeredProperties?.includes(tile.id) ||
                 gameState.pendingTrade.requestedProperties?.includes(tile.id)
               );
               const isDemandHighlighted = Boolean(isAuctionTile || isPendingTradeTile);
-              const isTradeOffered = Boolean(gameState.pendingTrade?.offeredProperties?.includes(tile.id));
-              const isTradeRequested = Boolean(gameState.pendingTrade?.requestedProperties?.includes(tile.id));
 
               return (
                 <div
                   key={tile.id}
                   onClick={() => onTileClick && onTileClick(tile)}
-                  className={`group relative rounded-xl bg-white dark:bg-slate-900 border transition-all duration-200 cursor-pointer overflow-hidden flex flex-col justify-between shadow-2xs hover:shadow-md hover:-translate-y-0.5 select-none tile-paper-press ${
+                  className={`group relative rounded-xl 2xl:rounded-2xl bg-white dark:bg-slate-900 border transition-all duration-200 cursor-pointer overflow-hidden flex flex-col justify-between shadow-2xs hover:shadow-md hover:-translate-y-0.5 select-none tile-paper-press ${
                     isDemandHighlighted
                       ? (isAuctionTile ? 'demand-highlight-auction ring-2 ring-red-400' : 'demand-highlight-trade ring-2 ring-cyan-400')
                       : isMortgaged
@@ -316,12 +306,12 @@ function TitleDeedCardsBase({ gameState = {}, myPlayerId, onTileClick }) {
                       : 'border-slate-300 dark:border-slate-700 hover:border-amber-500'
                   }`}
                 >
-                  {/* Üst Tapu Başlık Bandı (Kompakt & Net) */}
+                  {/* Üst Tapu Başlık Bandı */}
                   <div
-                    className="w-full px-2 py-1 text-center relative border-b border-black/20 flex items-center justify-between shadow-2xs"
+                    className="w-full px-2 py-1 2xl:px-3 2xl:py-1.5 text-center relative border-b border-black/20 flex items-center justify-between shadow-2xs"
                     style={{ backgroundColor: tile.groupColor || '#334155' }}
                   >
-                    <h4 className="text-[11px] font-black text-white tracking-wide uppercase truncate drop-shadow-xs font-space">
+                    <h4 className="text-[11px] 2xl:text-xs font-black text-white tracking-wide uppercase truncate drop-shadow-xs font-space">
                       {tile.name}
                     </h4>
 
@@ -329,32 +319,32 @@ function TitleDeedCardsBase({ gameState = {}, myPlayerId, onTileClick }) {
                     {houses > 0 ? (
                       <div className="flex-shrink-0">
                         {houses === 5 ? (
-                          <span className="text-[8.5px] font-extrabold bg-rose-600 text-white px-1.5 py-0.5 rounded-full border border-amber-300 shadow-xs font-jetbrains">
+                          <span className="text-[8.5px] 2xl:text-[9.5px] font-extrabold bg-rose-600 text-white px-1.5 py-0.5 rounded-full border border-amber-300 shadow-xs font-jetbrains">
                             🏨 OTEL
                           </span>
                         ) : (
-                          <span className="text-[8.5px] font-extrabold bg-slate-950/80 text-emerald-300 px-1.5 py-0.5 rounded-full border border-emerald-400/60 shadow-xs font-jetbrains">
+                          <span className="text-[8.5px] 2xl:text-[9.5px] font-extrabold bg-slate-950/80 text-emerald-300 px-1.5 py-0.5 rounded-full border border-emerald-400/60 shadow-xs font-jetbrains">
                             🏠 {houses} EV
                           </span>
                         )}
                       </div>
                     ) : tile.type === 'railroad' ? (
-                      <Train className="w-3 h-3 text-white/90 flex-shrink-0" />
+                      <Train className="w-3 h-3 2xl:w-3.5 2xl:h-3.5 text-white/90 flex-shrink-0" />
                     ) : tile.type === 'utility' ? (
-                      <Zap className="w-3 h-3 text-amber-300 flex-shrink-0" />
+                      <Zap className="w-3 h-3 2xl:w-3.5 2xl:h-3.5 text-amber-300 flex-shrink-0" />
                     ) : null}
                   </div>
 
-                  {/* Kart Gövdesi: Kompakt Görsel + Kira & İpotek Bilgisi */}
-                  <div className="p-2 flex flex-col gap-1 text-[10px] leading-snug bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">
+                  {/* Kart Gövdesi: Kira & İpotek Bilgisi */}
+                  <div className="p-2 2xl:p-2.5 flex flex-col gap-1 2xl:gap-1.5 text-[10px] 2xl:text-[11px] leading-snug bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">
                     <div className="flex items-center justify-between">
-                      <span className="text-[9.5px] text-slate-500 dark:text-slate-400 font-semibold font-space">Geçerli Kira:</span>
-                      <span className={`font-mono font-black text-xs font-jetbrains ${isMortgaged ? 'text-rose-500' : 'text-emerald-700 dark:text-emerald-400'}`}>
+                      <span className="text-[9.5px] 2xl:text-[10.5px] text-slate-500 dark:text-slate-400 font-semibold font-space">Geçerli Kira:</span>
+                      <span className={`font-mono font-black text-xs 2xl:text-sm font-jetbrains ${isMortgaged ? 'text-rose-500' : 'text-emerald-700 dark:text-emerald-400'}`}>
                         {isMortgaged ? '0₺' : `${currentRent}${typeof currentRent === 'number' ? '₺' : ''}`}
                       </span>
                     </div>
 
-                    <div className="flex items-center justify-between text-[9px] text-slate-500 dark:text-slate-400 pt-0.5 border-t border-slate-100 dark:border-slate-800/80">
+                    <div className="flex items-center justify-between text-[9px] 2xl:text-[10px] text-slate-500 dark:text-slate-400 pt-0.5 2xl:pt-1 border-t border-slate-100 dark:border-slate-800/80">
                       <span>Değer: <strong className="text-slate-800 dark:text-slate-200 font-jetbrains">{tile.cost}₺</strong></span>
                       <span>İpotek: <strong className="text-slate-800 dark:text-slate-200 font-jetbrains">{tile.mortgage}₺</strong></span>
                     </div>
@@ -363,16 +353,16 @@ function TitleDeedCardsBase({ gameState = {}, myPlayerId, onTileClick }) {
                   {/* İpotek Damgası (Klasik Çift Çerçeveli Kırmızı Kaşe) */}
                   {isMortgaged && (
                     <div className="absolute inset-0 z-20 bg-rose-950/25 backdrop-grayscale-[0.3] flex items-center justify-center p-1 pointer-events-none select-none overflow-hidden">
-                      <div className="transform -rotate-12 px-2 py-0.5 rounded border border-red-600 bg-red-600 text-white font-black text-[9px] font-space tracking-widest shadow-md">
+                      <div className="transform -rotate-12 px-2 py-0.5 rounded border border-red-600 bg-red-600 text-white font-black text-[9px] 2xl:text-[10px] font-space tracking-widest shadow-md">
                         İPOTEKLİ
                       </div>
                     </div>
                   )}
 
                   {/* Kartın Alt Butonu / Hover Efekti */}
-                  <div className="bg-slate-50 dark:bg-slate-850 px-2 py-0.5 text-center border-t border-slate-200 dark:border-slate-800 group-hover:bg-amber-100/80 dark:group-hover:bg-amber-950/80 group-hover:text-amber-950 dark:group-hover:text-amber-200 text-[9px] font-bold text-slate-600 dark:text-slate-300 transition-colors flex items-center justify-between font-space">
+                  <div className="bg-slate-50 dark:bg-slate-850 px-2 py-0.5 2xl:px-2.5 2xl:py-1 text-center border-t border-slate-200 dark:border-slate-800 group-hover:bg-amber-100/80 dark:group-hover:bg-amber-950/80 group-hover:text-amber-950 dark:group-hover:text-amber-200 text-[9px] 2xl:text-[10px] font-bold text-slate-600 dark:text-slate-300 transition-colors flex items-center justify-between font-space">
                     <span>{targetPlayer?.id !== effectiveMyId ? 'Teklif Yap' : 'İncele & Yönet'}</span>
-                    <ChevronRight className="w-2.5 h-2.5" />
+                    <ChevronRight className="w-2.5 h-2.5 2xl:w-3 2xl:h-3" />
                   </div>
                 </div>
               );

@@ -84,6 +84,7 @@ function ChatAndLogBase({
   onSendMessage,
   players = [],
   embedded = false,
+  maxLogs = 7,
   gameStartTime = null,
   totalPausedDuration = 0,
   roomCode = '',
@@ -112,15 +113,20 @@ function ChatAndLogBase({
   const unreadCount = Math.max(0, messages.length - lastReadMessageCount);
   const hasUnreadChat = activeTab !== 'chat' && unreadCount > 0;
 
-  // Son 3 olay ve tersine çevrilmiş günlükler (useMemo ile bellek & GC optimizasyonu)
+  // Son olaylar ve tersine çevrilmiş günlükler (useMemo ile bellek & GC optimizasyonu)
   const reversedLogs = useMemo(() => [...logs].reverse(), [logs]);
   const recentLogs = useMemo(() => reversedLogs.slice(0, 3), [reversedLogs]);
 
   const selectedPlayer = players.find(p => p.id === selectedPlayerFilter);
   const filteredLogs = useMemo(() => {
-    if (selectedPlayerFilter === 'ALL') return reversedLogs;
-    return reversedLogs.filter(log => selectedPlayer && log.text.includes(selectedPlayer.name));
-  }, [reversedLogs, selectedPlayerFilter, selectedPlayer]);
+    const list = selectedPlayerFilter === 'ALL'
+      ? reversedLogs
+      : reversedLogs.filter(log => selectedPlayer && log.text.includes(selectedPlayer.name));
+    if (embedded && maxLogs && !isExpanded) {
+      return list.slice(0, maxLogs);
+    }
+    return list;
+  }, [reversedLogs, selectedPlayerFilter, selectedPlayer, embedded, maxLogs, isExpanded]);
 
   useEffect(() => {
     if (isExpanded || embedded) {
