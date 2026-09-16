@@ -419,7 +419,7 @@ const TileCell = React.memo(function TileCell({
       {/* Mülk Renk Çubuğu & Binalar */}
       {tile.groupColor && tile.type === 'property' && (
         <div
-          className={`w-full ${isSideTile ? 'h-[16%] min-h-[12px] sm:min-h-[14px]' : 'h-[20%] min-h-[16px] sm:min-h-[18px] md:min-h-[20px]'} relative flex items-center justify-between px-1 border-b ${
+          className={`w-full ${isSideTile ? 'h-[12%] min-h-[8px] sm:min-h-[10px]' : 'h-[15%] min-h-[10px] sm:min-h-[12px]'} relative flex items-center justify-between px-0.5 border-b ${
             isDarkMode ? 'border-slate-800' : 'border-slate-300'
           } flex-shrink-0 z-10`}
           style={{ backgroundColor: tile.groupColor }}
@@ -486,15 +486,15 @@ const TileCell = React.memo(function TileCell({
       )}
 
       {/* Kare İçeriği */}
-      <div className="w-full flex-1 flex flex-col items-center justify-between text-center px-1 py-0.5 sm:py-1 relative z-10 min-h-0 overflow-hidden">
+      <div className="w-full flex-1 flex flex-col items-center justify-between text-center px-0.5 py-0.5 relative z-10 min-h-0 overflow-hidden">
         <div className="w-full flex items-center justify-center flex-shrink-0">
           <span
             className={`text-center w-full uppercase select-none ${
               isCorner
-                ? `font-space font-extrabold text-[9.5px] sm:text-[11px] md:text-[12px] tracking-[0.5px] leading-tight ${
+                ? `font-space font-extrabold text-[8.5px] sm:text-[10px] md:text-[11px] tracking-[0.5px] leading-tight ${
                     isDarkMode ? 'text-slate-100 drop-shadow-[0_1.5px_2px_rgba(0,0,0,0.95)]' : 'text-[#0F172A] drop-shadow-[0_1px_2px_rgba(255,255,255,0.95)]'
                   }`
-                : `font-space font-black text-[8px] sm:text-[9px] md:text-[9.5px] tracking-tight leading-[1.1] ${
+                : `font-space font-black text-[7.5px] sm:text-[8.5px] md:text-[9px] tracking-tight leading-[1.05] ${
                     isDarkMode ? 'text-slate-100 drop-shadow-[0_1.5px_2px_rgba(0,0,0,0.95)]' : 'text-[#0F172A] drop-shadow-[0_1px_2px_rgba(255,255,255,0.95)]'
                   }`
             }`}
@@ -505,25 +505,25 @@ const TileCell = React.memo(function TileCell({
         </div>
 
         {(isCorner || tile.type !== 'property') && (
-          <div className="my-0.5 flex items-center justify-center flex-shrink-0 z-10">
+          <div className="my-auto flex items-center justify-center flex-shrink-0 z-10">
             {tile.icon ? (
               <span className={`leading-none select-none ${
-                isCorner ? 'text-lg sm:text-xl md:text-2xl drop-shadow-md' : 'text-xs sm:text-sm md:text-base drop-shadow-sm'
+                isCorner ? 'text-base sm:text-lg md:text-xl drop-shadow-md' : 'text-[10px] sm:text-xs md:text-sm drop-shadow-sm'
               }`}>
                 {tile.icon}
               </span>
             ) : tile.type === 'railroad' ? (
-              <Train className={`w-3.5 h-3.5 sm:w-4 sm:h-4 drop-shadow ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`} />
+              <Train className={`w-3 h-3 sm:w-3.5 sm:h-3.5 drop-shadow ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`} />
             ) : tile.type === 'utility' ? (
-              <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 drop-shadow" />
+              <Zap className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-500 drop-shadow" />
             ) : tile.type === 'tax' ? (
-              <AlertTriangle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-rose-500 drop-shadow" />
+              <AlertTriangle className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-rose-500 drop-shadow" />
             ) : null}
           </div>
         )}
 
-        <div className="z-10 mt-auto pb-0.5">
-          <span className={`font-jetbrains font-extrabold text-[8px] sm:text-[9px] md:text-[9.5px] leading-none inline-block select-none ${
+        <div className="z-10 mt-auto pb-0">
+          <span className={`font-jetbrains font-extrabold text-[7.5px] sm:text-[8.5px] md:text-[9px] leading-none inline-block select-none ${
             isDarkMode ? 'text-amber-300 drop-shadow-[0_1.5px_2px_rgba(0,0,0,0.95)]' : 'text-amber-900 drop-shadow-[0_1px_2px_rgba(255,255,255,0.95)]'
           }`}>
             {tile.cost
@@ -540,30 +540,33 @@ const TileCell = React.memo(function TileCell({
       {canBeOwned && (
         <div
           className={`w-full ${
-            isSideTile ? 'h-[12px] sm:h-[14px]' : 'h-[14px] sm:h-[16px]'
+            isSideTile ? 'h-[7px] sm:h-[9px]' : 'h-[8px] sm:h-[10px]'
           } border-t ${
             isDarkMode ? 'border-slate-800' : 'border-slate-300/80'
           } flex items-center justify-center px-0.5 flex-shrink-0 z-10 overflow-hidden relative`}
           style={{
-            backgroundColor: owner ? `${owner.color}${isDarkMode ? '26' : '18'}` : (isDarkMode ? '#080d1a' : '#F1F5F9'),
+            backgroundColor: owner ? `${owner.color}${isDarkMode ? '33' : '22'}` : (isDarkMode ? '#080d1a' : '#F1F5F9'),
             borderBottom: owner ? `2px solid ${owner.color}` : 'none'
           }}
         >
           {owner ? (
             <div className="flex items-center gap-0.5 min-w-0 justify-center h-full">
               <div
-                className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full flex-shrink-0"
+                className="w-1 h-1 rounded-full flex-shrink-0"
                 style={{ backgroundColor: owner.color }}
               />
               <span
-                className="text-[6.5px] sm:text-[7px] md:text-[7.5px] font-space font-black truncate leading-none uppercase tracking-tighter text-center"
+                className="text-[6px] sm:text-[6.5px] font-space font-black truncate leading-none uppercase tracking-tighter text-center"
                 style={{ color: owner.color }}
-                title={`Mülk Sahibi: ${owner.name}${propState?.mortgaged ? ' (İpotekli)' : ''}`}
               >
                 {owner.name}
               </span>
             </div>
-          ) : null}
+          ) : (
+            <span className="text-[5.5px] sm:text-[6px] text-slate-400 dark:text-slate-600 font-jetbrains font-bold uppercase tracking-wider scale-90">
+              BOŞ
+            </span>
+          )}
         </div>
       )}
     </div>

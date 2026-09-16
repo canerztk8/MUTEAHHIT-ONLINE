@@ -1868,8 +1868,8 @@ export function App() {
 
         {/* SAĞ PANEL: SADECE MASAÜSTÜ (Desktop - lg:flex, Mobilde Zar Tablası Gizlendi) */}
         <aside className="hidden lg:flex w-[250px] xl:w-[310px] 2xl:w-[340px] h-full max-h-full flex-col gap-2 min-h-0 flex-shrink-0 order-3 lg:order-3">
-          {/* ÜST: 3D Zar Tablası (Sağ tarafın %70'i) */}
-          <div className="flex-[7] h-[70%] min-h-[280px] flex-shrink-0 flex flex-col min-h-0">
+          {/* ÜST: 3D Zar Tablası (%50 dengeli oran) */}
+          <div className="flex-1 h-1/2 min-h-[200px] flex-shrink-0 flex flex-col min-h-0">
             <ErrorBoundary name="Zar Tablası">
               <DiceSidebarTray
                 gameState={gameState}
@@ -1943,8 +1943,8 @@ export function App() {
             </ErrorBoundary>
           </div>
 
-          {/* ALT: Olaylar ve Canlı Sohbet (Sağ tarafın %30'u) */}
-          <div className="flex-[3] h-[30%] min-h-[140px] flex-1 min-h-0 flex flex-col overflow-hidden">
+          {/* ALT: Olaylar ve Canlı Sohbet (%50 dengeli oran) */}
+          <div className="flex-1 h-1/2 min-h-[180px] min-h-0 flex flex-col overflow-hidden">
             <ErrorBoundary name="Olaylar ve Canlı Sohbet">
               <ChatAndLog
                 logs={displayedLogs !== null ? displayedLogs : (gameState?.logs || [])}

@@ -308,155 +308,71 @@ function TitleDeedCardsBase({ gameState = {}, myPlayerId, onTileClick }) {
                 <div
                   key={tile.id}
                   onClick={() => onTileClick && onTileClick(tile)}
-                  className={`group relative rounded-2xl bg-white dark:bg-slate-900 border-2 transition-all duration-200 cursor-pointer overflow-hidden flex flex-col justify-between shadow-xs hover:shadow-lg hover:-translate-y-0.5 select-none tile-paper-press ${
+                  className={`group relative rounded-xl bg-white dark:bg-slate-900 border transition-all duration-200 cursor-pointer overflow-hidden flex flex-col justify-between shadow-2xs hover:shadow-md hover:-translate-y-0.5 select-none tile-paper-press ${
                     isDemandHighlighted
-                      ? (isAuctionTile ? 'demand-highlight-auction' : 'demand-highlight-trade')
+                      ? (isAuctionTile ? 'demand-highlight-auction ring-2 ring-red-400' : 'demand-highlight-trade ring-2 ring-cyan-400')
                       : isMortgaged
                       ? 'border-rose-400 dark:border-rose-600'
                       : 'border-slate-300 dark:border-slate-700 hover:border-amber-500'
                   }`}
                 >
-                  {/* Üst Tapu Başlık Bandı (Otantik Müteahhit Şekli) */}
+                  {/* Üst Tapu Başlık Bandı (Kompakt & Net) */}
                   <div
-                    className="w-full p-2 text-center relative border-b border-black/20 flex flex-col items-center justify-center shadow-xs"
+                    className="w-full px-2 py-1 text-center relative border-b border-black/20 flex items-center justify-between shadow-2xs"
                     style={{ backgroundColor: tile.groupColor || '#334155' }}
                   >
-                    <span className="text-[7.5px] tracking-widest uppercase font-black text-white/90 block drop-shadow-xs leading-tight font-space">
-                      TAPU SENEDİ
-                    </span>
-                    <h4 className="text-xs font-black text-white tracking-wide uppercase truncate w-full drop-shadow leading-tight mt-0.5 font-space">
+                    <h4 className="text-[11px] font-black text-white tracking-wide uppercase truncate drop-shadow-xs font-space">
                       {tile.name}
                     </h4>
 
-                    {/* Açık Artırma veya Takas Rozeti */}
-                    {isDemandHighlighted && (
-                      <div className="mt-1 flex items-center justify-center gap-1 bg-black/80 px-2 py-0.5 rounded-full border border-white/80 shadow-md">
-                        <span className="text-[8.5px] font-bold text-white flex items-center gap-1">
-                          {isAuctionTile ? <Gavel className="w-3 h-3" /> : <Handshake className="w-3 h-3" />}
-                          <span>
-                            {isAuctionTile
-                              ? 'AÇIK ARTIRMA'
-                              : isTradeOffered && !isTradeRequested
-                              ? 'TAKAS: VERİLECEK'
-                              : isTradeRequested && !isTradeOffered
-                              ? 'TAKAS: İSTENEN'
-                              : 'TAKAS'}
-                          </span>
-                        </span>
-                      </div>
-                    )}
-
                     {/* Ev / Otel Rozeti */}
-                    {houses > 0 && (
-                      <div className="mt-1 flex items-center justify-center gap-1 bg-black/60 px-1.5 py-0.5 rounded-full border border-white/20">
+                    {houses > 0 ? (
+                      <div className="flex-shrink-0">
                         {houses === 5 ? (
-                          <span className="text-[9px] font-bold text-rose-300 flex items-center gap-1 font-jetbrains">
-                            OTEL
+                          <span className="text-[8.5px] font-extrabold bg-rose-600 text-white px-1.5 py-0.5 rounded-full border border-amber-300 shadow-xs font-jetbrains">
+                            🏨 OTEL
                           </span>
                         ) : (
-                          <div className="flex items-center gap-1 text-[9px] font-bold text-emerald-300 font-jetbrains">
-                            <span className="font-mono text-white">{houses} EV</span>
-                          </div>
+                          <span className="text-[8.5px] font-extrabold bg-slate-950/80 text-emerald-300 px-1.5 py-0.5 rounded-full border border-emerald-400/60 shadow-xs font-jetbrains">
+                            🏠 {houses} EV
+                          </span>
                         )}
                       </div>
-                    )}
+                    ) : tile.type === 'railroad' ? (
+                      <Train className="w-3 h-3 text-white/90 flex-shrink-0" />
+                    ) : tile.type === 'utility' ? (
+                      <Zap className="w-3 h-3 text-amber-300 flex-shrink-0" />
+                    ) : null}
                   </div>
 
-                  {/* Tapu Küçük Fotoğrafı (Asla boş kalmaz) */}
-                  <div className="w-full h-14 sm:h-16 relative overflow-hidden bg-slate-100 dark:bg-slate-800 flex-shrink-0 border-b border-slate-200 dark:border-slate-800 flex items-center justify-center">
-                    {tile.image && (
-                      <img
-                        src={tile.image}
-                        alt={tile.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 relative z-10"
-                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                      />
-                    )}
-                    <span className="text-2xl absolute inset-0 flex items-center justify-center z-0">
-                      <Building2 className="w-6 h-6 text-slate-300 dark:text-slate-700" />
-                    </span>
-                  </div>
-
-                  {/* Kart Gövdesi: Kira & Değer Bilgileri */}
-                  <div className="p-2 flex flex-col gap-1.5 text-[10px] leading-snug bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">
-                    {/* Geçerli Kira (Vurgulanmış) */}
-                    <div className="flex items-center justify-between pb-1 border-b border-slate-200 dark:border-slate-800">
-                      <span className="text-slate-500 dark:text-slate-400 font-semibold font-space">Geçerli Kira:</span>
-                      <span className="font-mono font-black text-slate-900 dark:text-slate-100 text-xs font-jetbrains">
-                        {isMortgaged ? `0₺ (${targetPlayer?.name ? `${targetPlayer.name} İpotek` : 'İpotek'})` : `${currentRent}${typeof currentRent === 'number' ? '₺' : ''}`}
+                  {/* Kart Gövdesi: Kompakt Görsel + Kira & İpotek Bilgisi */}
+                  <div className="p-2 flex flex-col gap-1 text-[10px] leading-snug bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[9.5px] text-slate-500 dark:text-slate-400 font-semibold font-space">Geçerli Kira:</span>
+                      <span className={`font-mono font-black text-xs font-jetbrains ${isMortgaged ? 'text-rose-500' : 'text-emerald-700 dark:text-emerald-400'}`}>
+                        {isMortgaged ? '0₺' : `${currentRent}${typeof currentRent === 'number' ? '₺' : ''}`}
                       </span>
                     </div>
 
-                    {/* Arsa / Ev Kira Kademeleri */}
-                    {tile.type === 'property' && Array.isArray(tile.rent) && (
-                      <div className="grid grid-cols-2 gap-x-1.5 gap-y-0.5 text-[8.5px] sm:text-[9px] text-slate-600 dark:text-slate-400 font-medium">
-                        <span className={houses === 0 && !isMortgaged ? 'text-amber-900 dark:text-amber-200 bg-amber-100/90 dark:bg-amber-950/80 font-black px-1 rounded' : 'text-slate-600 dark:text-slate-400'}>
-                          Arsa: {tile.rent[0]}₺
-                        </span>
-                        <span className={houses === 1 ? 'text-amber-900 dark:text-amber-200 bg-amber-100/90 dark:bg-amber-950/80 font-black px-1 rounded' : 'text-slate-600 dark:text-slate-400'}>
-                          1 Ev: {tile.rent[1]}₺
-                        </span>
-                        <span className={houses === 2 ? 'text-amber-900 dark:text-amber-200 bg-amber-100/90 dark:bg-amber-950/80 font-black px-1 rounded' : 'text-slate-600 dark:text-slate-400'}>
-                          2 Ev: {tile.rent[2]}₺
-                        </span>
-                        <span className={houses === 3 ? 'text-amber-900 dark:text-amber-200 bg-amber-100/90 dark:bg-amber-950/80 font-black px-1 rounded' : 'text-slate-600 dark:text-slate-400'}>
-                          3 Ev: {tile.rent[3]}₺
-                        </span>
-                        <span className={houses === 4 ? 'text-amber-900 dark:text-amber-200 bg-amber-100/90 dark:bg-amber-950/80 font-black px-1 rounded' : 'text-slate-600 dark:text-slate-400'}>
-                          4 Ev: {tile.rent[4]}₺
-                        </span>
-                        <span className={houses === 5 ? 'text-rose-900 dark:text-rose-200 bg-rose-100/90 dark:bg-rose-950/80 font-black px-1 rounded' : 'text-slate-600 dark:text-slate-400'}>
-                          Otel: {tile.rent[5]}₺
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Gar Kira Kademeleri */}
-                    {tile.type === 'railroad' && (
-                      <div className="grid grid-cols-2 gap-x-1.5 gap-y-0.5 text-[8.5px] sm:text-[9px] text-slate-600 dark:text-slate-400 font-medium">
-                        <span className={ownerRailroadsCount === 1 ? 'text-amber-900 dark:text-amber-200 bg-amber-100/90 dark:bg-amber-950/80 font-black px-1 rounded' : 'text-slate-600 dark:text-slate-400'}>1 Gar: 25₺</span>
-                        <span className={ownerRailroadsCount === 2 ? 'text-amber-900 dark:text-amber-200 bg-amber-100/90 dark:bg-amber-950/80 font-black px-1 rounded' : 'text-slate-600 dark:text-slate-400'}>2 Gar: 50₺</span>
-                        <span className={ownerRailroadsCount === 3 ? 'text-amber-900 dark:text-amber-200 bg-amber-100/90 dark:bg-amber-950/80 font-black px-1 rounded' : 'text-slate-600 dark:text-slate-400'}>3 Gar: 100₺</span>
-                        <span className={ownerRailroadsCount === 4 ? 'text-rose-900 dark:text-rose-200 bg-rose-100/90 dark:bg-rose-950/80 font-black px-1 rounded' : 'text-slate-600 dark:text-slate-400'}>4 Gar: 200₺</span>
-                      </div>
-                    )}
-
-                    {/* Kamu Hizmeti Çarpanları */}
-                    {tile.type === 'utility' && (
-                      <div className="flex flex-col gap-0.5 text-[8.5px] sm:text-[9px] text-slate-600 dark:text-slate-400 font-medium">
-                        <span className={ownerUtilitiesCount === 1 ? 'text-amber-900 dark:text-amber-200 bg-amber-100/90 dark:bg-amber-950/80 font-black px-1 rounded' : 'text-slate-600 dark:text-slate-400'}>1 Tesis: Zarın 4 Katı</span>
-                        <span className={ownerUtilitiesCount === 2 ? 'text-amber-900 dark:text-amber-200 bg-amber-100/90 dark:bg-amber-950/80 font-black px-1 rounded' : 'text-slate-600 dark:text-slate-400'}>2 Tesis: Zarın 10 Katı</span>
-                      </div>
-                    )}
-
-                    {/* Alt Bilgiler: İnşa Maliyeti & İpotek Bedeli */}
-                    <div className="pt-1 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-[9px] text-slate-500 dark:text-slate-400 font-medium">
-                      {tile.houseCost ? (
-                        <span>Ev: <strong className="text-slate-800 dark:text-slate-200 font-jetbrains">{tile.houseCost}₺</strong></span>
-                      ) : (
-                        <span>Maliyet: <strong className="text-slate-800 dark:text-slate-200 font-jetbrains">{tile.cost}₺</strong></span>
-                      )}
+                    <div className="flex items-center justify-between text-[9px] text-slate-500 dark:text-slate-400 pt-0.5 border-t border-slate-100 dark:border-slate-800/80">
+                      <span>Değer: <strong className="text-slate-800 dark:text-slate-200 font-jetbrains">{tile.cost}₺</strong></span>
                       <span>İpotek: <strong className="text-slate-800 dark:text-slate-200 font-jetbrains">{tile.mortgage}₺</strong></span>
                     </div>
                   </div>
 
                   {/* İpotek Damgası (Klasik Çift Çerçeveli Kırmızı Kaşe) */}
                   {isMortgaged && (
-                    <div className="absolute inset-0 z-20 bg-rose-900/10 dark:bg-rose-950/30 backdrop-grayscale-[0.3] backdrop-contrast-[0.95] flex items-center justify-center p-2 pointer-events-none select-none overflow-hidden">
-                      <div className="transform -rotate-12 p-[2px] rounded-md border-2 border-red-600 dark:border-red-500/90 bg-red-50/95 dark:bg-black/80 shadow-xl flex items-center justify-center">
-                        <div className="border border-red-500/70 dark:border-red-500/60 rounded-[3px] px-2.5 py-0.5 flex items-center justify-center">
-                          <span className="text-[10.5px] sm:text-xs font-space font-black uppercase tracking-widest text-red-700 dark:text-red-400 leading-none drop-shadow-xs">
-                            İPOTEK
-                          </span>
-                        </div>
+                    <div className="absolute inset-0 z-20 bg-rose-950/25 backdrop-grayscale-[0.3] flex items-center justify-center p-1 pointer-events-none select-none overflow-hidden">
+                      <div className="transform -rotate-12 px-2 py-0.5 rounded border border-red-600 bg-red-600 text-white font-black text-[9px] font-space tracking-widest shadow-md">
+                        İPOTEKLİ
                       </div>
                     </div>
                   )}
 
                   {/* Kartın Alt Butonu / Hover Efekti */}
-                  <div className="bg-slate-50 dark:bg-slate-850 p-1 text-center border-t border-slate-200 dark:border-slate-800 group-hover:bg-amber-100/80 dark:group-hover:bg-amber-950/80 group-hover:text-amber-950 dark:group-hover:text-amber-200 text-[9.5px] font-bold text-slate-600 dark:text-slate-300 transition-colors flex items-center justify-center gap-1 font-space">
-                    <span>{targetPlayer?.id !== effectiveMyId ? 'Detay / Teklif Yap' : 'Detay / İnşa'}</span>
-                    <ChevronRight className="w-3 h-3" />
+                  <div className="bg-slate-50 dark:bg-slate-850 px-2 py-0.5 text-center border-t border-slate-200 dark:border-slate-800 group-hover:bg-amber-100/80 dark:group-hover:bg-amber-950/80 group-hover:text-amber-950 dark:group-hover:text-amber-200 text-[9px] font-bold text-slate-600 dark:text-slate-300 transition-colors flex items-center justify-between font-space">
+                    <span>{targetPlayer?.id !== effectiveMyId ? 'Teklif Yap' : 'İncele & Yönet'}</span>
+                    <ChevronRight className="w-2.5 h-2.5" />
                   </div>
                 </div>
               );
