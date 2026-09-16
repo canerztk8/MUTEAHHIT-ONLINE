@@ -276,19 +276,33 @@ export function App() {
     } catch {}
   }, []);
 
-  // 🚀 Render Backend Pre-Warm (Erken Uyandırma)
-  // Sayfa açıldığı anda backend'e arka planda sessizce bir GET isteği atarak
-  // Render uyku modundaysa oyuncu lobideyken uyanmasını sağlar.
+  // 🚀 Render Backend Pre-Warm (Erken Uyandırma & Canlılık Döngüsü)
+  // Sayfa açıldığı anda backend'e arka planda hızlı aralıklarla GET isteği atarak
+  // Render uyku modundaysa oyuncu lobideyken uyanmasını ve lobi kurma/katılmanın anında açılmasını sağlar.
   useEffect(() => {
     if (!ENV.IS_LOCAL && ENV.HEALTH_CHECK_URL) {
-      fetch(ENV.HEALTH_CHECK_URL, { mode: 'cors', cache: 'no-store' })
-        .then(res => res.json())
-        .then(() => console.log('[Network] Backend erken uyandırma sinyali başarılı (Pre-warm OK).'))
-        .catch(() => {
-          setTimeout(() => {
-            fetch(ENV.HEALTH_CHECK_URL, { mode: 'cors', cache: 'no-store' }).catch(() => {});
-          }, 3500);
-        });
+      let attempts = 0;
+      const maxAttempts = 15;
+      let timer = null;
+
+      const pingBackend = () => {
+        attempts++;
+        fetch(ENV.HEALTH_CHECK_URL, { mode: 'cors', cache: 'no-store' })
+          .then(res => res.json())
+          .then(() => {
+            console.log('[Network] Backend erken uyandırma sinyali başarılı (Pre-warm OK).');
+          })
+          .catch(() => {
+            if (attempts < maxAttempts) {
+              timer = setTimeout(pingBackend, 2500);
+            }
+          });
+      };
+
+      pingBackend();
+      return () => {
+        if (timer) clearTimeout(timer);
+      };
     }
   }, []);
 
