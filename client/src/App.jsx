@@ -1820,6 +1820,7 @@ export function App() {
           <ErrorBoundary name="Oyun Tahtası">
             <Board
               gameState={gameState}
+              logs={displayedLogs !== null ? displayedLogs : (gameState?.logs || [])}
               onTileClick={(tile) => setSelectedTileModal(tile)}
               selectedTileModal={selectedTileModal}
               onCloseTileModal={() => setSelectedTileModal(null)}
@@ -1944,10 +1945,10 @@ export function App() {
             </ErrorBoundary>
           </div>
 
-          {/* ALT (18" ve Altında Oyuncu Durumları Paneli, 2XL+ Dev Ekranlarda Canlı Sohbet) */}
+          {/* ALT (18" ve Altında Oyuncu Durumları + Tapular Paneli, 2XL+ Dev Ekranlarda Canlı Sohbet) */}
           <div className="h-[56%] 2xl:h-1/2 min-h-[180px] min-h-0 flex flex-col overflow-hidden">
-            {/* 18" ve Altı Ekranlarda: Oyuncu Durumları Box'ı ve Tapu Senetleri Butonu */}
-            <div className="flex 2xl:hidden flex-1 h-full min-h-0 flex-col overflow-y-auto custom-scrollbar">
+            {/* 18" ve Altı Ekranlarda: Oyuncu Durumları Box'ı ve Altında Tapu Senetleri Portföyü */}
+            <div className="flex 2xl:hidden flex-1 h-full min-h-0 flex-col overflow-y-auto custom-scrollbar gap-2">
               <ErrorBoundary name="Oyuncu Durumları Paneli">
                 <PlayerPanel
                   gameState={effectiveGameState}
@@ -1959,6 +1960,14 @@ export function App() {
                   onKickPlayer={handleKickPlayer}
                   onOpenDeeds={() => setShowDeedsModal(true)}
                   isDarkMode={isDarkMode}
+                />
+              </ErrorBoundary>
+
+              <ErrorBoundary name="Sağ Panel Tapu Senetleri">
+                <TitleDeedCards
+                  gameState={effectiveGameState}
+                  myPlayerId={effectiveMyPlayerId}
+                  onTileClick={(tile) => setSelectedTileModal(tile)}
                 />
               </ErrorBoundary>
             </div>

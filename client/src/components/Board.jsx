@@ -723,26 +723,28 @@ const CenterInspectedTilePreview = React.memo(function CenterInspectedTilePrevie
   );
 });
 
-// ─── Merkez Canlı Şeffaf Olay Akışı (Son 5 Olay - Aşağı Doğru Solar) ─────────
+// ─── Merkez Canlı Şeffaf Olay Akışı (Son 5 Olay - En Yeni Üstte, Eskidikçe Aşağı Solar) ─────────
 const CenterTransparentEventFeed = React.memo(function CenterTransparentEventFeed({ logs = [], isDarkMode }) {
   const recentLogs = useMemo(() => {
     if (!logs || logs.length === 0) return [];
+    // En yeni 5 olayı al; en yeni olay her zaman EN ÜSTTE (index 0) durur,
+    // yeni olay geldikçe eski olaylar aşağıya doğru kayar ve en alttan kaybolur.
     return [...logs].slice(-5).reverse();
   }, [logs]);
 
   if (recentLogs.length === 0) return null;
 
   return (
-    <div className="w-full max-w-[260px] sm:max-w-[310px] mx-auto mt-1 flex flex-col gap-0.5 pointer-events-none select-none px-1 overflow-hidden transition-all duration-300">
+    <div className="w-full max-w-[270px] sm:max-w-[320px] mx-auto mt-1 flex flex-col gap-0.5 pointer-events-none select-none px-1 overflow-hidden transition-all duration-300">
       {recentLogs.map((log, idx) => {
         const opacities = [
-          'opacity-95 scale-100',
-          'opacity-70 scale-[0.98]',
-          'opacity-45 scale-[0.96]',
-          'opacity-25 scale-[0.94]',
-          'opacity-15 scale-[0.92]'
+          'opacity-100 scale-100 font-semibold shadow-xs',
+          'opacity-80 scale-[0.98]',
+          'opacity-60 scale-[0.96]',
+          'opacity-40 scale-[0.94]',
+          'opacity-20 scale-[0.92]'
         ];
-        const opacityClass = opacities[idx] || 'opacity-10';
+        const opacityClass = opacities[idx] || 'opacity-15';
 
         const icon = log.type === 'dice' ? '🎲'
           : log.type === 'buy' ? '📜'
@@ -759,13 +761,13 @@ const CenterTransparentEventFeed = React.memo(function CenterTransparentEventFee
             key={log.id || `${log.time}-${idx}-${(log.text || '').slice(0, 15)}`}
             className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md backdrop-blur-xs transition-all duration-300 ${opacityClass} ${
               isDarkMode
-                ? 'bg-slate-950/40 text-slate-200 border border-slate-700/20 shadow-2xs'
-                : 'bg-white/60 text-slate-800 border border-slate-300/40 shadow-2xs'
+                ? (idx === 0 ? 'bg-slate-950/60 text-slate-100 border border-amber-500/30 shadow-xs' : 'bg-slate-950/40 text-slate-300 border border-slate-700/20 shadow-2xs')
+                : (idx === 0 ? 'bg-white/80 text-slate-900 border border-amber-500/40 shadow-xs' : 'bg-white/50 text-slate-700 border border-slate-300/40 shadow-2xs')
             }`}
           >
             <span className="text-[9px] sm:text-[10px] flex-shrink-0">{icon}</span>
             <span
-              className="text-[8px] sm:text-[9px] font-medium truncate leading-tight font-space"
+              className="text-[8px] sm:text-[9px] truncate leading-tight font-space flex-1"
               dangerouslySetInnerHTML={{ __html: log.text || '' }}
             />
             {log.time && (
@@ -782,6 +784,7 @@ const CenterTransparentEventFeed = React.memo(function CenterTransparentEventFee
 
 export function Board({
   gameState,
+  logs,
   onTileClick,
   myPlayerId,
   isDiceRolling = false,
@@ -2028,8 +2031,8 @@ export function Board({
                 })
               : centerControlsSlot}
 
-            {/* Canlı Şeffaf Olaylar Akışı (Son 5 Olay — Yeni Olay Geldikçe Aşağı Kayarak Solar) */}
-            <CenterTransparentEventFeed logs={gameState?.logs || []} isDarkMode={isDarkMode} />
+            {/* Canlı Şeffaf Olaylar Akışı (Son 5 Olay — En Yeni Üstte, Eskidikçe Aşağı Solar) */}
+            <CenterTransparentEventFeed logs={logs || gameState?.logs || []} isDarkMode={isDarkMode} />
           </div>
 
           {/* İncelenen Arsa / Tapu Bilgi Şeridi (Layout Shift Engellenmiş Sabit Taban Rozeti) */}
